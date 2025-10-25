@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  nexabudget-fe:
+    container_name: nexabudget-fe
+    build:
+      context: .
+      dockerfile: Dockerfile
+    expose:
+      - "80"
+    environment:
+      - BACKEND_URL=localhost:8080
+      - LOG_LEVEL=info
+    restart: unless-stopped

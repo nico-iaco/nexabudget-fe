@@ -25,20 +25,22 @@ Follow these instructions to get a copy of the project up and running on your lo
 - A running instance of the NexaBudget Backend (You will need to set up the backend server separately).
 ### Installation & Setup
 1. Clone the repository:
-```bash
-git clone https://github.com/nico-iaco/nexabudget-fe.git
-cd nexabudget-fe
-```
+    ```shell
+    git clone https://github.com/nico-iaco/nexabudget-fe.git
+    cd nexabudget-fe
+    ```
 2. Install dependencies:
-```bash
-npm install
-```
+    ```shell
+    npm install
+    ```
 3. Set up environment variables: The frontend needs to know the URL of the backend API. Create a file named .env.local in the root of the project and add the following variable. By default, the backend is expected to run on http://localhost:8080.
-```bash
-# .env.local
-VITE_BE_BASE_URL=http://localhost:8080
-The Vite development server will proxy requests from /api to this URL.
-```
+    ```shell
+    # .env.local
+    VITE_BE_BASE_URL=http://localhost:8080
+   ```
+    The Vite development server will proxy requests from /api to this URL.
 4. Run the development server:
-npm run dev
+    ```shell
+    npm run dev
+   ```
 5. Open the application: Open your browser and navigate to the local URL provided by Vite (usually http://localhost:5173).
