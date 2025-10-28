@@ -9,6 +9,8 @@ on:
       - 'package.json'
       - 'yarn.lock'
       - 'package-lock.json'
+      - 'index.html'
+      - 'nginx.conf.template'
       - 'Dockerfile'
       - '.github/workflows/docker-image.yml'
 
