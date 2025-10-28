@@ -1,8 +1,8 @@
 // src/pages/transactions/TransactionsPage.tsx
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useOutletContext } from 'react-router-dom';
-import { Table, Typography, Spin, Tag, Button, Flex, Modal, Form, InputNumber, Select, Input, DatePicker, List } from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { Table, Typography, Spin, Tag, Button, Flex, Modal, Form, InputNumber, Select, Input, DatePicker, List, Space } from 'antd';
+import { PlusOutlined, DeleteOutlined, EditOutlined, RetweetOutlined } from '@ant-design/icons';
 import * as api from '../../services/api';
 import type { Transaction, Account, TransactionRequest, Category } from '../../types/api';
 import { useAuth } from '../../contexts/AuthContext';
@@ -20,6 +20,7 @@ interface OutletContextType {
     fetchAccounts: () => void;
     transactionRefreshKey: number;
     categories: Category[];
+    handleOpenTransferModal: () => void;
 }
 
 interface FormValues extends Omit<TransactionRequest, 'data'> {
@@ -35,7 +36,7 @@ interface TableFilters {
 export const TransactionsPage = () => {
     const { accountId } = useParams<{ accountId?: string }>();
     const { auth } = useAuth();
-    const { accounts, fetchAccounts: fetchLayoutAccounts, transactionRefreshKey, categories } = useOutletContext<OutletContextType>();
+    const { accounts, fetchAccounts: fetchLayoutAccounts, transactionRefreshKey, categories, handleOpenTransferModal } = useOutletContext<OutletContextType>();
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
@@ -287,9 +288,14 @@ export const TransactionsPage = () => {
         <>
             <Flex justify="space-between" align="center" style={{ marginBottom: 24 }} wrap="wrap" gap="small">
                 <Title level={2} style={{ margin: 0 }}>{pageTitle}</Title>
-                <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>
-                    Nuova Transazione
-                </Button>
+                <Space wrap>
+                    <Button icon={<RetweetOutlined />} onClick={handleOpenTransferModal}>
+                        Nuovo Trasferimento
+                    </Button>
+                    <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>
+                        Nuova Transazione
+                    </Button>
+                </Space>
             </Flex>
 
             <Flex vertical gap="middle" style={{ marginBottom: 24 }}>

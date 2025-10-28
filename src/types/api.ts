@@ -61,6 +61,7 @@ export interface TransferRequest {
     destinationAccountId: number;
     amount: number;
     description: string;
+    transferDate: string;
     notes?: string;
 }
 

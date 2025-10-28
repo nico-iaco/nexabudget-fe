@@ -14,7 +14,9 @@ import {
     Input,
     Select,
     InputNumber,
-    Space
+    Space,
+    message,
+    DatePicker
 } from 'antd';
 import {
     MenuFoldOutlined,
@@ -28,11 +30,21 @@ import {
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import * as api from '../services/api';
-import type { Account, AccountRequest, Category } from '../types/api';
+import type { Account, AccountRequest, Category, TransferRequest } from '../types/api';
+import dayjs, { type Dayjs } from 'dayjs';
 
 const { Header, Sider, Content } = AntLayout;
 const { Title } = Typography;
 const { Option } = Select;
+
+interface TransferFormValues {
+    sourceAccountId: number;
+    destinationAccountId: number;
+    amount: number;
+    description: string;
+    transferDate?: Dayjs | null;
+    notes?: string;
+}
 
 export const Layout = () => {
     const [collapsed, setCollapsed] = useState(true);
@@ -46,10 +58,12 @@ export const Layout = () => {
     const [deletingAccount, setDeletingAccount] = useState<Account | null>(null);
     const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const [transactionRefreshKey, setTransactionRefreshKey] = useState(0);
+    const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
     const { auth, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const [form] = Form.useForm<AccountRequest>();
+    const [accountForm] = Form.useForm<AccountRequest>();
+    const [transferForm] = Form.useForm<TransferFormValues>();
 
     const {
         token: { colorBgContainer, borderRadiusLG },
@@ -97,13 +111,13 @@ export const Layout = () => {
 
     const handleOpenCreateAccountModal = () => {
         setEditingAccount(null);
-        form.resetFields();
+        accountForm.resetFields();
         setIsAccountModalOpen(true);
     };
 
     const handleOpenEditAccountModal = (account: Account) => {
         setEditingAccount(account);
-        form.setFieldsValue(account);
+        accountForm.setFieldsValue(account);
         setIsAccountModalOpen(true);
     };
 
@@ -155,6 +169,33 @@ export const Layout = () => {
         }
     };
 
+    const handleOpenTransferModal = () => {
+        transferForm.resetFields();
+        transferForm.setFieldsValue({ transferDate: dayjs() });
+        setIsTransferModalOpen(true);
+    };
+
+    const handleCancelTransferModal = () => {
+        setIsTransferModalOpen(false);
+    };
+
+    const onFinishTransfer = async (values: TransferFormValues) => {
+        const transferData: TransferRequest = {
+            ...values,
+            transferDate: values.transferDate ? values.transferDate.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'),
+        };
+        try {
+            await api.createTransfer(transferData);
+            setIsTransferModalOpen(false);
+            fetchAccounts();
+            triggerTransactionRefresh();
+            message.success('Trasferimento creato con successo!');
+        } catch (error) {
+            console.error("Failed to create transfer", error);
+            message.error('Errore durante la creazione del trasferimento.');
+        }
+    };
+
     const handleMenuClick = (path: string) => {
         const targetPath = selectedKeys.includes(path) ? '/transactions' : path;
         navigate(targetPath);
@@ -171,11 +212,11 @@ export const Layout = () => {
             label: (
                 <Flex justify="space-between" align="center">
                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {`${acc.name} (${acc.actualBalance.toFixed(2)} ${acc.currency})`}
+                        {acc.name}
                     </span>
                     <Space>
-                        <Button type="text" shape="circle" icon={<EditOutlined />} onClick={(e) => { e.stopPropagation(); handleOpenEditAccountModal(acc); }} style={{color: 'rgba(255, 255, 255, 0.65)'}} />
-                        <Button type="text" shape="circle" danger icon={<DeleteOutlined />} onClick={(e) => { e.stopPropagation(); handleOpenDeleteModal(acc); }} style={{color: 'rgba(255, 255, 255, 0.65)'}} />
+                        <Button type="text" size="small" icon={<EditOutlined />} onClick={(e) => { e.stopPropagation(); handleOpenEditAccountModal(acc); }} />
+                        <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={(e) => { e.stopPropagation(); handleOpenDeleteModal(acc); }} />
                     </Space>
                 </Flex>
             ),
@@ -184,7 +225,7 @@ export const Layout = () => {
     });
 
     if (!auth) {
-        return <Outlet context={{ accounts: [], fetchAccounts: () => {}, transactionRefreshKey: 0, categories: [], fetchCategories: () => {} }} />;
+        return <Outlet context={{ accounts: [], fetchAccounts: () => {}, transactionRefreshKey: 0, categories: [], fetchCategories: () => {}, handleOpenTransferModal: () => {} }} />;
     }
 
     return (
@@ -220,9 +261,11 @@ export const Layout = () => {
                     />
                     <Flex vertical style={{padding: '0 8px'}}>
                         <Title level={5} style={{ color: 'rgba(255, 255, 255, 0.65)', padding: '16px' }}>Conti</Title>
-                        <Button type="primary" icon={<PlusOutlined />} style={{margin: '0 8px 16px'}} onClick={handleOpenCreateAccountModal}>
-                            Nuovo Conto
-                        </Button>
+                        <Space direction="vertical" style={{width: '100%', padding: '0 8px 16px'}}>
+                            <Button type="primary" icon={<PlusOutlined />} block onClick={handleOpenCreateAccountModal}>
+                                Nuovo Conto
+                            </Button>
+                        </Space>
                     </Flex>
                     {loading ? <Spin style={{padding: '20px'}}/> : <Menu theme="dark" mode="inline" selectedKeys={selectedKeys} items={accountMenuItems} />}
                 </Sider>
@@ -248,7 +291,7 @@ export const Layout = () => {
                             borderRadius: borderRadiusLG,
                         }}
                     >
-                        <Outlet context={{ accounts, fetchAccounts, transactionRefreshKey, categories, fetchCategories }} />
+                        <Outlet context={{ accounts, fetchAccounts, transactionRefreshKey, categories, fetchCategories, handleOpenTransferModal }} />
                     </Content>
                 </AntLayout>
             </AntLayout>
@@ -269,7 +312,7 @@ export const Layout = () => {
             )}
 
             <Modal title={editingAccount ? "Modifica Conto" : "Nuovo Conto"} open={isAccountModalOpen} onCancel={handleCancelAccountModal} footer={null}>
-                <Form form={form} layout="vertical" onFinish={onFinishAccount} style={{marginTop: 24}} initialValues={{ currency: 'EUR' }}>
+                <Form form={accountForm} layout="vertical" onFinish={onFinishAccount} style={{marginTop: 24}} initialValues={{ currency: 'EUR' }}>
                     <Form.Item name="name" label="Nome Conto" rules={[{ required: true, message: 'Inserisci il nome del conto' }]}>
                         <Input placeholder="Es. Conto Principale" />
                     </Form.Item>
@@ -304,6 +347,55 @@ export const Layout = () => {
             >
                 <p>Sei sicuro di voler eliminare il conto "{deletingAccount?.name}"?</p>
                 <p>Questa azione è irreversibile e cancellerà anche tutte le transazioni associate.</p>
+            </Modal>
+
+            {/* Modale per il Trasferimento */}
+            <Modal title="Nuovo Trasferimento" open={isTransferModalOpen} onCancel={handleCancelTransferModal} footer={null}>
+                <Form form={transferForm} layout="vertical" onFinish={onFinishTransfer} style={{ marginTop: 24 }} initialValues={{ transferDate: dayjs() }}>
+                    <Form.Item
+                        name="sourceAccountId"
+                        label="Conto di Origine"
+                        rules={[{ required: true, message: 'Seleziona il conto di origine' }]}
+                    >
+                        <Select placeholder="Da quale conto?">
+                            {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
+                        </Select>
+                    </Form.Item>
+                    <Form.Item
+                        name="destinationAccountId"
+                        label="Conto di Destinazione"
+                        rules={[
+                            { required: true, message: 'Seleziona il conto di destinazione' },
+                            ({ getFieldValue }) => ({
+                                validator(_, value) {
+                                    if (!value || getFieldValue('sourceAccountId') !== value) {
+                                        return Promise.resolve();
+                                    }
+                                    return Promise.reject(new Error('Il conto di destinazione deve essere diverso da quello di origine.'));
+                                },
+                            }),
+                        ]}
+                    >
+                        <Select placeholder="A quale conto?">
+                            {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
+                        </Select>
+                    </Form.Item>
+                    <Form.Item name="amount" label="Importo" rules={[{ required: true, message: 'Inserisci l\'importo' }]}>
+                        <InputNumber style={{ width: '100%' }} min={0.01} addonAfter="€" />
+                    </Form.Item>
+                    <Form.Item name="transferDate" label="Data del Trasferimento" rules={[{ required: true, message: 'Seleziona la data' }]}>
+                        <DatePicker style={{ width: '100%' }} />
+                    </Form.Item>
+                    <Form.Item name="description" label="Descrizione" rules={[{ required: true, message: 'Inserisci una descrizione' }]}>
+                        <Input placeholder="Es. Giroconto" />
+                    </Form.Item>
+                    <Form.Item name="notes" label="Note">
+                        <Input.TextArea placeholder="Note aggiuntive (opzionale)" />
+                    </Form.Item>
+                    <Form.Item>
+                        <Button type="primary" htmlType="submit" block>Esegui Trasferimento</Button>
+                    </Form.Item>
+                </Form>
             </Modal>
         </>
     );
