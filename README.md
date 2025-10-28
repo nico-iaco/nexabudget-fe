@@ -24,6 +24,7 @@ Follow these instructions to get a copy of the project up and running on your lo
 - npm or another package manager like yarn or pnpm.
 - A running instance of the NexaBudget Backend (You will need to set up the backend server separately).
 ### Installation & Setup
+#### Local Development
 1. Clone the repository:
     ```shell
     git clone https://github.com/nico-iaco/nexabudget-fe.git
@@ -44,3 +45,13 @@ Follow these instructions to get a copy of the project up and running on your lo
     npm run dev
    ```
 5. Open the application: Open your browser and navigate to the local URL provided by Vite (usually http://localhost:5173).
+#### Running with Docker Compose
+As an alternative to running locally, you can start the application using Docker. This method does not require Node.js or npm dependencies to be installed on your host machine.
+1. **Prerequisites**:
+   - Docker and Docker Compose installed.
+   - A running instance of the NexaBudget backend, accessible from the Docker network. Make sure to configure the backend URL in the `nginx.conf.template` file if it's not http://localhost:8080.
+2. Start the application: Run the following command from the project's root directory to build the Docker image and start the container.
+   ```shell
+   docker-compose up -d --build
+   ```
+3. Open the application: Open your browser and go to http://localhost (or the port you configured in the docker-compose.yaml file).

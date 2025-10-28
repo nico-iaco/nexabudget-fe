@@ -5,9 +5,9 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    expose:
-      - "80"
+    ports:
+      - "3000:80"
     environment:
-      - BACKEND_URL=localhost:8080
+      - BACKEND_URL=192.168.86.112:8080
       - LOG_LEVEL=info
     restart: unless-stopped
