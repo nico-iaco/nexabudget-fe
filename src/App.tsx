@@ -5,6 +5,7 @@ import { Layout } from './components/Layout';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
 import { TransactionsPage } from './pages/transactions/TransactionsPage';
+import { DashboardPage } from './pages/dashboard/DashboardPage';
 import type { JSX } from "react";
 
 // 1. Layout per le pagine pubbliche (Login/Register)
@@ -32,7 +33,11 @@ const router = createBrowserRouter([
         path: '/',
         element: <PrivateRoute><Layout /></PrivateRoute>,
         children: [
-            { index: true, element: <Navigate to="/transactions" /> },
+            { index: true, element: <Navigate to="/dashboard" /> },
+            {
+                path: 'dashboard',
+                element: <DashboardPage />,
+            },
             {
                 path: 'transactions',
                 element: <TransactionsPage />,

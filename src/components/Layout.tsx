@@ -1,5 +1,5 @@
 // src/components/Layout.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import {
     Layout as AntLayout,
@@ -16,17 +16,19 @@ import {
     InputNumber,
     Space,
     message,
-    DatePicker
+    DatePicker,
+    Statistic
 } from 'antd';
 import {
     MenuFoldOutlined,
     MenuUnfoldOutlined,
     LogoutOutlined,
     WalletOutlined,
-    SwapOutlined,
     PlusOutlined,
     EditOutlined,
-    DeleteOutlined
+    DeleteOutlined,
+    PieChartOutlined,
+    TransactionOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import * as api from '../services/api';
@@ -34,7 +36,7 @@ import type { Account, AccountRequest, Category, TransferRequest } from '../type
 import dayjs, { type Dayjs } from 'dayjs';
 
 const { Header, Sider, Content } = AntLayout;
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Option } = Select;
 
 interface TransferFormValues {
@@ -130,14 +132,16 @@ export const Layout = () => {
         try {
             if (editingAccount) {
                 await api.updateAccount(editingAccount.id, values);
+                message.success('Conto aggiornato con successo');
             } else {
                 await api.createAccount(values);
+                message.success('Conto creato con successo');
             }
             setIsAccountModalOpen(false);
             fetchAccounts();
-            triggerTransactionRefresh();
         } catch (error) {
-            console.error("Failed to save account", error);
+            message.error('Errore durante il salvataggio del conto');
+            console.error(error);
         }
     };
 
@@ -155,17 +159,14 @@ export const Layout = () => {
         if (!deletingAccount) return;
         try {
             await api.deleteAccount(deletingAccount.id);
-            setIsDeleteModalOpen(false);
+            message.success('Conto eliminato con successo');
             fetchAccounts();
-            if (location.pathname.startsWith(`/accounts/${deletingAccount.id}`)) {
-                navigate('/transactions');
-            } else {
-                triggerTransactionRefresh();
-            }
+            navigate('/transactions');
         } catch (error) {
-            console.error("Failed to delete account", error);
+            message.error('Errore durante l\'eliminazione del conto');
+            console.error(error);
         } finally {
-            setDeletingAccount(null);
+            handleCancelDeleteModal();
         }
     };
 
@@ -186,13 +187,13 @@ export const Layout = () => {
         };
         try {
             await api.createTransfer(transferData);
+            message.success('Trasferimento creato con successo');
             setIsTransferModalOpen(false);
             fetchAccounts();
             triggerTransactionRefresh();
-            message.success('Trasferimento creato con successo!');
         } catch (error) {
-            console.error("Failed to create transfer", error);
-            message.error('Errore durante la creazione del trasferimento.');
+            message.error('Errore durante la creazione del trasferimento');
+            console.error(error);
         }
     };
 
@@ -204,6 +205,10 @@ export const Layout = () => {
         }
     };
 
+    const totalBalance = useMemo(() => {
+        return accounts.reduce((sum, account) => sum + account.actualBalance, 0);
+    }, [accounts]);
+
     const accountMenuItems = accounts.map(acc => {
         const path = `/accounts/${acc.id}/transactions`;
         return {
@@ -211,10 +216,9 @@ export const Layout = () => {
             icon: <WalletOutlined />,
             label: (
                 <Flex justify="space-between" align="center">
-                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {acc.name}
-                    </span>
-                    <Space>
+                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc.name}</span>
+                    <Text style={{ fontSize: '0.9em', marginLeft: 8, color: 'rgba(255, 255, 255, 0.85)' }}>{acc.actualBalance.toFixed(2)}€</Text>
+                    <Space style={{ marginLeft: 16 }}>
                         <Button type="text" size="small" icon={<EditOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />} onClick={(e) => { e.stopPropagation(); handleOpenEditAccountModal(acc); }} />
                         <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={(e) => { e.stopPropagation(); handleOpenDeleteModal(acc); }} />
                     </Space>
@@ -235,7 +239,7 @@ export const Layout = () => {
                     trigger={null}
                     collapsible
                     collapsed={collapsed}
-                    width={250}
+                    width={300}
                     breakpoint="lg"
                     collapsedWidth={0}
                     onBreakpoint={broken => {
@@ -251,21 +255,24 @@ export const Layout = () => {
                         mode="inline"
                         selectedKeys={selectedKeys}
                         items={[
-                            {
-                                key: '/transactions',
-                                icon: <SwapOutlined />,
-                                label: 'Tutte le Transazioni',
-                                onClick: () => handleMenuClick('/transactions'),
-                            },
+                            { key: '/dashboard', icon: <PieChartOutlined />, label: 'Dashboard', onClick: () => navigate('/dashboard') },
+                            { key: '/transactions', icon: <TransactionOutlined />, label: 'Tutte le Transazioni', onClick: () => navigate('/transactions') },
                         ]}
                     />
                     <Flex vertical style={{padding: '0 8px'}}>
-                        <Title level={5} style={{ color: 'rgba(255, 255, 255, 0.65)', padding: '16px' }}>Conti</Title>
-                        <Space direction="vertical" style={{width: '100%', padding: '0 8px 16px'}}>
-                            <Button type="primary" icon={<PlusOutlined />} block onClick={handleOpenCreateAccountModal}>
-                                Nuovo Conto
-                            </Button>
-                        </Space>
+                        <Flex justify="space-between" align="center" style={{ padding: '16px 16px 8px' }}>
+                            <Title level={5} style={{ color: 'rgba(255, 255, 255, 0.65)', margin: 0 }}>Conti</Title>
+                            <Button icon={<PlusOutlined />} size="small" onClick={handleOpenCreateAccountModal} />
+                        </Flex>
+                        <div style={{ padding: '0 16px 16px' }}>
+                            <Statistic
+                                title={<Text style={{ color: 'rgba(255, 255, 255, 0.45)' }}>Bilancio Totale</Text>}
+                                value={totalBalance}
+                                precision={2}
+                                valueStyle={{ color: '#fff' }}
+                                suffix="€"
+                            />
+                        </div>
                     </Flex>
                     {loading ? <Spin style={{padding: '20px'}}/> : <Menu theme="dark" mode="inline" selectedKeys={selectedKeys} items={accountMenuItems} />}
                 </Sider>
@@ -279,7 +286,7 @@ export const Layout = () => {
                         />
                         <div style={{flex: 1}} />
                         <Button type="primary" icon={<LogoutOutlined />} onClick={handleLogout}>
-                            Logout
+                            {!isMobile && 'Logout'}
                         </Button>
                     </Header>
                     <Content
@@ -289,6 +296,7 @@ export const Layout = () => {
                             minHeight: 280,
                             background: colorBgContainer,
                             borderRadius: borderRadiusLG,
+                            overflow: 'auto'
                         }}
                     >
                         <Outlet context={{ accounts, fetchAccounts, transactionRefreshKey, categories, fetchCategories, handleOpenTransferModal }} />
