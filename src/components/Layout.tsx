@@ -215,7 +215,7 @@ export const Layout = () => {
                         {acc.name}
                     </span>
                     <Space>
-                        <Button type="text" size="small" icon={<EditOutlined />} onClick={(e) => { e.stopPropagation(); handleOpenEditAccountModal(acc); }} />
+                        <Button type="text" size="small" icon={<EditOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />} onClick={(e) => { e.stopPropagation(); handleOpenEditAccountModal(acc); }} />
                         <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={(e) => { e.stopPropagation(); handleOpenDeleteModal(acc); }} />
                     </Space>
                 </Flex>

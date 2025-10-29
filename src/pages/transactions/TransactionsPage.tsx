@@ -1,10 +1,10 @@
 // src/pages/transactions/TransactionsPage.tsx
 import { useEffect, useState, useMemo } from 'react';
 import { useParams, useOutletContext } from 'react-router-dom';
-import { Table, Typography, Spin, Tag, Button, Flex, Modal, Form, InputNumber, Select, Input, DatePicker, List, Space } from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined, RetweetOutlined } from '@ant-design/icons';
+import { Table, Typography, Spin, Tag, Button, Flex, Modal, Form, InputNumber, Select, Input, DatePicker, List, Space, message, Radio, Alert } from 'antd';
+import { PlusOutlined, DeleteOutlined, EditOutlined, RetweetOutlined, SwapOutlined } from '@ant-design/icons';
 import * as api from '../../services/api';
-import type { Transaction, Account, TransactionRequest, Category } from '../../types/api';
+import type { Transaction, Account, TransactionRequest, Category, LinkTransferRequest } from '../../types/api';
 import { useAuth } from '../../contexts/AuthContext';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -12,7 +12,7 @@ import { TransactionCard } from '../../components/TransactionCard';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { Option } = Select;
 
 interface OutletContextType {
@@ -54,6 +54,14 @@ export const TransactionsPage = () => {
     });
     const [filters, setFilters] = useState<TableFilters>({});
 
+    // State for "Convert to Transfer" modal
+    const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
+    const [sourceTransaction, setSourceTransaction] = useState<Transaction | null>(null);
+    const [destinationAccountId, setDestinationAccountId] = useState<number | null>(null);
+    const [destinationTransactions, setDestinationTransactions] = useState<Transaction[]>([]);
+    const [loadingDestTransactions, setLoadingDestTransactions] = useState(false);
+    const [selectedDestTransactionId, setSelectedDestTransactionId] = useState<number | null>(null);
+
     const fetchTransactions = () => {
         if (!auth) return;
         setLoading(true);
@@ -71,6 +79,38 @@ export const TransactionsPage = () => {
     useEffect(() => {
         fetchTransactions();
     }, [accountId, auth, transactionRefreshKey]);
+
+    useEffect(() => {
+        if (!destinationAccountId || !sourceTransaction) return;
+
+        const fetchDestinationTransactions = async () => {
+            setLoadingDestTransactions(true);
+            try {
+                const response = await api.getTransactionsByAccountId(destinationAccountId);
+                const sourceDate = dayjs(sourceTransaction.data);
+                const startDate = sourceDate.subtract(3, 'day');
+                const endDate = sourceDate.add(3, 'day');
+
+                const filtered = response.data.filter(t => {
+                    const tDate = dayjs(t.data);
+                    // Must be opposite type, same amount, and within date range
+                    return t.type !== sourceTransaction.type &&
+                        t.importo === sourceTransaction.importo &&
+                        !t.transferId &&
+                        tDate.isAfter(startDate) && tDate.isBefore(endDate);
+                });
+                setDestinationTransactions(filtered);
+            } catch (error) {
+                console.error("Failed to fetch destination transactions", error);
+                message.error("Errore nel recupero delle transazioni di destinazione.");
+            } finally {
+                setLoadingDestTransactions(false);
+            }
+        };
+
+        fetchDestinationTransactions();
+    }, [destinationAccountId, sourceTransaction]);
+
 
     const handleDelete = async (id: number) => {
         try {
@@ -127,6 +167,38 @@ export const TransactionsPage = () => {
             fetchLayoutAccounts();
         } catch (error) {
             console.error("Failed to save transaction", error);
+        }
+    };
+
+    const handleOpenLinkTransferModal = (transaction: Transaction) => {
+        setSourceTransaction(transaction);
+        setIsLinkModalOpen(true);
+    };
+
+    const handleCancelLinkTransferModal = () => {
+        setIsLinkModalOpen(false);
+        setSourceTransaction(null);
+        setDestinationAccountId(null);
+        setDestinationTransactions([]);
+        setSelectedDestTransactionId(null);
+    };
+
+    const handleConfirmLinkTransfer = async () => {
+        if (!sourceTransaction || !selectedDestTransactionId) return;
+
+        const request: LinkTransferRequest = {
+            sourceTransactionId: sourceTransaction.id,
+            destinationTransactionId: selectedDestTransactionId,
+        };
+
+        try {
+            await api.linkTransactionsAsTransfer(request);
+            message.success("Transazioni collegate con successo!");
+            handleCancelLinkTransferModal();
+            fetchTransactions();
+        } catch (error) {
+            console.error("Failed to link transactions", error);
+            message.error("Errore durante il collegamento delle transazioni.");
         }
     };
 
@@ -195,6 +267,9 @@ export const TransactionsPage = () => {
             render: (_: unknown, record: Transaction) => (
                 <Flex gap="small">
                     <Button icon={<EditOutlined />} onClick={() => handleOpenEditModal(record)} />
+                    {!record.transferId && (
+                        <Button icon={<SwapOutlined />} onClick={() => handleOpenLinkTransferModal(record)} />
+                    )}
                     <Button danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />
                 </Flex>
             )
@@ -274,6 +349,7 @@ export const TransactionsPage = () => {
                             transaction={item}
                             onEdit={handleOpenEditModal}
                             onDelete={handleDelete}
+                            onConvertToTransfer={handleOpenLinkTransferModal}
                         />
                     )}
                 />
@@ -392,6 +468,71 @@ export const TransactionsPage = () => {
                         <Button type="primary" htmlType="submit" block>Salva</Button>
                     </Form.Item>
                 </Form>
+            </Modal>
+
+            <Modal
+                title="Collega a Trasferimento"
+                open={isLinkModalOpen}
+                onCancel={handleCancelLinkTransferModal}
+                footer={[
+                    <Button key="back" onClick={handleCancelLinkTransferModal}>Annulla</Button>,
+                    <Button key="submit" type="primary" onClick={handleConfirmLinkTransfer} disabled={!selectedDestTransactionId}>
+                        Salva Collegamento
+                    </Button>,
+                ]}
+                width={600}
+            >
+                {sourceTransaction && (
+                    <Space direction="vertical" style={{ width: '100%' }}>
+                        <Text strong>Transazione di Origine</Text>
+                        <p>
+                            {dayjs(sourceTransaction.data).format('DD/MM/YYYY')} - {sourceTransaction.descrizione} ({sourceTransaction.accountName}) -
+                            <Text type={sourceTransaction.type === 'IN' ? 'success' : 'danger'}> {sourceTransaction.importo.toFixed(2)}€</Text>
+                        </p>
+
+                        <Form layout="vertical">
+                            <Form.Item label="Seleziona Conto di Destinazione">
+                                <Select
+                                    placeholder="Seleziona un conto"
+                                    onChange={(value) => setDestinationAccountId(value)}
+                                    value={destinationAccountId}
+                                >
+                                    {accounts
+                                        .filter(acc => acc.id !== sourceTransaction.accountId)
+                                        .map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
+                                </Select>
+                            </Form.Item>
+                        </Form>
+
+                        {loadingDestTransactions ? <Spin /> : (
+                            destinationAccountId && (
+                                destinationTransactions.length > 0 ? (
+                                    <Radio.Group
+                                        onChange={(e) => setSelectedDestTransactionId(e.target.value)}
+                                        value={selectedDestTransactionId}
+                                        style={{ width: '100%' }}
+                                    >
+                                        <List
+                                            header={<div>Seleziona la transazione da collegare</div>}
+                                            bordered
+                                            dataSource={destinationTransactions}
+                                            renderItem={item => (
+                                                <List.Item>
+                                                    <Radio value={item.id}>
+                                                        {dayjs(item.data).format('DD/MM/YYYY')} - {item.descrizione} -
+                                                        <Text type={item.type === 'IN' ? 'success' : 'danger'}> {item.importo.toFixed(2)}€</Text>
+                                                    </Radio>
+                                                </List.Item>
+                                            )}
+                                        />
+                                    </Radio.Group>
+                                ) : (
+                                    <Alert message="Nessuna transazione compatibile trovata nel periodo di ±3 giorni con lo stesso importo e tipo opposto." type="info" showIcon />
+                                )
+                            )
+                        )}
+                    </Space>
+                )}
             </Modal>
         </>
     );

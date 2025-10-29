@@ -3,7 +3,7 @@ import axios, {type AxiosResponse} from 'axios';
 import type {
     Account,
     AccountRequest,
-    AuthResponse, Category, CategoryRequest,
+    AuthResponse, Category, CategoryRequest, LinkTransferRequest,
     LoginRequest,
     Transaction,
     TransactionRequest,
@@ -43,6 +43,8 @@ export const createTransaction = (data: TransactionRequest): Promise<AxiosRespon
 export const updateTransaction = (id: number, data: TransactionRequest): Promise<AxiosResponse<Transaction>> => apiClient.put(`/transactions/${id}`, data);
 export const createTransfer = (data: TransferRequest): Promise<AxiosResponse<Transaction[]>> => apiClient.post('/transactions/transfer', data);
 export const deleteTransaction = (id: number): Promise<AxiosResponse<void>> => apiClient.delete(`/transactions/${id}`);
+export const linkTransactionsAsTransfer = (data: LinkTransferRequest): Promise<AxiosResponse<void>> => apiClient.post('/transactions/convert-to-transfer', data);
+
 
 // Categories
 export const getCategories = (): Promise<AxiosResponse<Category[]>> => apiClient.get('/categories');

@@ -65,6 +65,11 @@ export interface TransferRequest {
     notes?: string;
 }
 
+export interface LinkTransferRequest {
+    sourceTransactionId: number;
+    destinationTransactionId: number;
+}
+
 export interface Category {
     id: number;
     name: string;

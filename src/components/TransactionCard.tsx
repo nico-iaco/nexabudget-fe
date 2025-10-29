@@ -1,6 +1,6 @@
 // src/components/TransactionCard.tsx
 import { Card, Tag, Button, Flex, Typography } from 'antd';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EditOutlined, DeleteOutlined, SwapOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Transaction } from '../types/api';
 
@@ -10,9 +10,10 @@ interface TransactionCardProps {
     transaction: Transaction;
     onEdit: (transaction: Transaction) => void;
     onDelete: (id: number) => void;
+    onConvertToTransfer: (transaction: Transaction) => void;
 }
 
-export const TransactionCard = ({ transaction, onEdit, onDelete }: TransactionCardProps) => {
+export const TransactionCard = ({ transaction, onEdit, onDelete, onConvertToTransfer }: TransactionCardProps) => {
     const isIncome = transaction.type === 'IN';
     const amountColor = isIncome ? 'green' : 'red';
 
@@ -36,6 +37,9 @@ export const TransactionCard = ({ transaction, onEdit, onDelete }: TransactionCa
             </Flex>
             <Flex justify="end" style={{ marginTop: 16 }}>
                 <Button icon={<EditOutlined />} onClick={() => onEdit(transaction)} style={{ marginRight: 8 }} />
+                {!transaction.transferId && (
+                    <Button icon={<SwapOutlined />} onClick={() => onConvertToTransfer(transaction)} style={{ marginRight: 8 }} />
+                )}
                 <Button danger icon={<DeleteOutlined />} onClick={() => onDelete(transaction.id)} />
             </Flex>
         </Card>
