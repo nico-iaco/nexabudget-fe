@@ -1,10 +1,13 @@
 // src/components/CustomLineChart.tsx
-import { Tooltip } from 'antd';
+import { Tooltip, Typography } from 'antd';
+import dayjs from 'dayjs';
 
+const { Text } = Typography;
 
 export interface LineData {
     label: string;
     value: number;
+    monthlyNet?: number;
 }
 
 interface CustomLineChartProps {
@@ -36,6 +39,22 @@ export const CustomLineChart = ({ data, dataKey, valueKey }: CustomLineChartProp
         return `${i === 0 ? 'M' : 'L'} ${x},${y}`;
     }).join(' ');
 
+    const getTooltipContent = (item: LineData) => {
+        const label = dayjs(item.label).format('MMM YYYY');
+        const totalBalance = item.value.toFixed(2);
+        const monthlyNet = item.monthlyNet?.toFixed(2);
+
+        return (
+            <div>
+                <Text strong style={{ color: 'white' }}>{label}</Text>
+                <div><Text style={{ color: 'white' }}>Bilancio Totale: {totalBalance}€</Text></div>
+                {monthlyNet !== undefined && (
+                    <div><Text style={{ color: 'white' }}>Saldo del mese: {monthlyNet}€</Text></div>
+                )}
+            </div>
+        );
+    };
+
     return (
         <div style={{ position: 'relative', width: '100%', height: chartHeight + 50 }}>
             <svg width="100%" height={chartHeight + 50} viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
@@ -56,7 +75,7 @@ export const CustomLineChart = ({ data, dataKey, valueKey }: CustomLineChartProp
                 <line x1={margin.left} y1={chartHeight - margin.bottom} x2={chartWidth - margin.right} y2={chartHeight - margin.bottom} stroke="#ccc" />
                 {data.map((d, i) => (
                     <text key={i} x={getX(i)} y={chartHeight - margin.bottom + 15} textAnchor="middle" fontSize="10" fill="#666">
-                        {d[dataKey as keyof LineData]}
+                        {dayjs(d[dataKey as keyof LineData] as string).format('MMM YY')}
                     </text>
                 ))}
 
@@ -67,7 +86,7 @@ export const CustomLineChart = ({ data, dataKey, valueKey }: CustomLineChartProp
                 {data.map((d, i) => (
                     <Tooltip
                         key={i}
-                        title={`${d[dataKey as keyof LineData]}: ${(d[valueKey as keyof LineData] as number).toFixed(2)}€`}
+                        title={getTooltipContent(d)}
                     >
                         <circle
                             cx={getX(i)}

@@ -75,6 +75,23 @@ export const DashboardPage = () => {
             .sort((a, b) => b.value - a.value);
     }, [filteredTransactions]);
 
+    const incomeByCategory = useMemo(() => {
+        const categoryMap: { [key: string]: number } = {};
+        filteredTransactions
+            .filter(t => t.type === 'IN' && t.categoryName)
+            .forEach(t => {
+                const category = t.categoryName!;
+                if (!categoryMap[category]) {
+                    categoryMap[category] = 0;
+                }
+                categoryMap[category] += t.importo;
+            });
+
+        return Object.entries(categoryMap)
+            .map(([type, value]) => ({ type, value }))
+            .sort((a, b) => b.value - a.value);
+    }, [filteredTransactions]);
+
     const monthlyTrend = useMemo((): BarData[] => {
         const trend: { [month: string]: { income: number; expense: number } } = {};
 
@@ -110,12 +127,19 @@ export const DashboardPage = () => {
             balanceByMonth[month] += t.type === 'IN' ? t.importo : -t.importo;
         });
 
-        return Object.entries(balanceByMonth)
-            .map(([month, value]) => ({
-                label: dayjs(month).format('MMM YY'),
-                value: value,
-            }))
-            .sort((a, b) => dayjs(a.label, 'MMM YY').valueOf() - dayjs(b.label, 'MMM YY').valueOf());
+        const sortedMonths = Object.entries(balanceByMonth)
+            .map(([month, value]) => ({ month, value }))
+            .sort((a, b) => a.month.localeCompare(b.month));
+
+        let cumulativeBalance = 0;
+        return sortedMonths.map(item => {
+            cumulativeBalance += item.value;
+            return {
+                label: dayjs(item.month).endOf('month').format('YYYY-MM-DD'),
+                value: cumulativeBalance,
+                monthlyNet: item.value,
+            };
+        });
     }, [filteredTransactions]);
 
     const expenseComparison = useMemo(() => {
@@ -213,11 +237,19 @@ export const DashboardPage = () => {
 
                     <Row gutter={16} style={{ marginTop: 24 }}>
                         <Col xs={24} md={12}>
+                            <Card title="Entrate per Categoria">
+                                {incomeByCategory.length > 0 ? <CustomPieChart data={incomeByCategory} /> : <Empty description="Nessuna entrata categorizzata" />}
+                            </Card>
+                        </Col>
+                        <Col xs={24} md={12}>
                             <Card title="Uscite per Categoria">
                                 {expensesByCategory.length > 0 ? <CustomPieChart data={expensesByCategory} /> : <Empty description="Nessuna spesa categorizzata" />}
                             </Card>
                         </Col>
-                        <Col xs={24} md={12}>
+                    </Row>
+
+                    <Row gutter={16} style={{ marginTop: 24 }}>
+                        <Col xs={24}>
                             <Card title="Andamento Mensile (Entrate/Uscite)">
                                 {monthlyTrend.length > 0 ? <CustomBarChart data={monthlyTrend} /> : <Empty description="Dati insufficienti" />}
                             </Card>
