@@ -2,6 +2,7 @@
 import { Typography, Tooltip, Flex } from 'antd';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import { useState, useRef, useLayoutEffect } from 'react';
 
 dayjs.extend(customParseFormat);
 
@@ -17,15 +18,39 @@ interface CustomBarChartProps {
     data: BarData[];
 }
 
+const useResizeObserver = () => {
+    const ref = useRef<HTMLDivElement>(null);
+    const [width, setWidth] = useState(0);
+
+    useLayoutEffect(() => {
+        const element = ref.current;
+        if (!element) return;
+
+        const observer = new ResizeObserver(entries => {
+            if (entries[0]) {
+                setWidth(entries[0].contentRect.width);
+            }
+        });
+
+        observer.observe(element);
+        return () => observer.disconnect();
+    }, []);
+
+    return { ref, width };
+};
+
 export const CustomBarChart = ({ data }: CustomBarChartProps) => {
+    const { ref, width: chartWidth } = useResizeObserver();
     const months = [...new Set(data.map(d => d.month))]
         .sort((a, b) => dayjs(a, 'MMM YY').valueOf() - dayjs(b, 'MMM YY').valueOf());
-    const maxValue = Math.max(...data.map(d => d.value), 1); // Evita divisione per zero
+    const maxValue = Math.max(...data.map(d => d.value), 1);
 
-    const chartHeight = 250;
-    const chartWidth = 500;
-    const barWidth = (chartWidth / months.length) * 0.35;
-    const barMargin = (chartWidth / months.length) * 0.15;
+    const chartHeight = 300;
+    const margin = { top: 20, right: 20, bottom: 40, left: 60 };
+
+    const bandWidth = (chartWidth - margin.left - margin.right) / months.length;
+    const barPadding = 0.2;
+    const barWidth = bandWidth * (1 - barPadding) / 2;
 
     const getTooltipContent = (month: string) => {
         const monthData = data.filter(d => d.month === month);
@@ -44,59 +69,56 @@ export const CustomBarChart = ({ data }: CustomBarChartProps) => {
     };
 
     return (
-        <div style={{ position: 'relative', width: '100%', height: chartHeight + 50 }}>
-            <svg width="100%" height={chartHeight + 50} viewBox={`0 0 ${chartWidth + 50} ${chartHeight + 30}`}>
-                {/* Asse Y */}
-                <line x1="40" y1="0" x2="40" y2={chartHeight} stroke="#ccc" />
-                {[0, 0.25, 0.5, 0.75, 1].map(tick => (
-                    <g key={tick}>
-                        <text x="35" y={chartHeight - tick * chartHeight + 5} textAnchor="end" fontSize="10" fill="#666">
-                            {(tick * maxValue).toFixed(0)}
-                        </text>
-                        <line x1="40" y1={chartHeight - tick * chartHeight} x2={chartWidth + 40} y2={chartHeight - tick * chartHeight} stroke="#eee" />
-                    </g>
-                ))}
-
-                {/* Barre e Asse X */}
-                {months.map((month, index) => {
-                    const monthData = data.filter(d => d.month === month);
-                    const incomeData = monthData.find(d => d.type === 'Entrate');
-                    const expenseData = monthData.find(d => d.type === 'Uscite');
-
-                    const x = 40 + index * (barWidth * 2 + barMargin * 2) + barMargin;
-                    const incomeHeight = incomeData ? (incomeData.value / maxValue) * chartHeight : 0;
-                    const expenseHeight = expenseData ? (expenseData.value / maxValue) * chartHeight : 0;
-
-                    return (
-                        <g key={month}>
-                            <Tooltip title={getTooltipContent(month)}>
-                                <g style={{ cursor: 'pointer' }}>
-                                    {/* Barra Entrate */}
-                                    <rect
-                                        x={x}
-                                        y={chartHeight - incomeHeight}
-                                        width={barWidth}
-                                        height={incomeHeight}
-                                        fill="#3f8600"
-                                    />
-                                    {/* Barra Uscite */}
-                                    <rect
-                                        x={x + barWidth + barMargin}
-                                        y={chartHeight - expenseHeight}
-                                        width={barWidth}
-                                        height={expenseHeight}
-                                        fill="#cf1322"
-                                    />
-                                </g>
-                            </Tooltip>
-                            {/* Etichetta Mese */}
-                            <text x={x + barWidth + barMargin / 2} y={chartHeight + 15} textAnchor="middle" fontSize="10" fill="#666">
-                                {month}
+        <div ref={ref} style={{ position: 'relative', width: '100%', height: chartHeight }}>
+            {chartWidth > 0 && (
+                <svg width={chartWidth} height={chartHeight}>
+                    {/* Asse Y e griglia */}
+                    <line x1={margin.left} y1={margin.top} x2={margin.left} y2={chartHeight - margin.bottom} stroke="#ccc" />
+                    {[0, 0.25, 0.5, 0.75, 1].map(tick => (
+                        <g key={tick}>
+                            <text x={margin.left - 8} y={chartHeight - margin.bottom - (tick * (chartHeight - margin.top - margin.bottom))} textAnchor="end" fontSize="12" fill="#666">
+                                {(tick * maxValue).toFixed(0)}€
                             </text>
+                            <line x1={margin.left} y1={chartHeight - margin.bottom - (tick * (chartHeight - margin.top - margin.bottom))} x2={chartWidth - margin.right} y2={chartHeight - margin.bottom - (tick * (chartHeight - margin.top - margin.bottom))} stroke="#eee" />
                         </g>
-                    );
-                })}
-            </svg>
+                    ))}
+
+                    {/* Asse X */}
+                    <line x1={margin.left} y1={chartHeight - margin.bottom} x2={chartWidth - margin.right} y2={chartHeight - margin.bottom} stroke="#ccc" />
+
+                    {/* Barre e Etichette X */}
+                    {months.map((month, index) => {
+                        const monthData = data.filter(d => d.month === month);
+                        const incomeData = monthData.find(d => d.type === 'Entrate');
+                        const expenseData = monthData.find(d => d.type === 'Uscite');
+
+                        const bandStart = margin.left + index * bandWidth;
+                        const x1 = bandStart + (bandWidth * barPadding / 2);
+                        const x2 = x1 + barWidth;
+
+                        const incomeHeight = incomeData ? (incomeData.value / maxValue) * (chartHeight - margin.top - margin.bottom) : 0;
+                        const expenseHeight = expenseData ? (expenseData.value / maxValue) * (chartHeight - margin.top - margin.bottom) : 0;
+
+                        const showLabel = chartWidth < 500 ? index % 2 === 0 : true;
+
+                        return (
+                            <g key={month}>
+                                <Tooltip title={getTooltipContent(month)}>
+                                    <g style={{ cursor: 'pointer' }}>
+                                        <rect x={x1} y={chartHeight - margin.bottom - incomeHeight} width={barWidth} height={incomeHeight} fill="#3f8600" />
+                                        <rect x={x2} y={chartHeight - margin.bottom - expenseHeight} width={barWidth} height={expenseHeight} fill="#cf1322" />
+                                    </g>
+                                </Tooltip>
+                                {showLabel && (
+                                    <text x={bandStart + bandWidth / 2} y={chartHeight - margin.bottom + 20} textAnchor="middle" fontSize="12" fill="#666">
+                                        {month}
+                                    </text>
+                                )}
+                            </g>
+                        );
+                    })}
+                </svg>
+            )}
         </div>
     );
 };
