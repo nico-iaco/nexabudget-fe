@@ -1,9 +1,13 @@
-// src/components/charts/CustomBarChart.tsx
+// src/components/CustomBarChart.tsx
 import { Typography, Tooltip, Flex } from 'antd';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+
+dayjs.extend(customParseFormat);
 
 const { Text } = Typography;
 
-interface BarData {
+export interface BarData {
     month: string;
     type: 'Entrate' | 'Uscite';
     value: number;
@@ -14,7 +18,8 @@ interface CustomBarChartProps {
 }
 
 export const CustomBarChart = ({ data }: CustomBarChartProps) => {
-    const months = [...new Set(data.map(d => d.month))].sort();
+    const months = [...new Set(data.map(d => d.month))]
+        .sort((a, b) => dayjs(a, 'MMM YY').valueOf() - dayjs(b, 'MMM YY').valueOf());
     const maxValue = Math.max(...data.map(d => d.value), 1); // Evita divisione per zero
 
     const chartHeight = 250;

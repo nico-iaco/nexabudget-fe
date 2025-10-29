@@ -7,9 +7,10 @@ import dayjs, { type Dayjs } from 'dayjs';
 import * as api from '../../services/api';
 import type { Transaction } from '../../types/api';
 import { CustomPieChart } from '../../components/CustomPieChart';
-import { CustomBarChart } from '../../components/CustomBarChart';
+import { CustomBarChart, type BarData } from '../../components/CustomBarChart';
+import { CustomLineChart, type LineData } from '../../components/CustomLineChart';
 
-const { Title } = Typography;
+const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
 
 type DateRange = [Dayjs | null, Dayjs | null] | null;
@@ -18,17 +19,11 @@ interface OutletContextType {
     transactionRefreshKey: number;
 }
 
-interface BarData {
-    month: string;
-    type: 'Entrate' | 'Uscite';
-    value: number;
-}
-
 export const DashboardPage = () => {
     const { transactionRefreshKey } = useOutletContext<OutletContextType>();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
-    const [dateRange, setDateRange] = useState<DateRange>([dayjs().startOf('month'), dayjs().endOf('month')]);
+    const [dateRange, setDateRange] = useState<DateRange>([dayjs().startOf('year'), dayjs().endOf('year')]);
 
     useEffect(() => {
         setLoading(true);
@@ -44,10 +39,10 @@ export const DashboardPage = () => {
         if (!dateRange || !dateRange[0] || !dateRange[1]) {
             return transactions;
         }
-        const [start, end] = dateRange;
+        const [startDate, endDate] = dateRange;
         return transactions.filter(t => {
             const transactionDate = dayjs(t.data);
-            return transactionDate.isAfter(start.startOf('day')) && transactionDate.isBefore(end.endOf('day'));
+            return transactionDate.isAfter(startDate) && transactionDate.isBefore(endDate);
         });
     }, [transactions, dateRange]);
 
@@ -64,116 +59,180 @@ export const DashboardPage = () => {
     }, [filteredTransactions]);
 
     const expensesByCategory = useMemo(() => {
-        const expenseMap: { [key: string]: number } = {};
-        const expenseTransactions = filteredTransactions.filter(t => t.type === 'OUT');
+        const categoryMap: { [key: string]: number } = {};
+        filteredTransactions
+            .filter(t => t.type === 'OUT' && t.categoryName)
+            .forEach(t => {
+                const category = t.categoryName!;
+                if (!categoryMap[category]) {
+                    categoryMap[category] = 0;
+                }
+                categoryMap[category] += t.importo;
+            });
 
-        expenseTransactions.forEach(t => {
-            const categoryName = t.categoryName || 'Senza Categoria';
-            if (expenseMap[categoryName]) {
-                expenseMap[categoryName] += t.importo;
-            } else {
-                expenseMap[categoryName] = t.importo;
-            }
-        });
-
-        return Object.entries(expenseMap)
+        return Object.entries(categoryMap)
             .map(([type, value]) => ({ type, value }))
             .sort((a, b) => b.value - a.value);
     }, [filteredTransactions]);
 
-    const monthlyTrend = useMemo(() => {
-        const trends: { [key: string]: { income: number; expense: number } } = {};
+    const monthlyTrend = useMemo((): BarData[] => {
+        const trend: { [month: string]: { income: number; expense: number } } = {};
 
         filteredTransactions.forEach(t => {
-            const month = dayjs(t.data).format('MMM');
-            if (!trends[month]) {
-                trends[month] = { income: 0, expense: 0 };
+            const month = dayjs(t.data).format('YYYY-MM');
+            if (!trend[month]) {
+                trend[month] = { income: 0, expense: 0 };
             }
             if (t.type === 'IN') {
-                trends[month].income += t.importo;
+                trend[month].income += t.importo;
             } else {
-                trends[month].expense += t.importo;
+                trend[month].expense += t.importo;
             }
         });
 
-        const barChartData: BarData[] = Object.entries(trends).flatMap(([month, values]) => [
-            { month, type: 'Entrate', value: values.income },
-            { month, type: 'Uscite', value: values.expense },
-        ]);
+        const result: BarData[] = [];
+        Object.keys(trend).forEach(month => {
+            result.push({ month: dayjs(month).format('MMM YY'), type: 'Entrate', value: trend[month].income });
+            result.push({ month: dayjs(month).format('MMM YY'), type: 'Uscite', value: trend[month].expense });
+        });
 
-        const monthOrder = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
-        return barChartData.sort((a, b) => monthOrder.indexOf(a.month) - monthOrder.indexOf(b.month));
+        return result.sort((a, b) => dayjs(a.month, 'MMM YY').valueOf() - dayjs(b.month, 'MMM YY').valueOf());
     }, [filteredTransactions]);
 
+    const monthlyNetBalance = useMemo((): LineData[] => {
+        const balanceByMonth: { [key: string]: number } = {};
+
+        filteredTransactions.forEach(t => {
+            const month = dayjs(t.data).format('YYYY-MM');
+            if (!balanceByMonth[month]) {
+                balanceByMonth[month] = 0;
+            }
+            balanceByMonth[month] += t.type === 'IN' ? t.importo : -t.importo;
+        });
+
+        return Object.entries(balanceByMonth)
+            .map(([month, value]) => ({
+                label: dayjs(month).format('MMM YY'),
+                value: value,
+            }))
+            .sort((a, b) => dayjs(a.label, 'MMM YY').valueOf() - dayjs(b.label, 'MMM YY').valueOf());
+    }, [filteredTransactions]);
+
+    const expenseComparison = useMemo(() => {
+        if (!dateRange || !dateRange[0] || !dateRange[1]) return null;
+
+        const [start, end] = dateRange;
+        const duration = end.diff(start, 'day');
+        const prevStart = start.subtract(duration + 1, 'day');
+        const prevEnd = end.subtract(duration + 1, 'day');
+
+        const currentExpenses = filteredTransactions
+            .filter(t => t.type === 'OUT')
+            .reduce((sum, t) => sum + t.importo, 0);
+
+        const previousExpenses = transactions
+            .filter(t => {
+                const tDate = dayjs(t.data);
+                return t.type === 'OUT' && tDate.isAfter(prevStart) && tDate.isBefore(prevEnd);
+            })
+            .reduce((sum, t) => sum + t.importo, 0);
+
+        if (previousExpenses === 0) {
+            return { percentageChange: currentExpenses > 0 ? 100 : 0, period: 'periodo precedente' };
+        }
+
+        const percentageChange = ((currentExpenses - previousExpenses) / previousExpenses) * 100;
+        return { percentageChange, period: 'periodo precedente' };
+    }, [transactions, dateRange, filteredTransactions]);
+
     if (loading) {
-        return <Spin size="large" style={{ display: 'block', marginTop: '50px' }} />;
+        return <Spin size="large" style={{ display: 'block', marginTop: 50 }} />;
     }
 
     return (
         <>
             <Row justify="space-between" align="middle">
-                <Title level={2}>Dashboard</Title>
-                <RangePicker value={dateRange} onChange={setDateRange} />
-            </Row>
-
-            <Row gutter={16} style={{ marginTop: 24 }}>
-                <Col xs={24} sm={8}>
-                    <Card>
-                        <Statistic
-                            title="Entrate Totali"
-                            value={totalIncome}
-                            precision={2}
-                            valueStyle={{ color: '#3f8600' }}
-                            prefix={<ArrowUpOutlined />}
-                            suffix="€"
-                        />
-                    </Card>
+                <Col>
+                    <Title level={2}>Dashboard</Title>
                 </Col>
-                <Col xs={24} sm={8}>
-                    <Card>
-                        <Statistic
-                            title="Uscite Totali"
-                            value={totalExpenses}
-                            precision={2}
-                            valueStyle={{ color: '#cf1322' }}
-                            prefix={<ArrowDownOutlined />}
-                            suffix="€"
-                        />
-                    </Card>
-                </Col>
-                <Col xs={24} sm={8}>
-                    <Card>
-                        <Statistic
-                            title="Bilancio Netto"
-                            value={netBalance}
-                            precision={2}
-                            valueStyle={{ color: netBalance >= 0 ? '#3f8600' : '#cf1322' }}
-                            suffix="€"
-                        />
-                    </Card>
+                <Col>
+                    <RangePicker value={dateRange} onChange={setDateRange} />
                 </Col>
             </Row>
 
-            <Row gutter={16} style={{ marginTop: 24 }}>
-                <Col xs={24} lg={12}>
-                    <Card title="Uscite per Categoria">
-                        {expensesByCategory.length > 0 ? (
-                            <CustomPieChart data={expensesByCategory} />
-                        ) : (
-                            <Empty description="Nessuna spesa nel periodo selezionato" />
-                        )}
-                    </Card>
-                </Col>
-                <Col xs={24} lg={12}>
-                    <Card title="Andamento Mensile (Entrate vs Uscite)">
-                        {monthlyTrend.length > 0 ? (
-                            <CustomBarChart data={monthlyTrend} />
-                        ) : (
-                            <Empty description="Nessun dato nel periodo selezionato" />
-                        )}
-                    </Card>
-                </Col>
-            </Row>
+            {filteredTransactions.length === 0 ? (
+                <Empty description="Nessuna transazione trovata per il periodo selezionato." style={{ marginTop: 48 }} />
+            ) : (
+                <>
+                    <Row gutter={16} style={{ marginTop: 24 }}>
+                        <Col xs={24} sm={8}>
+                            <Card>
+                                <Statistic
+                                    title="Saldo Netto"
+                                    value={netBalance}
+                                    precision={2}
+                                    valueStyle={{ color: netBalance >= 0 ? '#3f8600' : '#cf1322' }}
+                                    prefix={netBalance >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+                                    suffix="€"
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={8}>
+                            <Card>
+                                <Statistic
+                                    title="Entrate Totali"
+                                    value={totalIncome}
+                                    precision={2}
+                                    valueStyle={{ color: '#3f8600' }}
+                                    prefix={<ArrowUpOutlined />}
+                                    suffix="€"
+                                />
+                            </Card>
+                        </Col>
+                        <Col xs={24} sm={8}>
+                            <Card>
+                                <Statistic
+                                    title="Uscite Totali"
+                                    value={totalExpenses}
+                                    precision={2}
+                                    valueStyle={{ color: '#cf1322' }}
+                                    prefix={<ArrowDownOutlined />}
+                                    suffix="€"
+                                />
+                                {expenseComparison && (
+                                    <div style={{ marginTop: 8, fontSize: '12px' }}>
+                                        <Text type={expenseComparison.percentageChange >= 0 ? 'danger' : 'success'}>
+                                            {expenseComparison.percentageChange.toFixed(2)}%
+                                        </Text>
+                                        <Text type="secondary"> vs {expenseComparison.period}</Text>
+                                    </div>
+                                )}
+                            </Card>
+                        </Col>
+                    </Row>
+
+                    <Row gutter={16} style={{ marginTop: 24 }}>
+                        <Col xs={24} md={12}>
+                            <Card title="Uscite per Categoria">
+                                {expensesByCategory.length > 0 ? <CustomPieChart data={expensesByCategory} /> : <Empty description="Nessuna spesa categorizzata" />}
+                            </Card>
+                        </Col>
+                        <Col xs={24} md={12}>
+                            <Card title="Andamento Mensile (Entrate/Uscite)">
+                                {monthlyTrend.length > 0 ? <CustomBarChart data={monthlyTrend} /> : <Empty description="Dati insufficienti" />}
+                            </Card>
+                        </Col>
+                    </Row>
+
+                    <Row gutter={16} style={{ marginTop: 24 }}>
+                        <Col xs={24}>
+                            <Card title="Andamento Saldo Netto Mensile">
+                                {monthlyNetBalance.length > 0 ? <CustomLineChart data={monthlyNetBalance} dataKey="label" valueKey="value" /> : <Empty description="Dati insufficienti" />}
+                            </Card>
+                        </Col>
+                    </Row>
+                </>
+            )}
         </>
     );
 };
