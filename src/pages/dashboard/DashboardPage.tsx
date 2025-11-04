@@ -41,7 +41,7 @@ export const DashboardPage = () => {
         }
         const [startDate, endDate] = dateRange;
         return transactions.filter(t => {
-            const transactionDate = dayjs(t.data);
+            const transactionDate = dayjs(t.date);
             return transactionDate.isAfter(startDate) && transactionDate.isBefore(endDate);
         });
     }, [transactions, dateRange]);
@@ -49,9 +49,9 @@ export const DashboardPage = () => {
     const { totalIncome, totalExpenses, netBalance } = useMemo(() => {
         return filteredTransactions.reduce((acc, t) => {
             if (t.type === 'IN') {
-                acc.totalIncome += t.importo;
+                acc.totalIncome += t.amount;
             } else {
-                acc.totalExpenses += t.importo;
+                acc.totalExpenses += t.amount;
             }
             acc.netBalance = acc.totalIncome - acc.totalExpenses;
             return acc;
@@ -67,7 +67,7 @@ export const DashboardPage = () => {
                 if (!categoryMap[category]) {
                     categoryMap[category] = 0;
                 }
-                categoryMap[category] += t.importo;
+                categoryMap[category] += t.amount;
             });
 
         return Object.entries(categoryMap)
@@ -84,7 +84,7 @@ export const DashboardPage = () => {
                 if (!categoryMap[category]) {
                     categoryMap[category] = 0;
                 }
-                categoryMap[category] += t.importo;
+                categoryMap[category] += t.amount;
             });
 
         return Object.entries(categoryMap)
@@ -96,14 +96,14 @@ export const DashboardPage = () => {
         const trend: { [month: string]: { income: number; expense: number } } = {};
 
         filteredTransactions.forEach(t => {
-            const month = dayjs(t.data).format('YYYY-MM');
+            const month = dayjs(t.date).format('YYYY-MM');
             if (!trend[month]) {
                 trend[month] = { income: 0, expense: 0 };
             }
             if (t.type === 'IN') {
-                trend[month].income += t.importo;
+                trend[month].income += t.amount;
             } else {
-                trend[month].expense += t.importo;
+                trend[month].expense += t.amount;
             }
         });
 
@@ -120,11 +120,11 @@ export const DashboardPage = () => {
         const balanceByMonth: { [key: string]: number } = {};
 
         filteredTransactions.forEach(t => {
-            const month = dayjs(t.data).format('YYYY-MM');
+            const month = dayjs(t.date).format('YYYY-MM');
             if (!balanceByMonth[month]) {
                 balanceByMonth[month] = 0;
             }
-            balanceByMonth[month] += t.type === 'IN' ? t.importo : -t.importo;
+            balanceByMonth[month] += t.type === 'IN' ? t.amount : -t.amount;
         });
 
         const sortedMonths = Object.entries(balanceByMonth)
@@ -152,14 +152,14 @@ export const DashboardPage = () => {
 
         const currentExpenses = filteredTransactions
             .filter(t => t.type === 'OUT')
-            .reduce((sum, t) => sum + t.importo, 0);
+            .reduce((sum, t) => sum + t.amount, 0);
 
         const previousExpenses = transactions
             .filter(t => {
-                const tDate = dayjs(t.data);
+                const tDate = dayjs(t.date);
                 return t.type === 'OUT' && tDate.isAfter(prevStart) && tDate.isBefore(prevEnd);
             })
-            .reduce((sum, t) => sum + t.importo, 0);
+            .reduce((sum, t) => sum + t.amount, 0);
 
         if (previousExpenses === 0) {
             return { percentageChange: currentExpenses > 0 ? 100 : 0, period: 'periodo precedente' };

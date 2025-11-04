@@ -17,7 +17,8 @@ import {
     Space,
     message,
     DatePicker,
-    Statistic
+    Statistic,
+    Steps
 } from 'antd';
 import {
     MenuFoldOutlined,
@@ -28,12 +29,14 @@ import {
     EditOutlined,
     DeleteOutlined,
     PieChartOutlined,
-    TransactionOutlined
+    TransactionOutlined,
+    LinkOutlined
 } from '@ant-design/icons';
 import { useAuth } from '../contexts/AuthContext';
 import * as api from '../services/api';
-import type { Account, AccountRequest, Category, TransferRequest } from '../types/api';
+import type { Account, AccountRequest, Category, TransferRequest, GoCardlessBank } from '../types/api';
 import dayjs, { type Dayjs } from 'dayjs';
+import { europeanCountries } from '../utils/countries';
 
 const { Header, Sider, Content } = AntLayout;
 const { Title, Text } = Typography;
@@ -61,6 +64,16 @@ export const Layout = () => {
     const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const [transactionRefreshKey, setTransactionRefreshKey] = useState(0);
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
+
+    // GoCardless states
+    const [isGoCardlessModalOpen, setIsGoCardlessModalOpen] = useState(false);
+    const [linkingAccount, setLinkingAccount] = useState<Account | null>(null);
+    const [currentStep, setCurrentStep] = useState(0);
+    const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
+    const [banks, setBanks] = useState<GoCardlessBank[]>([]);
+    const [loadingBanks, setLoadingBanks] = useState(false);
+    const [selectedBank, setSelectedBank] = useState<string | null>(null);
+
     const { auth, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -197,6 +210,63 @@ export const Layout = () => {
         }
     };
 
+    // GoCardless handlers
+    const handleOpenGoCardlessModal = (account: Account) => {
+        setLinkingAccount(account);
+        setCurrentStep(0);
+        setSelectedCountry(null);
+        setBanks([]);
+        setSelectedBank(null);
+        setIsGoCardlessModalOpen(true);
+    };
+
+    const handleCancelGoCardlessModal = () => {
+        setIsGoCardlessModalOpen(false);
+        setLinkingAccount(null);
+        setCurrentStep(0);
+        setSelectedCountry(null);
+        setBanks([]);
+        setSelectedBank(null);
+    };
+
+    const handleCountrySelect = async (countryCode: string) => {
+        setSelectedCountry(countryCode);
+        setLoadingBanks(true);
+        try {
+            const response = await api.getGoCardlessBankList(countryCode);
+            setBanks(response.data);
+            setCurrentStep(1);
+        } catch (error) {
+            message.error('Errore nel caricamento delle banche');
+            console.error(error);
+        } finally {
+            setLoadingBanks(false);
+        }
+    };
+
+    const handleBankSelect = (bankId: string) => {
+        setSelectedBank(bankId);
+    };
+
+    const handleConfirmBankLink = async () => {
+        if (!selectedBank || !linkingAccount) return;
+
+        try {
+            const response = await api.getGoCardlessBankLink({
+                institutionId: selectedBank,
+                localAccountId: linkingAccount.id
+            });
+
+            // Redirect al link fornito da GoCardless
+            window.location.href = response.data;
+
+            handleCancelGoCardlessModal();
+        } catch (error) {
+            message.error('Errore durante la generazione del link di collegamento');
+            console.error(error);
+        }
+    };
+
     const handleMenuClick = (path: string) => {
         const targetPath = selectedKeys.includes(path) ? '/transactions' : path;
         navigate(targetPath);
@@ -219,8 +289,34 @@ export const Layout = () => {
                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc.name}</span>
                     <Text style={{ fontSize: '0.9em', marginLeft: 8, color: 'rgba(255, 255, 255, 0.85)' }}>{acc.actualBalance.toFixed(2)}€</Text>
                     <Space style={{ marginLeft: 16 }}>
-                        <Button type="text" size="small" icon={<EditOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />} onClick={(e) => { e.stopPropagation(); handleOpenEditAccountModal(acc); }} />
-                        <Button type="text" size="small" danger icon={<DeleteOutlined />} onClick={(e) => { e.stopPropagation(); handleOpenDeleteModal(acc); }} />
+                        <Button
+                            type="text"
+                            size="small"
+                            icon={<LinkOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenGoCardlessModal(acc);
+                            }}
+                        />
+                        <Button
+                            type="text"
+                            size="small"
+                            icon={<EditOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditAccountModal(acc);
+                            }}
+                        />
+                        <Button
+                            type="text"
+                            size="small"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDeleteModal(acc);
+                            }}
+                        />
                     </Space>
                 </Flex>
             ),
@@ -357,7 +453,6 @@ export const Layout = () => {
                 <p>Questa azione è irreversibile e cancellerà anche tutte le transazioni associate.</p>
             </Modal>
 
-            {/* Modale per il Trasferimento */}
             <Modal title="Nuovo Trasferimento" open={isTransferModalOpen} onCancel={handleCancelTransferModal} footer={null}>
                 <Form form={transferForm} layout="vertical" onFinish={onFinishTransfer} style={{ marginTop: 24 }} initialValues={{ transferDate: dayjs() }}>
                     <Form.Item
@@ -404,6 +499,92 @@ export const Layout = () => {
                         <Button type="primary" htmlType="submit" block>Esegui Trasferimento</Button>
                     </Form.Item>
                 </Form>
+            </Modal>
+
+            {/* Modale GoCardless */}
+            <Modal
+                title={`Collega "${linkingAccount?.name}" a GoCardless`}
+                open={isGoCardlessModalOpen}
+                onCancel={handleCancelGoCardlessModal}
+                footer={[
+                    <Button key="back" onClick={handleCancelGoCardlessModal}>Annulla</Button>,
+                    <Button
+                        key="submit"
+                        type="primary"
+                        onClick={handleConfirmBankLink}
+                        disabled={!selectedBank}
+                    >
+                        Collega Banca
+                    </Button>,
+                ]}
+                width={700}
+            >
+                <Steps
+                    current={currentStep}
+                    style={{ marginBottom: 24 }}
+                    items={[
+                        { title: 'Seleziona Nazione' },
+                        { title: 'Seleziona Banca' },
+                    ]}
+                />
+
+                {currentStep === 0 && (
+                    <Form layout="vertical">
+                        <Form.Item label="Seleziona la tua nazione">
+                            <Select
+                                showSearch
+                                placeholder="Seleziona una nazione"
+                                onChange={handleCountrySelect}
+                                value={selectedCountry}
+                                loading={loadingBanks}
+                                filterOption={(input, option) =>
+                                    (option?.label as string ?? '').toLowerCase().includes(input.toLowerCase())
+                                }
+                            >
+                                {europeanCountries.map(country => (
+                                    <Option key={country.code} value={country.code} label={country.name}>
+                                        {country.name}
+                                    </Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                    </Form>
+                )}
+
+                {currentStep === 1 && (
+                    <Form layout="vertical">
+                        <Form.Item label="Seleziona la tua banca">
+                            {loadingBanks ? (
+                                <Spin />
+                            ) : (
+                                <Select
+                                    showSearch
+                                    placeholder="Seleziona una banca"
+                                    onChange={handleBankSelect}
+                                    value={selectedBank}
+                                    filterOption={(input, option) =>
+                                        (option?.label as string ?? '').toLowerCase().includes(input.toLowerCase())
+                                    }
+                                >
+                                    {banks.map(bank => (
+                                        <Option key={bank.id} value={bank.id} label={bank.name}>
+                                            <Flex align="center" gap="small">
+                                                {bank.logo && (
+                                                    <img
+                                                        src={bank.logo}
+                                                        alt={bank.name}
+                                                        style={{ width: 24, height: 24, objectFit: 'contain' }}
+                                                    />
+                                                )}
+                                                <span>{bank.name}</span>
+                                            </Flex>
+                                        </Option>
+                                    ))}
+                                </Select>
+                            )}
+                        </Form.Item>
+                    </Form>
+                )}
             </Modal>
         </>
     );

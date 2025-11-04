@@ -7,6 +7,7 @@ import { RegisterPage } from './pages/auth/RegisterPage';
 import { TransactionsPage } from './pages/transactions/TransactionsPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
 import type { JSX } from "react";
+import {GoCardlessCallbackPage} from "./pages/gocardless/GoCardlessCallbackPage.tsx";
 
 // 1. Layout per le pagine pubbliche (Login/Register)
 const PublicLayout = () => (
@@ -45,6 +46,10 @@ const router = createBrowserRouter([
             {
                 path: 'accounts/:accountId/transactions',
                 element: <TransactionsPage />,
+            },
+            {
+                path: 'gocardless/callback/:accountId',
+                element: <GoCardlessCallbackPage />,
             },
         ],
     },

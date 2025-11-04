@@ -38,10 +38,10 @@ export interface Transaction {
     accountName: string;
     categoryId?: number;
     categoryName?: string;
-    importo: number;
+    amount: number;
     type: 'IN' | 'OUT';
-    descrizione: string;
-    data: string;
+    description: string;
+    date: string;
     note?: string;
     transferId?: string;
 }
@@ -79,4 +79,26 @@ export interface Category {
 export interface CategoryRequest {
     name: string;
     transactionType: 'IN' | 'OUT';
+}
+
+export interface GoCardlessBank {
+    id: string;
+    name: string;
+    bic: string;
+    logo: string;
+}
+
+export interface GoCardlessBankLinkRequest {
+    institutionId: string;
+    localAccountId: number;
+}
+
+export interface GoCardlessBankDetails {
+    account_id: string;
+    institution: GoCardlessBank;
+    name: string;
+}
+
+export interface GoCardlessCompleteBankLinkRequest {
+    accountId: string;
 }

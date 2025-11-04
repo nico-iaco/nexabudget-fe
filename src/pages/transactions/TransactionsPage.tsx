@@ -1,19 +1,37 @@
 // src/pages/transactions/TransactionsPage.tsx
-import { useEffect, useState, useMemo } from 'react';
-import { useParams, useOutletContext } from 'react-router-dom';
-import { Table, Typography, Spin, Tag, Button, Flex, Modal, Form, InputNumber, Select, Input, DatePicker, List, Space, message, Radio, Alert } from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined, RetweetOutlined, SwapOutlined } from '@ant-design/icons';
+import {useEffect, useState, useMemo} from 'react';
+import {useParams, useOutletContext} from 'react-router-dom';
+import {
+    Table,
+    Typography,
+    Spin,
+    Tag,
+    Button,
+    Flex,
+    Modal,
+    Form,
+    InputNumber,
+    Select,
+    Input,
+    DatePicker,
+    List,
+    Space,
+    message,
+    Radio,
+    Alert
+} from 'antd';
+import {PlusOutlined, DeleteOutlined, EditOutlined, RetweetOutlined, SwapOutlined} from '@ant-design/icons';
 import * as api from '../../services/api';
-import type { Transaction, Account, TransactionRequest, Category, LinkTransferRequest } from '../../types/api';
-import { useAuth } from '../../contexts/AuthContext';
-import dayjs, { type Dayjs } from 'dayjs';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { TransactionCard } from '../../components/TransactionCard';
-import type { ColumnsType, TableProps } from 'antd/es/table';
-import type { SorterResult } from 'antd/es/table/interface';
+import type {Transaction, Account, TransactionRequest, Category, LinkTransferRequest} from '../../types/api';
+import {useAuth} from '../../contexts/AuthContext';
+import dayjs, {type Dayjs} from 'dayjs';
+import {useMediaQuery} from '../../hooks/useMediaQuery';
+import {TransactionCard} from '../../components/TransactionCard';
+import type {ColumnsType, TableProps} from 'antd/es/table';
+import type {SorterResult} from 'antd/es/table/interface';
 
-const { Title, Text } = Typography;
-const { Option } = Select;
+const {Title, Text} = Typography;
+const {Option} = Select;
 
 interface OutletContextType {
     accounts: Account[];
@@ -34,9 +52,15 @@ interface TableFilters {
 }
 
 export const TransactionsPage = () => {
-    const { accountId } = useParams<{ accountId?: string }>();
-    const { auth } = useAuth();
-    const { accounts, fetchAccounts: fetchLayoutAccounts, transactionRefreshKey, categories, handleOpenTransferModal } = useOutletContext<OutletContextType>();
+    const {accountId} = useParams<{ accountId?: string }>();
+    const {auth} = useAuth();
+    const {
+        accounts,
+        fetchAccounts: fetchLayoutAccounts,
+        transactionRefreshKey,
+        categories,
+        handleOpenTransferModal
+    } = useOutletContext<OutletContextType>();
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
@@ -61,6 +85,29 @@ export const TransactionsPage = () => {
     const [destinationTransactions, setDestinationTransactions] = useState<Transaction[]>([]);
     const [loadingDestTransactions, setLoadingDestTransactions] = useState(false);
     const [selectedDestTransactionId, setSelectedDestTransactionId] = useState<number | null>(null);
+
+    const [syncingTransactions, setSyncingTransactions] = useState(false);
+
+    const handleSyncGoCardlessTransactions = async () => {
+        if (!accountId) return;
+
+        setSyncingTransactions(true);
+        const hideMessage = message.loading('Sincronizzazione transazioni in corso...', 0);
+
+        try {
+            await api.syncGoCardlessBankAccount(parseInt(accountId));
+            message.success('Transazioni sincronizzate con successo!');
+            fetchTransactions();
+            fetchLayoutAccounts();
+        } catch (error) {
+            console.error(error);
+            message.error('Errore durante la sincronizzazione delle transazioni');
+        } finally {
+            hideMessage();
+            setSyncingTransactions(false);
+        }
+    };
+
 
     const fetchTransactions = () => {
         if (!auth) return;
@@ -87,15 +134,15 @@ export const TransactionsPage = () => {
             setLoadingDestTransactions(true);
             try {
                 const response = await api.getTransactionsByAccountId(destinationAccountId);
-                const sourceDate = dayjs(sourceTransaction.data);
+                const sourceDate = dayjs(sourceTransaction.date);
                 const startDate = sourceDate.subtract(3, 'day');
                 const endDate = sourceDate.add(3, 'day');
 
                 const filtered = response.data.filter(t => {
-                    const tDate = dayjs(t.data);
+                    const tDate = dayjs(t.date);
                     // Must be opposite type, same amount, and within date range
                     return t.type !== sourceTransaction.type &&
-                        t.importo === sourceTransaction.importo &&
+                        t.amount === sourceTransaction.amount &&
                         !t.transferId &&
                         tDate.isAfter(startDate) && tDate.isBefore(endDate);
                 });
@@ -126,7 +173,7 @@ export const TransactionsPage = () => {
         setEditingRecord(null);
         form.resetFields();
         if (accountId) {
-            form.setFieldsValue({ accountId: parseInt(accountId) });
+            form.setFieldsValue({accountId: parseInt(accountId)});
         }
         setIsModalOpen(true);
     };
@@ -135,7 +182,7 @@ export const TransactionsPage = () => {
         setEditingRecord(record);
         form.setFieldsValue({
             ...record,
-            data: record.data ? dayjs(record.data) : null,
+            data: record.date ? dayjs(record.date) : null,
         });
         setIsModalOpen(true);
     };
@@ -205,18 +252,18 @@ export const TransactionsPage = () => {
     const columns: ColumnsType<Transaction> = [
         {
             title: 'Data',
-            dataIndex: 'data',
+            dataIndex: 'date',
             key: 'data',
             render: (text: string) => dayjs(text).format('DD/MM/YYYY'),
-            sorter: (a, b) => dayjs(a.data).unix() - dayjs(b.data).unix(),
+            sorter: (a, b) => dayjs(a.date).unix() - dayjs(b.date).unix(),
             sortOrder: sortConfig.field === 'data' ? sortConfig.order : null,
             defaultSortOrder: 'descend',
         },
         {
             title: 'Descrizione',
-            dataIndex: 'descrizione',
+            dataIndex: 'description',
             key: 'descrizione',
-            sorter: (a, b) => a.descrizione.localeCompare(b.descrizione),
+            sorter: (a, b) => a.description.localeCompare(b.description),
             sortOrder: sortConfig.field === 'descrizione' ? sortConfig.order : null,
         },
         {
@@ -235,18 +282,18 @@ export const TransactionsPage = () => {
         },
         {
             title: 'Importo',
-            dataIndex: 'importo',
+            dataIndex: 'amount',
             key: 'importo',
             sorter: (a, b) => {
-                const amountA = a.type === 'OUT' ? -a.importo : a.importo;
-                const amountB = b.type === 'OUT' ? -b.importo : b.importo;
+                const amountA = a.type === 'OUT' ? -a.amount : a.amount;
+                const amountB = b.type === 'OUT' ? -b.amount : b.amount;
                 return amountA - amountB;
             },
             sortOrder: sortConfig.field === 'importo' ? sortConfig.order : null,
             render: (amount: number, record: Transaction) => (
-                <span style={{ color: record.type === 'IN' ? 'green' : 'red' }}>
-                    {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} €
-                </span>
+                <span style={{color: record.type === 'IN' ? 'green' : 'red'}}>
+            {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} €
+        </span>
             )
         },
         {
@@ -257,8 +304,8 @@ export const TransactionsPage = () => {
                 <Tag color={type === 'IN' ? 'success' : 'error'}>{type}</Tag>
             ),
             filters: [
-                { text: 'Entrata', value: 'IN' },
-                { text: 'Uscita', value: 'OUT' },
+                {text: 'Entrata', value: 'IN'},
+                {text: 'Uscita', value: 'OUT'},
             ],
         },
         {
@@ -266,11 +313,11 @@ export const TransactionsPage = () => {
             key: 'actions',
             render: (_: unknown, record: Transaction) => (
                 <Flex gap="small">
-                    <Button icon={<EditOutlined />} onClick={() => handleOpenEditModal(record)} />
+                    <Button icon={<EditOutlined/>} onClick={() => handleOpenEditModal(record)}/>
                     {!record.transferId && (
-                        <Button icon={<SwapOutlined />} onClick={() => handleOpenLinkTransferModal(record)} />
+                        <Button icon={<SwapOutlined/>} onClick={() => handleOpenLinkTransferModal(record)}/>
                     )}
-                    <Button danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />
+                    <Button danger icon={<DeleteOutlined/>} onClick={() => handleDelete(record.id)}/>
                 </Flex>
             )
         },
@@ -292,7 +339,7 @@ export const TransactionsPage = () => {
         let data = transactions.map(t => {
             if (!t.accountName) {
                 const account = accounts.find(acc => acc.id === t.accountId);
-                return { ...t, accountName: account?.name || 'N/A' };
+                return {...t, accountName: account?.name || 'N/A'};
             }
             return t;
         });
@@ -301,7 +348,7 @@ export const TransactionsPage = () => {
         if (filters.search) {
             const lowerCaseSearch = filters.search.toLowerCase();
             data = data.filter(t =>
-                t.descrizione.toLowerCase().includes(lowerCaseSearch) ||
+                t.description.toLowerCase().includes(lowerCaseSearch) ||
                 t.accountName.toLowerCase().includes(lowerCaseSearch) ||
                 (t.categoryName && t.categoryName.toLowerCase().includes(lowerCaseSearch))
             );
@@ -312,7 +359,7 @@ export const TransactionsPage = () => {
         if (filters.data) {
             const [start, end] = filters.data;
             data = data.filter(t => {
-                const date = dayjs(t.data);
+                const date = dayjs(t.date);
                 const isAfterStart = start ? date.isAfter(start.startOf('day')) : true;
                 const isBeforeEnd = end ? date.isBefore(end.endOf('day')) : true;
                 return isAfterStart && isBeforeEnd;
@@ -337,7 +384,7 @@ export const TransactionsPage = () => {
         ? `Transazioni per ${accounts.find(acc => acc.id === parseInt(accountId))?.name}`
         : 'Tutte le Transazioni';
 
-    if (loading && transactions.length === 0) return <Spin size="large" />;
+    if (loading && transactions.length === 0) return <Spin size="large"/>;
 
     const renderContent = () => {
         if (isMobile) {
@@ -355,32 +402,43 @@ export const TransactionsPage = () => {
                 />
             );
         }
-        return <Table columns={columns} dataSource={processedTransactions} rowKey="id" loading={loading} onChange={handleTableChange} />;
+        return <Table columns={columns} dataSource={processedTransactions} rowKey="id" loading={loading}
+                      onChange={handleTableChange}/>;
     };
 
     const filteredCategories = categories.filter(cat => cat.transactionType === transactionType);
 
     return (
         <>
-            <Flex justify="space-between" align="center" style={{ marginBottom: 24 }} wrap="wrap" gap="small">
-                <Title level={2} style={{ margin: 0 }}>{pageTitle}</Title>
+            <Flex justify="space-between" align="center" style={{marginBottom: 24}} wrap="wrap" gap="small">
+                <Title level={2} style={{margin: 0}}>{pageTitle}</Title>
                 <Space wrap>
-                    <Button icon={<RetweetOutlined />} onClick={handleOpenTransferModal}>
-                        Nuovo Trasferimento
+                    {accountId && (
+                        <Button
+                            icon={<RetweetOutlined/>}
+                            onClick={handleSyncGoCardlessTransactions}
+                            loading={syncingTransactions}
+                        >
+                            {isMobile ? '' : 'Sincronizza GoCardless'}
+                        </Button>
+                    )}
+                    <Button icon={<RetweetOutlined/>} onClick={handleOpenTransferModal}>
+                        {isMobile ? '' : 'Nuovo Trasferimento'}
                     </Button>
-                    <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal}>
-                        Nuova Transazione
+                    <Button type="primary" icon={<PlusOutlined/>} onClick={handleOpenCreateModal}>
+                        {isMobile ? '' : 'Nuova Transazione'}
                     </Button>
                 </Space>
             </Flex>
 
-            <Flex vertical gap="middle" style={{ marginBottom: 24 }}>
+
+            <Flex vertical gap="middle" style={{marginBottom: 24}}>
                 <Input.Search
                     placeholder="Cerca per descrizione, conto, categoria"
-                    onSearch={(value) => setFilters(prev => ({ ...prev, search: value }))}
+                    onSearch={(value) => setFilters(prev => ({...prev, search: value}))}
                     onChange={(e) => {
                         if (e.target.value === '') {
-                            setFilters(prev => ({ ...prev, search: undefined }));
+                            setFilters(prev => ({...prev, search: undefined}));
                         }
                     }}
                     allowClear
@@ -391,8 +449,8 @@ export const TransactionsPage = () => {
                         mode="multiple"
                         placeholder="Filtra per tipo"
                         value={filters.type}
-                        onChange={(value) => setFilters(prev => ({ ...prev, type: value }))}
-                        style={{ flex: 1, minWidth: 120 }}
+                        onChange={(value) => setFilters(prev => ({...prev, type: value}))}
+                        style={{flex: 1, minWidth: 120}}
                         allowClear
                     >
                         <Option value="IN">Entrata</Option>
@@ -400,19 +458,19 @@ export const TransactionsPage = () => {
                     </Select>
                     <DatePicker
                         placeholder="Da"
-                        style={{ flex: 1, minWidth: 120 }}
-                        onChange={(date) => setFilters(prev => ({ ...prev, data: [date, prev.data?.[1] ?? null] }))}
+                        style={{flex: 1, minWidth: 120}}
+                        onChange={(date) => setFilters(prev => ({...prev, data: [date, prev.data?.[1] ?? null]}))}
                     />
                     <DatePicker
                         placeholder="A"
-                        style={{ flex: 1, minWidth: 120 }}
-                        onChange={(date) => setFilters(prev => ({ ...prev, data: [prev.data?.[0] ?? null, date] }))}
+                        style={{flex: 1, minWidth: 120}}
+                        onChange={(date) => setFilters(prev => ({...prev, data: [prev.data?.[0] ?? null, date]}))}
                     />
                     <Select
                         placeholder="Ordina per"
                         value={sortConfig.field as string}
-                        onChange={(value) => setSortConfig(prev => ({ ...prev, field: value }))}
-                        style={{ flex: 1, minWidth: 120 }}
+                        onChange={(value) => setSortConfig(prev => ({...prev, field: value}))}
+                        style={{flex: 1, minWidth: 120}}
                     >
                         <Option value="data">Data</Option>
                         <Option value="descrizione">Descrizione</Option>
@@ -423,8 +481,8 @@ export const TransactionsPage = () => {
                     <Select
                         placeholder="Ordine"
                         value={sortConfig.order}
-                        onChange={(value) => setSortConfig(prev => ({ ...prev, order: value }))}
-                        style={{ flex: 1, minWidth: 120 }}
+                        onChange={(value) => setSortConfig(prev => ({...prev, order: value}))}
+                        style={{flex: 1, minWidth: 120}}
                     >
                         <Option value="ascend">Crescente</Option>
                         <Option value="descend">Decrescente</Option>
@@ -434,18 +492,20 @@ export const TransactionsPage = () => {
 
             {renderContent()}
 
-            <Modal title={editingRecord ? "Modifica Transazione" : "Nuova Transazione"} open={isModalOpen} onCancel={handleCancel} footer={null}>
-                <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: 24 }}>
-                    <Form.Item name="accountId" label="Conto" rules={[{ required: true }]}>
+            <Modal title={editingRecord ? "Modifica Transazione" : "Nuova Transazione"} open={isModalOpen}
+                   onCancel={handleCancel} footer={null}>
+                <Form form={form} layout="vertical" onFinish={onFinish} style={{marginTop: 24}}>
+                    <Form.Item name="accountId" label="Conto" rules={[{required: true}]}>
                         <Select placeholder="Seleziona un conto" disabled={!!accountId || !!editingRecord}>
                             {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="importo" label="Importo" rules={[{ required: true }]}>
-                        <InputNumber style={{ width: '100%' }} min={0} addonAfter="€" />
+                    <Form.Item name="importo" label="Importo" rules={[{required: true}]}>
+                        <InputNumber style={{width: '100%'}} min={0} addonAfter="€"/>
                     </Form.Item>
-                    <Form.Item name="type" label="Tipo" rules={[{ required: true }]}>
-                        <Select placeholder="Entrata o Uscita" onChange={() => form.setFieldsValue({ categoryId: undefined })}>
+                    <Form.Item name="type" label="Tipo" rules={[{required: true}]}>
+                        <Select placeholder="Entrata o Uscita"
+                                onChange={() => form.setFieldsValue({categoryId: undefined})}>
                             <Option value="IN">Entrata</Option>
                             <Option value="OUT">Uscita</Option>
                         </Select>
@@ -455,14 +515,14 @@ export const TransactionsPage = () => {
                             {filteredCategories.map(cat => <Option key={cat.id} value={cat.id}>{cat.name}</Option>)}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="descrizione" label="Descrizione" rules={[{ required: true }]}>
-                        <Input />
+                    <Form.Item name="descrizione" label="Descrizione" rules={[{required: true}]}>
+                        <Input/>
                     </Form.Item>
                     <Form.Item name="data" label="Data" initialValue={dayjs()}>
-                        <DatePicker style={{ width: '100%' }} />
+                        <DatePicker style={{width: '100%'}}/>
                     </Form.Item>
                     <Form.Item name="note" label="Note">
-                        <Input.TextArea />
+                        <Input.TextArea/>
                     </Form.Item>
                     <Form.Item>
                         <Button type="primary" htmlType="submit" block>Salva</Button>
@@ -476,18 +536,21 @@ export const TransactionsPage = () => {
                 onCancel={handleCancelLinkTransferModal}
                 footer={[
                     <Button key="back" onClick={handleCancelLinkTransferModal}>Annulla</Button>,
-                    <Button key="submit" type="primary" onClick={handleConfirmLinkTransfer} disabled={!selectedDestTransactionId}>
+                    <Button key="submit" type="primary" onClick={handleConfirmLinkTransfer}
+                            disabled={!selectedDestTransactionId}>
                         Salva Collegamento
                     </Button>,
                 ]}
                 width={600}
             >
                 {sourceTransaction && (
-                    <Space direction="vertical" style={{ width: '100%' }}>
+                    <Space direction="vertical" style={{width: '100%'}}>
                         <Text strong>Transazione di Origine</Text>
                         <p>
-                            {dayjs(sourceTransaction.data).format('DD/MM/YYYY')} - {sourceTransaction.descrizione} ({sourceTransaction.accountName}) -
-                            <Text type={sourceTransaction.type === 'IN' ? 'success' : 'danger'}> {sourceTransaction.importo.toFixed(2)}€</Text>
+                            {dayjs(sourceTransaction.date).format('DD/MM/YYYY')} - {sourceTransaction.description} ({sourceTransaction.accountName})
+                            -
+                            <Text
+                                type={sourceTransaction.type === 'IN' ? 'success' : 'danger'}> {sourceTransaction.amount.toFixed(2)}€</Text>
                         </p>
 
                         <Form layout="vertical">
@@ -504,13 +567,13 @@ export const TransactionsPage = () => {
                             </Form.Item>
                         </Form>
 
-                        {loadingDestTransactions ? <Spin /> : (
+                        {loadingDestTransactions ? <Spin/> : (
                             destinationAccountId && (
                                 destinationTransactions.length > 0 ? (
                                     <Radio.Group
                                         onChange={(e) => setSelectedDestTransactionId(e.target.value)}
                                         value={selectedDestTransactionId}
-                                        style={{ width: '100%' }}
+                                        style={{width: '100%'}}
                                     >
                                         <List
                                             header={<div>Seleziona la transazione da collegare</div>}
@@ -519,15 +582,18 @@ export const TransactionsPage = () => {
                                             renderItem={item => (
                                                 <List.Item>
                                                     <Radio value={item.id}>
-                                                        {dayjs(item.data).format('DD/MM/YYYY')} - {item.descrizione} -
-                                                        <Text type={item.type === 'IN' ? 'success' : 'danger'}> {item.importo.toFixed(2)}€</Text>
+                                                        {dayjs(item.date).format('DD/MM/YYYY')} - {item.description} -
+                                                        <Text
+                                                            type={item.type === 'IN' ? 'success' : 'danger'}> {item.amount.toFixed(2)}€</Text>
                                                     </Radio>
                                                 </List.Item>
                                             )}
                                         />
                                     </Radio.Group>
                                 ) : (
-                                    <Alert message="Nessuna transazione compatibile trovata nel periodo di ±3 giorni con lo stesso importo e tipo opposto." type="info" showIcon />
+                                    <Alert
+                                        message="Nessuna transazione compatibile trovata nel periodo di ±3 giorni con lo stesso importo e tipo opposto."
+                                        type="info" showIcon/>
                                 )
                             )
                         )}

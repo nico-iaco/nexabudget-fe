@@ -3,7 +3,8 @@ import axios, {type AxiosResponse} from 'axios';
 import type {
     Account,
     AccountRequest,
-    AuthResponse, Category, CategoryRequest, LinkTransferRequest,
+    AuthResponse, Category, CategoryRequest, GoCardlessBank, GoCardlessBankDetails,
+    GoCardlessBankLinkRequest, GoCardlessCompleteBankLinkRequest, LinkTransferRequest,
     LoginRequest,
     Transaction,
     TransactionRequest,
@@ -51,3 +52,10 @@ export const getCategories = (): Promise<AxiosResponse<Category[]>> => apiClient
 export const createCategory = (category: CategoryRequest): Promise<AxiosResponse<void>> => apiClient.post('/categories', category);
 export const updateCategory = (id: number, category: CategoryRequest): Promise<AxiosResponse<void>> => apiClient.put(`/categories/${id}`, category);
 export const deleteCategory = (id: number): Promise<AxiosResponse<void>> => apiClient.delete(`/categories/${id}`);
+
+// GoCardless
+export const getGoCardlessBankList = (countryCode: string): Promise<AxiosResponse<GoCardlessBank[]>> => apiClient.get(`/gocardless/bank?countryCode=${countryCode}`);
+export const getGoCardlessBankLink = (data: GoCardlessBankLinkRequest): Promise<AxiosResponse<string>> => apiClient.post(`/gocardless/bank/link`, data);
+export const getGoCardlessBankAccounts = (localAccountId: number): Promise<AxiosResponse<GoCardlessBankDetails[]>> => apiClient.get(`/gocardless/bank/${localAccountId}/account`);
+export const linkGoCardlessBankAccount = (localAccountId: number, data: GoCardlessCompleteBankLinkRequest): Promise<AxiosResponse<void>> => apiClient.post(`/gocardless/bank/${localAccountId}/link`, data);
+export const syncGoCardlessBankAccount = (localAccountId: number): Promise<AxiosResponse<void>> => apiClient.post(`/gocardless/bank/${localAccountId}/sync`);
