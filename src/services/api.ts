@@ -27,6 +27,19 @@ apiClient.interceptors.request.use((config) => {
     return config;
 });
 
+apiClient.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        if (error.response?.status === 403) {
+            // Rimuovi il token e reindirizza al login
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('auth');
+            window.location.href = '/login';
+        }
+        return Promise.reject(error);
+    }
+);
+
 // Auth
 export const login = (data: LoginRequest): Promise<AxiosResponse<AuthResponse>> => apiClient.post('/auth/login', data);
 export const register = (data: UserRequest): Promise<AxiosResponse<AuthResponse>> => apiClient.post('/auth/register', data);

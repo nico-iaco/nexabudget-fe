@@ -22,6 +22,7 @@ export interface Account {
     type: 'CONTO_CORRENTE' | 'RISPARMIO' | 'INVESTIMENTO' | 'CONTANTI';
     actualBalance: number;
     currency: string;
+    linkedToExternal: boolean;
     createdAt: string;
 }
 

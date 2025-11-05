@@ -253,18 +253,18 @@ export const TransactionsPage = () => {
         {
             title: 'Data',
             dataIndex: 'date',
-            key: 'data',
+            key: 'date',
             render: (text: string) => dayjs(text).format('DD/MM/YYYY'),
             sorter: (a, b) => dayjs(a.date).unix() - dayjs(b.date).unix(),
-            sortOrder: sortConfig.field === 'data' ? sortConfig.order : null,
+            sortOrder: sortConfig.field === 'date' ? sortConfig.order : null,
             defaultSortOrder: 'descend',
         },
         {
             title: 'Descrizione',
             dataIndex: 'description',
-            key: 'descrizione',
+            key: 'description',
             sorter: (a, b) => a.description.localeCompare(b.description),
-            sortOrder: sortConfig.field === 'descrizione' ? sortConfig.order : null,
+            sortOrder: sortConfig.field === 'description' ? sortConfig.order : null,
         },
         {
             title: 'Conto',
@@ -283,13 +283,13 @@ export const TransactionsPage = () => {
         {
             title: 'Importo',
             dataIndex: 'amount',
-            key: 'importo',
+            key: 'amount',
             sorter: (a, b) => {
                 const amountA = a.type === 'OUT' ? -a.amount : a.amount;
                 const amountB = b.type === 'OUT' ? -b.amount : b.amount;
                 return amountA - amountB;
             },
-            sortOrder: sortConfig.field === 'importo' ? sortConfig.order : null,
+            sortOrder: sortConfig.field === 'amount' ? sortConfig.order : null,
             render: (amount: number, record: Transaction) => (
                 <span style={{color: record.type === 'IN' ? 'green' : 'red'}}>
             {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} €
@@ -413,7 +413,7 @@ export const TransactionsPage = () => {
             <Flex justify="space-between" align="center" style={{marginBottom: 24}} wrap="wrap" gap="small">
                 <Title level={2} style={{margin: 0}}>{pageTitle}</Title>
                 <Space wrap>
-                    {accountId && (
+                    {accountId && accounts.find(acc => acc.id === parseInt(accountId))?.linkedToExternal && (
                         <Button
                             icon={<RetweetOutlined/>}
                             onClick={handleSyncGoCardlessTransactions}
