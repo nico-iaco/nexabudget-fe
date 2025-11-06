@@ -1,46 +1,47 @@
 // src/components/Layout.tsx
-import { useEffect, useState, useMemo } from 'react';
-import { Outlet, useNavigate, useLocation } from 'react-router-dom';
+import {useEffect, useMemo, useState} from 'react';
+import {Outlet, useLocation, useNavigate} from 'react-router-dom';
 import {
-    Layout as AntLayout,
-    Menu,
     Button,
-    theme,
-    Spin,
-    Typography,
+    DatePicker,
     Flex,
-    Modal,
     Form,
     Input,
-    Select,
     InputNumber,
-    Space,
+    Layout as AntLayout,
+    Menu,
     message,
-    DatePicker,
+    Modal,
+    Select,
+    Space,
+    Spin,
     Statistic,
-    Steps
+    Steps,
+    theme,
+    Typography
 } from 'antd';
 import {
+    DeleteOutlined,
+    DisconnectOutlined,
+    EditOutlined,
+    LinkOutlined,
+    LogoutOutlined,
     MenuFoldOutlined,
     MenuUnfoldOutlined,
-    LogoutOutlined,
-    WalletOutlined,
-    PlusOutlined,
-    EditOutlined,
-    DeleteOutlined,
     PieChartOutlined,
+    PlusOutlined,
     TransactionOutlined,
-    LinkOutlined
+    WalletOutlined
 } from '@ant-design/icons';
-import { useAuth } from '../contexts/AuthContext';
+import {useAuth} from '../contexts/AuthContext';
 import * as api from '../services/api';
-import type { Account, AccountRequest, Category, TransferRequest, GoCardlessBank } from '../types/api';
-import dayjs, { type Dayjs } from 'dayjs';
-import { europeanCountries } from '../utils/countries';
+import type {Account, AccountRequest, Category, GoCardlessBank, TransferRequest} from '../types/api';
+import dayjs, {type Dayjs} from 'dayjs';
+import {europeanCountries} from '../utils/countries';
 
-const { Header, Sider, Content } = AntLayout;
-const { Title, Text } = Typography;
-const { Option } = Select;
+const {Header, Sider, Content} = AntLayout;
+const {Title, Text} = Typography;
+const {Option} = Select;
 
 interface TransferFormValues {
     sourceAccountId: number;
@@ -74,14 +75,14 @@ export const Layout = () => {
     const [loadingBanks, setLoadingBanks] = useState(false);
     const [selectedBank, setSelectedBank] = useState<string | null>(null);
 
-    const { auth, logout } = useAuth();
+    const {auth, logout} = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [accountForm] = Form.useForm<AccountRequest>();
     const [transferForm] = Form.useForm<TransferFormValues>();
 
     const {
-        token: { colorBgContainer, borderRadiusLG },
+        token: {colorBgContainer, borderRadiusLG},
     } = theme.useToken();
 
     const triggerTransactionRefresh = () => {
@@ -185,7 +186,7 @@ export const Layout = () => {
 
     const handleOpenTransferModal = () => {
         transferForm.resetFields();
-        transferForm.setFieldsValue({ transferDate: dayjs() });
+        transferForm.setFieldsValue({transferDate: dayjs()});
         setIsTransferModalOpen(true);
     };
 
@@ -281,27 +282,54 @@ export const Layout = () => {
 
     const accountMenuItems = accounts.map(acc => {
         const path = `/accounts/${acc.id}/transactions`;
+        const isConnectedToGoCardless = acc.linkedToExternal;
+        const isCheckingAccount = acc.type === 'CONTO_CORRENTE';
+
         return {
             key: path,
-            icon: <WalletOutlined />,
+            icon: <WalletOutlined/>,
             label: (
                 <Flex justify="space-between" align="center">
-                    <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc.name}</span>
-                    <Text style={{ fontSize: '0.9em', marginLeft: 8, color: 'rgba(255, 255, 255, 0.85)' }}>{acc.actualBalance.toFixed(2)}€</Text>
-                    <Space style={{ marginLeft: 16 }}>
+                    <span style={{
+                        flex: 1,
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        whiteSpace: 'nowrap'
+                    }}>{acc.name}</span>
+                    <Text style={{
+                        fontSize: '0.9em',
+                        marginLeft: 8,
+                        color: 'rgba(255, 255, 255, 0.85)'
+                    }}>{acc.actualBalance.toFixed(2)}€</Text>
+                    <Space style={{marginLeft: 16}}>
+                        {isCheckingAccount && (
+                            isConnectedToGoCardless ? (
+                                <Button
+                                    type="text"
+                                    size="small"
+                                    icon={<DisconnectOutlined style={{color: 'rgba(255, 255, 255, 0.85)'}}/>}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        // TODO: implementare handleDisconnectGoCardless(acc)
+                                        message.info('Funzione di scollegamento da implementare');
+                                    }}
+                                />
+                            ) : (
+                                <Button
+                                    type="text"
+                                    size="small"
+                                    icon={<LinkOutlined style={{color: 'rgba(255, 255, 255, 0.85)'}}/>}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleOpenGoCardlessModal(acc);
+                                    }}
+                                />
+                            )
+                        )}
                         <Button
                             type="text"
                             size="small"
-                            icon={<LinkOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenGoCardlessModal(acc);
-                            }}
-                        />
-                        <Button
-                            type="text"
-                            size="small"
-                            icon={<EditOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />}
+                            icon={<EditOutlined style={{color: 'rgba(255, 255, 255, 0.85)'}}/>}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleOpenEditAccountModal(acc);
@@ -311,7 +339,7 @@ export const Layout = () => {
                             type="text"
                             size="small"
                             danger
-                            icon={<DeleteOutlined />}
+                            icon={<DeleteOutlined/>}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleOpenDeleteModal(acc);
@@ -324,13 +352,19 @@ export const Layout = () => {
         };
     });
 
+
     if (!auth) {
-        return <Outlet context={{ accounts: [], fetchAccounts: () => {}, transactionRefreshKey: 0, categories: [], fetchCategories: () => {}, handleOpenTransferModal: () => {} }} />;
+        return <Outlet context={{
+            accounts: [], fetchAccounts: () => {
+            }, transactionRefreshKey: 0, categories: [], fetchCategories: () => {
+            }, handleOpenTransferModal: () => {
+            }
+        }}/>;
     }
 
     return (
         <>
-            <AntLayout style={{ minHeight: '100vh' }}>
+            <AntLayout style={{minHeight: '100vh'}}>
                 <Sider
                     trigger={null}
                     collapsible
@@ -343,45 +377,62 @@ export const Layout = () => {
                         setCollapsed(broken);
                     }}
                     onCollapse={(isCollapsed) => setCollapsed(isCollapsed)}
-                    style={isMobile ? { position: 'fixed', zIndex: 1001, height: '100vh' } : {}}
+                    style={isMobile ? {position: 'fixed', zIndex: 1001, height: '100vh'} : {}}
                 >
-                    <div className="demo-logo-vertical" style={{height: '32px', margin: '16px'}} />
+                    <div className="demo-logo-vertical" style={{height: '32px', margin: '16px'}}/>
                     <Menu
                         theme="dark"
                         mode="inline"
                         selectedKeys={selectedKeys}
                         items={[
-                            { key: '/dashboard', icon: <PieChartOutlined />, label: 'Dashboard', onClick: () => navigate('/dashboard') },
-                            { key: '/transactions', icon: <TransactionOutlined />, label: 'Tutte le Transazioni', onClick: () => navigate('/transactions') },
+                            {
+                                key: '/dashboard',
+                                icon: <PieChartOutlined/>,
+                                label: 'Dashboard',
+                                onClick: () => navigate('/dashboard')
+                            },
+                            {
+                                key: '/transactions',
+                                icon: <TransactionOutlined/>,
+                                label: 'Tutte le Transazioni',
+                                onClick: () => navigate('/transactions')
+                            },
                         ]}
                     />
                     <Flex vertical style={{padding: '0 8px'}}>
-                        <Flex justify="space-between" align="center" style={{ padding: '16px 16px 8px' }}>
-                            <Title level={5} style={{ color: 'rgba(255, 255, 255, 0.65)', margin: 0 }}>Conti</Title>
-                            <Button icon={<PlusOutlined />} size="small" onClick={handleOpenCreateAccountModal} />
+                        <Flex justify="space-between" align="center" style={{padding: '16px 16px 8px'}}>
+                            <Title level={5} style={{color: 'rgba(255, 255, 255, 0.65)', margin: 0}}>Conti</Title>
+                            <Button icon={<PlusOutlined/>} size="small" onClick={handleOpenCreateAccountModal}/>
                         </Flex>
-                        <div style={{ padding: '0 16px 16px' }}>
+                        <div style={{padding: '0 16px 16px'}}>
                             <Statistic
-                                title={<Text style={{ color: 'rgba(255, 255, 255, 0.45)' }}>Bilancio Totale</Text>}
+                                title={<Text style={{color: 'rgba(255, 255, 255, 0.45)'}}>Bilancio Totale</Text>}
                                 value={totalBalance}
                                 precision={2}
-                                valueStyle={{ color: '#fff' }}
+                                valueStyle={{color: '#fff'}}
                                 suffix="€"
                             />
                         </div>
                     </Flex>
-                    {loading ? <Spin style={{padding: '20px'}}/> : <Menu theme="dark" mode="inline" selectedKeys={selectedKeys} items={accountMenuItems} />}
+                    {loading ? <Spin style={{padding: '20px'}}/> :
+                        <Menu theme="dark" mode="inline" selectedKeys={selectedKeys} items={accountMenuItems}/>}
                 </Sider>
                 <AntLayout className="site-layout">
-                    <Header style={{ padding: '0 16px', background: colorBgContainer, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Header style={{
+                        padding: '0 16px',
+                        background: colorBgContainer,
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                    }}>
                         <Button
                             type="text"
-                            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+                            icon={collapsed ? <MenuUnfoldOutlined/> : <MenuFoldOutlined/>}
                             onClick={() => setCollapsed(!collapsed)}
-                            style={{ fontSize: '16px', width: 64, height: 64 }}
+                            style={{fontSize: '16px', width: 64, height: 64}}
                         />
-                        <div style={{flex: 1}} />
-                        <Button type="primary" icon={<LogoutOutlined />} onClick={handleLogout}>
+                        <div style={{flex: 1}}/>
+                        <Button type="primary" icon={<LogoutOutlined/>} onClick={handleLogout}>
                             {!isMobile && 'Logout'}
                         </Button>
                     </Header>
@@ -395,7 +446,14 @@ export const Layout = () => {
                             overflow: 'auto'
                         }}
                     >
-                        <Outlet context={{ accounts, fetchAccounts, transactionRefreshKey, categories, fetchCategories, handleOpenTransferModal }} />
+                        <Outlet context={{
+                            accounts,
+                            fetchAccounts,
+                            transactionRefreshKey,
+                            categories,
+                            fetchCategories,
+                            handleOpenTransferModal
+                        }}/>
                     </Content>
                 </AntLayout>
             </AntLayout>
@@ -415,12 +473,16 @@ export const Layout = () => {
                 />
             )}
 
-            <Modal title={editingAccount ? "Modifica Conto" : "Nuovo Conto"} open={isAccountModalOpen} onCancel={handleCancelAccountModal} footer={null}>
-                <Form form={accountForm} layout="vertical" onFinish={onFinishAccount} style={{marginTop: 24}} initialValues={{ currency: 'EUR' }}>
-                    <Form.Item name="name" label="Nome Conto" rules={[{ required: true, message: 'Inserisci il nome del conto' }]}>
-                        <Input placeholder="Es. Conto Principale" />
+            <Modal title={editingAccount ? "Modifica Conto" : "Nuovo Conto"} open={isAccountModalOpen}
+                   onCancel={handleCancelAccountModal} footer={null}>
+                <Form form={accountForm} layout="vertical" onFinish={onFinishAccount} style={{marginTop: 24}}
+                      initialValues={{currency: 'EUR'}}>
+                    <Form.Item name="name" label="Nome Conto"
+                               rules={[{required: true, message: 'Inserisci il nome del conto'}]}>
+                        <Input placeholder="Es. Conto Principale"/>
                     </Form.Item>
-                    <Form.Item name="type" label="Tipo di Conto" rules={[{ required: true, message: 'Seleziona il tipo di conto' }]}>
+                    <Form.Item name="type" label="Tipo di Conto"
+                               rules={[{required: true, message: 'Seleziona il tipo di conto'}]}>
                         <Select placeholder="Seleziona un tipo">
                             <Option value="CONTO_CORRENTE">Conto Corrente</Option>
                             <Option value="RISPARMIO">Risparmio</Option>
@@ -428,11 +490,13 @@ export const Layout = () => {
                             <Option value="CONTANTI">Contanti</Option>
                         </Select>
                     </Form.Item>
-                    <Form.Item name="starterBalance" label="Saldo Iniziale" initialValue={0} rules={[{ required: true, message: 'Inserisci il saldo iniziale' }]}>
-                        <InputNumber style={{ width: '100%' }} min={0} addonAfter="€" disabled={!!editingAccount} />
+                    <Form.Item name="starterBalance" label="Saldo Iniziale" initialValue={0}
+                               rules={[{required: true, message: 'Inserisci il saldo iniziale'}]}>
+                        <InputNumber style={{width: '100%'}} min={0} addonAfter="€" disabled={!!editingAccount}/>
                     </Form.Item>
-                    <Form.Item name="currency" label="Valuta" rules={[{ required: true, message: 'Inserisci la valuta' }]}>
-                        <Input placeholder="Es. EUR" />
+                    <Form.Item name="currency" label="Valuta"
+                               rules={[{required: true, message: 'Inserisci la valuta'}]}>
+                        <Input placeholder="Es. EUR"/>
                     </Form.Item>
                     <Form.Item>
                         <Button type="primary" htmlType="submit" block>Salva Conto</Button>
@@ -447,18 +511,20 @@ export const Layout = () => {
                 onCancel={handleCancelDeleteModal}
                 okText="Elimina"
                 cancelText="Annulla"
-                okButtonProps={{ danger: true }}
+                okButtonProps={{danger: true}}
             >
                 <p>Sei sicuro di voler eliminare il conto "{deletingAccount?.name}"?</p>
                 <p>Questa azione è irreversibile e cancellerà anche tutte le transazioni associate.</p>
             </Modal>
 
-            <Modal title="Nuovo Trasferimento" open={isTransferModalOpen} onCancel={handleCancelTransferModal} footer={null}>
-                <Form form={transferForm} layout="vertical" onFinish={onFinishTransfer} style={{ marginTop: 24 }} initialValues={{ transferDate: dayjs() }}>
+            <Modal title="Nuovo Trasferimento" open={isTransferModalOpen} onCancel={handleCancelTransferModal}
+                   footer={null}>
+                <Form form={transferForm} layout="vertical" onFinish={onFinishTransfer} style={{marginTop: 24}}
+                      initialValues={{transferDate: dayjs()}}>
                     <Form.Item
                         name="sourceAccountId"
                         label="Conto di Origine"
-                        rules={[{ required: true, message: 'Seleziona il conto di origine' }]}
+                        rules={[{required: true, message: 'Seleziona il conto di origine'}]}
                     >
                         <Select placeholder="Da quale conto?">
                             {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
@@ -468,8 +534,8 @@ export const Layout = () => {
                         name="destinationAccountId"
                         label="Conto di Destinazione"
                         rules={[
-                            { required: true, message: 'Seleziona il conto di destinazione' },
-                            ({ getFieldValue }) => ({
+                            {required: true, message: 'Seleziona il conto di destinazione'},
+                            ({getFieldValue}) => ({
                                 validator(_, value) {
                                     if (!value || getFieldValue('sourceAccountId') !== value) {
                                         return Promise.resolve();
@@ -483,17 +549,20 @@ export const Layout = () => {
                             {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="amount" label="Importo" rules={[{ required: true, message: 'Inserisci l\'importo' }]}>
-                        <InputNumber style={{ width: '100%' }} min={0.01} addonAfter="€" />
+                    <Form.Item name="amount" label="Importo"
+                               rules={[{required: true, message: 'Inserisci l\'importo'}]}>
+                        <InputNumber style={{width: '100%'}} min={0.01} addonAfter="€"/>
                     </Form.Item>
-                    <Form.Item name="transferDate" label="Data del Trasferimento" rules={[{ required: true, message: 'Seleziona la data' }]}>
-                        <DatePicker style={{ width: '100%' }} />
+                    <Form.Item name="transferDate" label="Data del Trasferimento"
+                               rules={[{required: true, message: 'Seleziona la data'}]}>
+                        <DatePicker style={{width: '100%'}}/>
                     </Form.Item>
-                    <Form.Item name="description" label="Descrizione" rules={[{ required: true, message: 'Inserisci una descrizione' }]}>
-                        <Input placeholder="Es. Giroconto" />
+                    <Form.Item name="description" label="Descrizione"
+                               rules={[{required: true, message: 'Inserisci una descrizione'}]}>
+                        <Input placeholder="Es. Giroconto"/>
                     </Form.Item>
                     <Form.Item name="notes" label="Note">
-                        <Input.TextArea placeholder="Note aggiuntive (opzionale)" />
+                        <Input.TextArea placeholder="Note aggiuntive (opzionale)"/>
                     </Form.Item>
                     <Form.Item>
                         <Button type="primary" htmlType="submit" block>Esegui Trasferimento</Button>
@@ -521,10 +590,10 @@ export const Layout = () => {
             >
                 <Steps
                     current={currentStep}
-                    style={{ marginBottom: 24 }}
+                    style={{marginBottom: 24}}
                     items={[
-                        { title: 'Seleziona Nazione' },
-                        { title: 'Seleziona Banca' },
+                        {title: 'Seleziona Nazione'},
+                        {title: 'Seleziona Banca'},
                     ]}
                 />
 
@@ -555,7 +624,7 @@ export const Layout = () => {
                     <Form layout="vertical">
                         <Form.Item label="Seleziona la tua banca">
                             {loadingBanks ? (
-                                <Spin />
+                                <Spin/>
                             ) : (
                                 <Select
                                     showSearch
@@ -573,7 +642,7 @@ export const Layout = () => {
                                                     <img
                                                         src={bank.logo}
                                                         alt={bank.name}
-                                                        style={{ width: 24, height: 24, objectFit: 'contain' }}
+                                                        style={{width: 24, height: 24, objectFit: 'contain'}}
                                                     />
                                                 )}
                                                 <span>{bank.name}</span>

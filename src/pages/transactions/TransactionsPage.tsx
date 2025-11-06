@@ -1,28 +1,28 @@
 // src/pages/transactions/TransactionsPage.tsx
-import {useEffect, useState, useMemo} from 'react';
-import {useParams, useOutletContext} from 'react-router-dom';
+import {useEffect, useMemo, useState} from 'react';
+import {useOutletContext, useParams} from 'react-router-dom';
 import {
-    Table,
-    Typography,
-    Spin,
-    Tag,
+    Alert,
     Button,
-    Flex,
-    Modal,
-    Form,
-    InputNumber,
-    Select,
-    Input,
     DatePicker,
+    Flex,
+    Form,
+    Input,
+    InputNumber,
     List,
-    Space,
     message,
+    Modal,
     Radio,
-    Alert
+    Select,
+    Space,
+    Spin,
+    Table,
+    Tag,
+    Typography
 } from 'antd';
-import {PlusOutlined, DeleteOutlined, EditOutlined, RetweetOutlined, SwapOutlined} from '@ant-design/icons';
+import {DeleteOutlined, EditOutlined, PlusOutlined, RetweetOutlined, SwapOutlined} from '@ant-design/icons';
 import * as api from '../../services/api';
-import type {Transaction, Account, TransactionRequest, Category, LinkTransferRequest} from '../../types/api';
+import type {Account, Category, LinkTransferRequest, Transaction, TransactionRequest} from '../../types/api';
 import {useAuth} from '../../contexts/AuthContext';
 import dayjs, {type Dayjs} from 'dayjs';
 import {useMediaQuery} from '../../hooks/useMediaQuery';
@@ -73,7 +73,7 @@ export const TransactionsPage = () => {
 
     // State for sorting and filtering
     const [sortConfig, setSortConfig] = useState<SorterResult<Transaction>>({
-        field: 'data',
+        field: 'date',
         order: 'descend',
     });
     const [filters, setFilters] = useState<TableFilters>({});
@@ -472,9 +472,9 @@ export const TransactionsPage = () => {
                         onChange={(value) => setSortConfig(prev => ({...prev, field: value}))}
                         style={{flex: 1, minWidth: 120}}
                     >
-                        <Option value="data">Data</Option>
-                        <Option value="descrizione">Descrizione</Option>
-                        <Option value="importo">Importo</Option>
+                        <Option value="date">Data</Option>
+                        <Option value="description">Descrizione</Option>
+                        <Option value="amount">Importo</Option>
                         <Option value="accountName">Conto</Option>
                         <Option value="categoryName">Categoria</Option>
                     </Select>
@@ -500,7 +500,7 @@ export const TransactionsPage = () => {
                             {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="importo" label="Importo" rules={[{required: true}]}>
+                    <Form.Item name="amount" label="Importo" rules={[{required: true}]}>
                         <InputNumber style={{width: '100%'}} min={0} addonAfter="€"/>
                     </Form.Item>
                     <Form.Item name="type" label="Tipo" rules={[{required: true}]}>
@@ -515,10 +515,10 @@ export const TransactionsPage = () => {
                             {filteredCategories.map(cat => <Option key={cat.id} value={cat.id}>{cat.name}</Option>)}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="descrizione" label="Descrizione" rules={[{required: true}]}>
+                    <Form.Item name="description" label="Descrizione" rules={[{required: true}]}>
                         <Input/>
                     </Form.Item>
-                    <Form.Item name="data" label="Data" initialValue={dayjs()}>
+                    <Form.Item name="date" label="Data" initialValue={dayjs()}>
                         <DatePicker style={{width: '100%'}}/>
                     </Form.Item>
                     <Form.Item name="note" label="Note">
