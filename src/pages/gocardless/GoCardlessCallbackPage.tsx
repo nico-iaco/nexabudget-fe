@@ -6,10 +6,10 @@ import {BankOutlined} from '@ant-design/icons';
 import * as api from '../../services/api';
 import type {GoCardlessBankDetails} from '../../types/api';
 
-const { Title, Text } = Typography;
+const {Title, Text} = Typography;
 
 export const GoCardlessCallbackPage = () => {
-    const { accountId } = useParams<{ accountId: string }>();
+    const {accountId} = useParams<{ accountId: string }>();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
     const [bankAccounts, setBankAccounts] = useState<GoCardlessBankDetails[]>([]);
@@ -83,11 +83,11 @@ export const GoCardlessCallbackPage = () => {
             <Flex
                 justify="center"
                 align="center"
-                style={{ minHeight: '100vh' }}
+                style={{minHeight: '100vh'}}
                 vertical
                 gap="large"
             >
-                <Spin size="large" />
+                <Spin size="large"/>
                 <Text>
                     {bankAccounts.length > 0
                         ? 'Collegamento e importazione transazioni in corso...'
@@ -103,9 +103,9 @@ export const GoCardlessCallbackPage = () => {
             <Flex
                 justify="center"
                 align="center"
-                style={{ minHeight: '100vh', padding: '24px' }}
+                style={{minHeight: '100vh', padding: '24px'}}
             >
-                <Card style={{ maxWidth: 600, width: '100%' }}>
+                <Card style={{maxWidth: 600, width: '100%'}}>
                     <Alert
                         message="Errore"
                         description={error}
@@ -115,7 +115,7 @@ export const GoCardlessCallbackPage = () => {
                     <Button
                         type="primary"
                         onClick={() => navigate('/transactions')}
-                        style={{ marginTop: 16 }}
+                        style={{marginTop: 16}}
                         block
                     >
                         Torna alle Transazioni
@@ -126,13 +126,13 @@ export const GoCardlessCallbackPage = () => {
     }
 
     return (
-        <Flex justify="center" align="center" style={{ minHeight: '100vh', padding: '24px' }}>
+        <Flex justify="center" align="center" style={{minHeight: '100vh', padding: '24px'}}>
             <Card
-                style={{ maxWidth: 800, width: '100%' }}
+                style={{maxWidth: 800, width: '100%'}}
                 title={
                     <Flex align="center" gap="small">
-                        <BankOutlined />
-                        <Title level={3} style={{ margin: 0 }}>
+                        <BankOutlined/>
+                        <Title level={3} style={{margin: 0}}>
                             Seleziona il Conto da Sincronizzare
                         </Title>
                     </Flex>
@@ -143,7 +143,7 @@ export const GoCardlessCallbackPage = () => {
                     description="Scegli quale conto bancario vuoi collegare e inserisci il bilancio corrente per allineare correttamente le transazioni."
                     type="info"
                     showIcon
-                    style={{ marginBottom: 24 }}
+                    style={{marginBottom: 24}}
                 />
 
                 <List
@@ -165,19 +165,45 @@ export const GoCardlessCallbackPage = () => {
                                 transition: 'all 0.3s'
                             }}
                         >
-                            {/* ... resto del List.Item invariato ... */}
+                            <Flex gap="middle" align="center" style={{ width: '100%' }}>
+                                {account.institution.logo && (
+                                    <img
+                                        src={account.institution.logo}
+                                        alt={account.institution.name}
+                                        style={{
+                                            width: '48px',
+                                            height: '48px',
+                                            objectFit: 'contain',
+                                            borderRadius: '8px'
+                                        }}
+                                    />
+                                )}
+                                <Flex vertical gap="small" style={{ flex: 1 }}>
+                                    <Text strong style={{ fontSize: '16px' }}>
+                                        {account.institution.name || 'Banca Sconosciuta'}
+                                    </Text>
+                                    {account.name && (
+                                        <Text type="secondary">
+                                            Nome: {account.name}
+                                        </Text>
+                                    )}
+                                </Flex>
+                                <BankOutlined style={{ fontSize: '24px', color: '#1890ff' }} />
+                            </Flex>
                         </List.Item>
+
+
                     )}
                 />
 
                 {selectedAccountId && (
                     <Form.Item
                         label="Bilancio Corrente"
-                        style={{ marginTop: 24 }}
+                        style={{marginTop: 24}}
                         help="Inserisci il bilancio attuale del conto bancario per allineare correttamente le transazioni"
                     >
                         <InputNumber
-                            style={{ width: '100%' }}
+                            style={{width: '100%'}}
                             value={currentBalance}
                             onChange={(value) => setCurrentBalance(value)}
                             placeholder="Es: 1000.00"
@@ -187,15 +213,15 @@ export const GoCardlessCallbackPage = () => {
                     </Form.Item>
                 )}
 
-                <Flex gap="small" style={{ marginTop: 24 }}>
-                    <Button onClick={() => navigate('/transactions')} style={{ flex: 1 }}>
+                <Flex gap="small" style={{marginTop: 24}}>
+                    <Button onClick={() => navigate('/transactions')} style={{flex: 1}}>
                         Annulla
                     </Button>
                     <Button
                         type="primary"
                         onClick={handleConfirmSelection}
                         disabled={!selectedAccountId || currentBalance === null}
-                        style={{ flex: 1 }}
+                        style={{flex: 1}}
                     >
                         Conferma Selezione
                     </Button>
