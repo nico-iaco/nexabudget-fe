@@ -1,7 +1,7 @@
 // src/types/api.ts
 export interface AuthResponse {
     token: string;
-    userId: number;
+    userId: string;
     username: string;
 }
 
@@ -17,7 +17,7 @@ export interface UserRequest {
 }
 
 export interface Account {
-    id: number;
+    id: string;
     name: string;
     type: 'CONTO_CORRENTE' | 'RISPARMIO' | 'INVESTIMENTO' | 'CONTANTI';
     actualBalance: number;
@@ -34,10 +34,10 @@ export interface AccountRequest {
 }
 
 export interface Transaction {
-    id: number;
-    accountId: number;
+    id: string;
+    accountId: string;
     accountName: string;
-    categoryId?: number;
+    categoryId?: string;
     categoryName?: string;
     amount: number;
     type: 'IN' | 'OUT';
@@ -48,18 +48,18 @@ export interface Transaction {
 }
 
 export interface TransactionRequest {
-    accountId: number;
-    categoryId?: number;
-    importo: number;
+    accountId: string;
+    categoryId?: string;
+    amount: number;
     type: 'IN' | 'OUT';
-    descrizione: string;
-    data?: string;
+    description: string;
+    date?: string;
     note?: string;
 }
 
 export interface TransferRequest {
-    sourceAccountId: number;
-    destinationAccountId: number;
+    sourceAccountId: string;
+    destinationAccountId: string;
     amount: number;
     description: string;
     transferDate: string;
@@ -67,12 +67,12 @@ export interface TransferRequest {
 }
 
 export interface LinkTransferRequest {
-    sourceTransactionId: number;
-    destinationTransactionId: number;
+    sourceTransactionId: string;
+    destinationTransactionId: string;
 }
 
 export interface Category {
-    id: number;
+    id: string;
     name: string;
     transactionType: 'IN' | 'OUT';
 }
@@ -91,7 +91,7 @@ export interface GoCardlessBank {
 
 export interface GoCardlessBankLinkRequest {
     institutionId: string;
-    localAccountId: number;
+    localAccountId: string;
 }
 
 export interface GoCardlessBankDetails {
@@ -102,4 +102,8 @@ export interface GoCardlessBankDetails {
 
 export interface GoCardlessCompleteBankLinkRequest {
     accountId: string;
+}
+
+export interface SyncBankTransactionsRequest {
+    actualBalance: number;
 }

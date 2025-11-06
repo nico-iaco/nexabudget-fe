@@ -41,8 +41,8 @@ interface OutletContextType {
     handleOpenTransferModal: () => void;
 }
 
-interface FormValues extends Omit<TransactionRequest, 'data'> {
-    data?: Dayjs | null;
+interface FormValues extends Omit<TransactionRequest, 'date'> {
+    date?: dayjs.Dayjs | null;
 }
 
 interface TableFilters {
@@ -81,24 +81,31 @@ export const TransactionsPage = () => {
     // State for "Convert to Transfer" modal
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
     const [sourceTransaction, setSourceTransaction] = useState<Transaction | null>(null);
-    const [destinationAccountId, setDestinationAccountId] = useState<number | null>(null);
+    const [destinationAccountId, setDestinationAccountId] = useState<string | null>(null);
     const [destinationTransactions, setDestinationTransactions] = useState<Transaction[]>([]);
     const [loadingDestTransactions, setLoadingDestTransactions] = useState(false);
-    const [selectedDestTransactionId, setSelectedDestTransactionId] = useState<number | null>(null);
+    const [selectedDestTransactionId, setSelectedDestTransactionId] = useState<string | null>(null);
+    const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
+    const [currentBalance, setCurrentBalance] = useState<number | null>(null);
 
     const [syncingTransactions, setSyncingTransactions] = useState(false);
 
     const handleSyncGoCardlessTransactions = async () => {
-        if (!accountId) return;
+        if (!accountId || currentBalance === null) {
+            message.error('Inserisci il bilancio corrente');
+            return;
+        }
 
         setSyncingTransactions(true);
+        setIsBalanceModalOpen(false);
         const hideMessage = message.loading('Sincronizzazione transazioni in corso...', 0);
 
         try {
-            await api.syncGoCardlessBankAccount(parseInt(accountId));
+            await api.syncGoCardlessBankAccount(accountId, {actualBalance: currentBalance});
             message.success('Transazioni sincronizzate con successo!');
             fetchTransactions();
             fetchLayoutAccounts();
+            setCurrentBalance(null);
         } catch (error) {
             console.error(error);
             message.error('Errore durante la sincronizzazione delle transazioni');
@@ -114,7 +121,7 @@ export const TransactionsPage = () => {
         setLoading(true);
 
         const apiCall = accountId
-            ? api.getTransactionsByAccountId(parseInt(accountId))
+            ? api.getTransactionsByAccountId(accountId)
             : api.getTransactionsByUserId();
 
         apiCall
@@ -159,7 +166,7 @@ export const TransactionsPage = () => {
     }, [destinationAccountId, sourceTransaction]);
 
 
-    const handleDelete = async (id: number) => {
+    const handleDelete = async (id: string) => {
         try {
             await api.deleteTransaction(id);
             fetchTransactions();
@@ -173,7 +180,7 @@ export const TransactionsPage = () => {
         setEditingRecord(null);
         form.resetFields();
         if (accountId) {
-            form.setFieldsValue({accountId: parseInt(accountId)});
+            form.setFieldsValue({accountId: accountId});
         }
         setIsModalOpen(true);
     };
@@ -182,10 +189,11 @@ export const TransactionsPage = () => {
         setEditingRecord(record);
         form.setFieldsValue({
             ...record,
-            data: record.date ? dayjs(record.date) : null,
+            date: record.date ? dayjs(record.date) : null,
         });
         setIsModalOpen(true);
     };
+
 
     const handleCancel = () => {
         setIsModalOpen(false);
@@ -196,10 +204,10 @@ export const TransactionsPage = () => {
         try {
             const dataToSend: TransactionRequest = {
                 ...values,
-                data: values.data ? values.data.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'),
-                importo: values.importo,
+                date: values.date ? values.date.format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'),
+                amount: values.amount,
                 type: values.type,
-                descrizione: values.descrizione,
+                description: values.description,
                 accountId: values.accountId,
             };
 
@@ -381,7 +389,7 @@ export const TransactionsPage = () => {
     }, [transactions, sortConfig, filters, accounts]);
 
     const pageTitle = accountId
-        ? `Transazioni per ${accounts.find(acc => acc.id === parseInt(accountId))?.name}`
+        ? `Transazioni per ${accounts.find(acc => acc.id === accountId)?.name}`
         : 'Tutte le Transazioni';
 
     if (loading && transactions.length === 0) return <Spin size="large"/>;
@@ -413,10 +421,10 @@ export const TransactionsPage = () => {
             <Flex justify="space-between" align="center" style={{marginBottom: 24}} wrap="wrap" gap="small">
                 <Title level={2} style={{margin: 0}}>{pageTitle}</Title>
                 <Space wrap>
-                    {accountId && accounts.find(acc => acc.id === parseInt(accountId))?.linkedToExternal && (
+                    {accountId && accounts.find(acc => acc.id === accountId)?.linkedToExternal && (
                         <Button
                             icon={<RetweetOutlined/>}
-                            onClick={handleSyncGoCardlessTransactions}
+                            onClick={() => setIsBalanceModalOpen(true)}
                             loading={syncingTransactions}
                         >
                             {isMobile ? '' : 'Sincronizza GoCardless'}
@@ -599,6 +607,52 @@ export const TransactionsPage = () => {
                         )}
                     </Space>
                 )}
+            </Modal>
+
+            <Modal
+                title="Inserisci Bilancio Corrente"
+                open={isBalanceModalOpen}
+                onCancel={() => {
+                    setIsBalanceModalOpen(false);
+                    setCurrentBalance(null);
+                }}
+                footer={[
+                    <Button key="cancel" onClick={() => {
+                        setIsBalanceModalOpen(false);
+                        setCurrentBalance(null);
+                    }}>
+                        Annulla
+                    </Button>,
+                    <Button
+                        key="submit"
+                        type="primary"
+                        onClick={handleSyncGoCardlessTransactions}
+                        disabled={currentBalance === null}
+                    >
+                        Sincronizza
+                    </Button>
+                ]}
+            >
+                <Form layout="vertical">
+                    <Alert
+                        message="Bilancio Corrente"
+                        description="Inserisci il bilancio attuale del conto bancario per allineare correttamente le transazioni dopo la sincronizzazione."
+                        type="info"
+                        showIcon
+                        style={{ marginBottom: 16 }}
+                    />
+                    <Form.Item label="Bilancio Corrente">
+                        <InputNumber
+                            style={{ width: '100%' }}
+                            value={currentBalance}
+                            onChange={(value) => setCurrentBalance(value)}
+                            placeholder="Es: 1000.00"
+                            addonAfter="€"
+                            precision={2}
+                            autoFocus
+                        />
+                    </Form.Item>
+                </Form>
             </Modal>
         </>
     );

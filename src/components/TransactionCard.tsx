@@ -1,15 +1,15 @@
 // src/components/TransactionCard.tsx
-import { Card, Tag, Button, Flex, Typography } from 'antd';
-import { EditOutlined, DeleteOutlined, SwapOutlined } from '@ant-design/icons';
+import {Button, Card, Flex, Tag, Typography} from 'antd';
+import {DeleteOutlined, EditOutlined, SwapOutlined} from '@ant-design/icons';
 import dayjs from 'dayjs';
-import type { Transaction } from '../types/api';
+import type {Transaction} from '../types/api';
 
 const { Text } = Typography;
 
 interface TransactionCardProps {
     transaction: Transaction;
     onEdit: (transaction: Transaction) => void;
-    onDelete: (id: number) => void;
+    onDelete: (id: string) => void;
     onConvertToTransfer: (transaction: Transaction) => void;
 }
 

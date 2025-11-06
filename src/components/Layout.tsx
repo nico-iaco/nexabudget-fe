@@ -44,8 +44,8 @@ const {Title, Text} = Typography;
 const {Option} = Select;
 
 interface TransferFormValues {
-    sourceAccountId: number;
-    destinationAccountId: number;
+    sourceAccountId: string;
+    destinationAccountId: string;
     amount: number;
     description: string;
     transferDate?: Dayjs | null;
