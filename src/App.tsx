@@ -1,12 +1,13 @@
 // src/App.tsx
-import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom';
-import { useAuth } from './contexts/AuthContext';
-import { Layout } from './components/Layout';
-import { LoginPage } from './pages/auth/LoginPage';
-import { RegisterPage } from './pages/auth/RegisterPage';
-import { TransactionsPage } from './pages/transactions/TransactionsPage';
-import { DashboardPage } from './pages/dashboard/DashboardPage';
-import type { JSX } from "react";
+import {createBrowserRouter, Navigate, Outlet, RouterProvider} from 'react-router-dom';
+import {App as AntApp} from 'antd';
+import {useAuth} from './contexts/AuthContext';
+import {Layout} from './components/Layout';
+import {LoginPage} from './pages/auth/LoginPage';
+import {RegisterPage} from './pages/auth/RegisterPage';
+import {TransactionsPage} from './pages/transactions/TransactionsPage';
+import {DashboardPage} from './pages/dashboard/DashboardPage';
+import type {JSX} from "react";
 import {GoCardlessCallbackPage} from "./pages/gocardless/GoCardlessCallbackPage.tsx";
 
 // 1. Layout per le pagine pubbliche (Login/Register)
@@ -64,7 +65,11 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
-    return <RouterProvider router={router} />;
+    return (
+        <AntApp>
+            <RouterProvider router={router} />
+        </AntApp>
+    );
 }
 
 export default App;

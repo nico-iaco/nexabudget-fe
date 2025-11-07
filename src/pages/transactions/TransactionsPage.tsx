@@ -12,6 +12,7 @@ import {
     List,
     message,
     Modal,
+    notification,
     Radio,
     Select,
     Space,
@@ -90,27 +91,60 @@ export const TransactionsPage = () => {
 
     const [syncingTransactions, setSyncingTransactions] = useState(false);
 
+    const [apiNotification, contextHolder] = notification.useNotification();
+
     const handleSyncGoCardlessTransactions = async () => {
-        if (!accountId || currentBalance === null) {
+        console.log('handleSyncGoCardlessTransactions called', {accountId, currentBalance});
+
+        if (!accountId) {
+            message.error('ID conto non valido');
+            return;
+        }
+
+        if (currentBalance === null || currentBalance === undefined) {
             message.error('Inserisci il bilancio corrente');
             return;
         }
 
         setSyncingTransactions(true);
-        setIsBalanceModalOpen(false);
-        const hideMessage = message.loading('Sincronizzazione transazioni in corso...', 0);
 
         try {
+            console.log('Calling syncGoCardlessBankAccount...');
             await api.syncGoCardlessBankAccount(accountId, {actualBalance: currentBalance});
-            message.success('Transazioni sincronizzate con successo!');
-            fetchTransactions();
-            fetchLayoutAccounts();
+            console.log('Sync API call completed successfully');
+
+            // Chiudi il modal PRIMA di mostrare la notifica
+            setIsBalanceModalOpen(false);
             setCurrentBalance(null);
+
+            // Aspetta che il modal si chiuda completamente prima di mostrare la notifica
+            setTimeout(() => {
+                console.log('Showing notification...');
+
+                apiNotification.success({
+                        message: 'Sincronizzazione Avviata',
+                        description: 'Le transazioni verranno aggiornate in background nei prossimi minuti.',
+                        placement: 'topRight',
+                        duration: 5,
+                });
+
+            }, 500);
+
+            // Refresh automatico dopo 30 secondi per mostrare le nuove transazioni
+            setTimeout(() => {
+                fetchTransactions();
+                fetchLayoutAccounts();
+            }, 30000);
         } catch (error) {
-            console.error(error);
-            message.error('Errore durante la sincronizzazione delle transazioni');
+            console.error('Error during sync:', error);
+            setIsBalanceModalOpen(false);
+            apiNotification.error({
+                message: 'Errore di Sincronizzazione',
+                description: 'Si è verificato un errore durante la sincronizzazione delle transazioni. Riprova più tardi.',
+                placement: 'topRight',
+                duration: 5,
+            })
         } finally {
-            hideMessage();
             setSyncingTransactions(false);
         }
     };
@@ -418,6 +452,7 @@ export const TransactionsPage = () => {
 
     return (
         <>
+            {contextHolder}
             <Flex justify="space-between" align="center" style={{marginBottom: 24}} wrap="wrap" gap="small">
                 <Title level={2} style={{margin: 0}}>{pageTitle}</Title>
                 <Space wrap>
