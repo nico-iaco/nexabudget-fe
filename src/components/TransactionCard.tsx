@@ -18,29 +18,51 @@ export const TransactionCard = ({ transaction, onEdit, onDelete, onConvertToTran
     const amountColor = isIncome ? 'green' : 'red';
 
     return (
-        <Card style={{ marginBottom: 16 }}>
-            <Flex justify="space-between" align="start">
-                <Flex vertical>
-                    <Text strong>{transaction.description}</Text>
-                    <Text type="secondary">{transaction.accountName}</Text>
-                    {transaction.categoryName && <Text type="secondary" italic>{transaction.categoryName}</Text>}
-                    <Text type="secondary" style={{ fontSize: '0.8em', marginTop: 4 }}>
+        <Card
+            style={{ marginBottom: 12 }}
+            styles={{ body: { padding: '12px 16px' } }}
+        >
+            <Flex justify="space-between" align="start" gap="middle">
+                <Flex vertical style={{ flex: 1, minWidth: 0 }}>
+                    <Text strong style={{ fontSize: '15px' }}>{transaction.description}</Text>
+                    <Text type="secondary" style={{ fontSize: '13px' }}>{transaction.accountName}</Text>
+                    {transaction.categoryName && (
+                        <Text type="secondary" italic style={{ fontSize: '12px' }}>
+                            {transaction.categoryName}
+                        </Text>
+                    )}
+                    <Text type="secondary" style={{ fontSize: '12px', marginTop: 4 }}>
                         {dayjs(transaction.date).format('DD/MM/YYYY')}
                     </Text>
                 </Flex>
-                <Flex vertical align="end">
-                    <Text strong style={{ color: amountColor, fontSize: '1.1em' }}>
+                <Flex vertical align="end" style={{ flexShrink: 0 }}>
+                    <Text strong style={{ color: amountColor, fontSize: '16px', whiteSpace: 'nowrap' }}>
                         {isIncome ? '+' : '-'} {transaction.amount.toFixed(2)} €
                     </Text>
-                    <Tag color={isIncome ? 'success' : 'error'}>{transaction.type}</Tag>
+                    <Tag color={isIncome ? 'success' : 'error'} style={{ marginTop: 4 }}>
+                        {transaction.type}
+                    </Tag>
                 </Flex>
             </Flex>
-            <Flex justify="end" style={{ marginTop: 16 }}>
-                <Button icon={<EditOutlined />} onClick={() => onEdit(transaction)} style={{ marginRight: 8 }} />
+            <Flex justify="end" gap="small" style={{ marginTop: 12 }}>
+                <Button
+                    icon={<EditOutlined />}
+                    onClick={() => onEdit(transaction)}
+                    size="small"
+                />
                 {!transaction.transferId && (
-                    <Button icon={<SwapOutlined />} onClick={() => onConvertToTransfer(transaction)} style={{ marginRight: 8 }} />
+                    <Button
+                        icon={<SwapOutlined />}
+                        onClick={() => onConvertToTransfer(transaction)}
+                        size="small"
+                    />
                 )}
-                <Button danger icon={<DeleteOutlined />} onClick={() => onDelete(transaction.id)} />
+                <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    onClick={() => onDelete(transaction.id)}
+                    size="small"
+                />
             </Flex>
         </Card>
     );

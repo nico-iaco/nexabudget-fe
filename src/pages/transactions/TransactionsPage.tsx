@@ -101,11 +101,6 @@ export const TransactionsPage = () => {
             return;
         }
 
-        if (currentBalance === null || currentBalance === undefined) {
-            message.error('Inserisci il bilancio corrente');
-            return;
-        }
-
         setSyncingTransactions(true);
 
         try {
@@ -453,31 +448,41 @@ export const TransactionsPage = () => {
     return (
         <>
             {contextHolder}
-            <Flex justify="space-between" align="center" style={{marginBottom: 24}} wrap="wrap" gap="small">
-                <Title level={2} style={{margin: 0}}>{pageTitle}</Title>
-                <Space wrap>
+            <Flex justify="space-between" align="center" style={{marginBottom: 16}} wrap="wrap" gap="small">
+                <Title level={2} style={{margin: 0, fontSize: isMobile ? '1.5rem' : '2rem'}}>{pageTitle}</Title>
+                <Space wrap size={isMobile ? 'small' : 'middle'}>
                     {accountId && accounts.find(acc => acc.id === accountId)?.linkedToExternal && (
                         <Button
                             icon={<RetweetOutlined/>}
                             onClick={() => setIsBalanceModalOpen(true)}
                             loading={syncingTransactions}
+                            size={isMobile ? 'middle' : 'large'}
                         >
-                            {isMobile ? '' : 'Sincronizza GoCardless'}
+                            Sync GoCardless
                         </Button>
                     )}
-                    <Button icon={<RetweetOutlined/>} onClick={handleOpenTransferModal}>
-                        {isMobile ? '' : 'Nuovo Trasferimento'}
+                    <Button
+                        icon={<RetweetOutlined/>}
+                        onClick={handleOpenTransferModal}
+                        size={isMobile ? 'middle' : 'large'}
+                    >
+                        New Transfer
                     </Button>
-                    <Button type="primary" icon={<PlusOutlined/>} onClick={handleOpenCreateModal}>
-                        {isMobile ? '' : 'Nuova Transazione'}
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined/>}
+                        onClick={handleOpenCreateModal}
+                        size={isMobile ? 'middle' : 'large'}
+                    >
+                        New Transaction
                     </Button>
                 </Space>
             </Flex>
 
 
-            <Flex vertical gap="middle" style={{marginBottom: 24}}>
+            <Flex vertical gap="middle" style={{marginBottom: 16}}>
                 <Input.Search
-                    placeholder="Cerca per descrizione, conto, categoria"
+                    placeholder="Search by description, account, category"
                     onSearch={(value) => setFilters(prev => ({...prev, search: value}))}
                     onChange={(e) => {
                         if (e.target.value === '') {
@@ -486,6 +491,7 @@ export const TransactionsPage = () => {
                     }}
                     allowClear
                     enterButton
+                    size="middle"
                 />
                 <Flex gap="small" wrap="wrap">
                     <Select
@@ -493,7 +499,7 @@ export const TransactionsPage = () => {
                         placeholder="Filtra per tipo"
                         value={filters.type}
                         onChange={(value) => setFilters(prev => ({...prev, type: value}))}
-                        style={{flex: 1, minWidth: 120}}
+                        style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
                         allowClear
                     >
                         <Option value="IN">Entrata</Option>
@@ -501,19 +507,19 @@ export const TransactionsPage = () => {
                     </Select>
                     <DatePicker
                         placeholder="Da"
-                        style={{flex: 1, minWidth: 120}}
+                        style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
                         onChange={(date) => setFilters(prev => ({...prev, data: [date, prev.data?.[1] ?? null]}))}
                     />
                     <DatePicker
                         placeholder="A"
-                        style={{flex: 1, minWidth: 120}}
+                        style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
                         onChange={(date) => setFilters(prev => ({...prev, data: [prev.data?.[0] ?? null, date]}))}
                     />
                     <Select
                         placeholder="Ordina per"
                         value={sortConfig.field as string}
                         onChange={(value) => setSortConfig(prev => ({...prev, field: value}))}
-                        style={{flex: 1, minWidth: 120}}
+                        style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
                     >
                         <Option value="date">Data</Option>
                         <Option value="description">Descrizione</Option>
@@ -525,7 +531,7 @@ export const TransactionsPage = () => {
                         placeholder="Ordine"
                         value={sortConfig.order}
                         onChange={(value) => setSortConfig(prev => ({...prev, order: value}))}
-                        style={{flex: 1, minWidth: 120}}
+                        style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
                     >
                         <Option value="ascend">Crescente</Option>
                         <Option value="descend">Decrescente</Option>
@@ -662,7 +668,6 @@ export const TransactionsPage = () => {
                         key="submit"
                         type="primary"
                         onClick={handleSyncGoCardlessTransactions}
-                        disabled={currentBalance === null}
                     >
                         Sincronizza
                     </Button>
@@ -671,7 +676,8 @@ export const TransactionsPage = () => {
                 <Form layout="vertical">
                     <Alert
                         message="Bilancio Corrente"
-                        description="Inserisci il bilancio attuale del conto bancario per allineare correttamente le transazioni dopo la sincronizzazione."
+                        description="Inserisci il bilancio attuale del conto bancario per allineare correttamente le transazioni dopo la sincronizzazione.
+                        Se vuoi solo sincronizzare le transazioni senza modificare il bilancio corrente, lascia vuoto questo campo."
                         type="info"
                         showIcon
                         style={{ marginBottom: 16 }}

@@ -38,6 +38,7 @@ import * as api from '../services/api';
 import type {Account, AccountRequest, Category, GoCardlessBank, TransferRequest} from '../types/api';
 import dayjs, {type Dayjs} from 'dayjs';
 import {europeanCountries} from '../utils/countries';
+import {PWAInstallPrompt} from './PWAInstallPrompt';
 
 const {Header, Sider, Content} = AntLayout;
 const {Title, Text} = Typography;
@@ -289,19 +290,25 @@ export const Layout = () => {
             key: path,
             icon: <WalletOutlined/>,
             label: (
-                <Flex justify="space-between" align="center">
-                    <span style={{
-                        flex: 1,
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap'
-                    }}>{acc.name}</span>
-                    <Text style={{
-                        fontSize: '0.9em',
-                        marginLeft: 8,
-                        color: 'rgba(255, 255, 255, 0.85)'
-                    }}>{acc.actualBalance.toFixed(2)}€</Text>
-                    <Space style={{marginLeft: 16}}>
+                <Flex justify="space-between" align="center" wrap="wrap" gap="small">
+                    <Flex vertical style={{ flex: 1, minWidth: 0 }}>
+                        <Text style={{
+                            color: 'rgba(255, 255, 255, 0.85)',
+                            fontWeight: 500,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap'
+                        }}>
+                            {acc.name}
+                        </Text>
+                        <Text style={{
+                            fontSize: '0.85em',
+                            color: 'rgba(255, 255, 255, 0.65)'
+                        }}>
+                            {acc.actualBalance.toFixed(2)}€
+                        </Text>
+                    </Flex>
+                    <Space style={{ marginLeft: 8 }}>
                         {isCheckingAccount && (
                             isConnectedToGoCardless ? (
                                 <Button
@@ -310,8 +317,7 @@ export const Layout = () => {
                                     icon={<DisconnectOutlined style={{color: 'rgba(255, 255, 255, 0.85)'}}/>}
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        // TODO: implementare handleDisconnectGoCardless(acc)
-                                        message.info('Funzione di scollegamento da implementare');
+                                        message.info('Disconnect feature coming soon');
                                     }}
                                 />
                             ) : (
@@ -369,7 +375,7 @@ export const Layout = () => {
                     trigger={null}
                     collapsible
                     collapsed={collapsed}
-                    width={300}
+                    width={isMobile ? '100%' : 300}
                     breakpoint="lg"
                     collapsedWidth={0}
                     onBreakpoint={broken => {
@@ -377,9 +383,20 @@ export const Layout = () => {
                         setCollapsed(broken);
                     }}
                     onCollapse={(isCollapsed) => setCollapsed(isCollapsed)}
-                    style={isMobile ? {position: 'fixed', zIndex: 1001, height: '100vh'} : {}}
+                    style={isMobile ? {position: 'fixed', zIndex: 1001, height: '100vh', width: '100%'} : {}}
                 >
-                    <div className="demo-logo-vertical" style={{height: '32px', margin: '16px'}}/>
+                    {isMobile && !collapsed && (
+                        <Flex justify="space-between" align="center" style={{padding: '16px', background: '#001529'}}>
+                            <Title level={4} style={{color: '#fff', margin: 0}}>Menu</Title>
+                            <Button
+                                type="text"
+                                icon={<MenuFoldOutlined style={{color: '#fff', fontSize: '20px'}}/>}
+                                onClick={() => setCollapsed(true)}
+                                size="large"
+                            />
+                        </Flex>
+                    )}
+                    {!isMobile && <div className="demo-logo-vertical" style={{height: '32px', margin: '16px'}}/>}
                     <Menu
                         theme="dark"
                         mode="inline"
@@ -389,24 +406,30 @@ export const Layout = () => {
                                 key: '/dashboard',
                                 icon: <PieChartOutlined/>,
                                 label: 'Dashboard',
-                                onClick: () => navigate('/dashboard')
+                                onClick: () => {
+                                    navigate('/dashboard');
+                                    if (isMobile) setCollapsed(true);
+                                }
                             },
                             {
                                 key: '/transactions',
                                 icon: <TransactionOutlined/>,
-                                label: 'Tutte le Transazioni',
-                                onClick: () => navigate('/transactions')
+                                label: 'All Transactions',
+                                onClick: () => {
+                                    navigate('/transactions');
+                                    if (isMobile) setCollapsed(true);
+                                }
                             },
                         ]}
                     />
                     <Flex vertical style={{padding: '0 8px'}}>
                         <Flex justify="space-between" align="center" style={{padding: '16px 16px 8px'}}>
-                            <Title level={5} style={{color: 'rgba(255, 255, 255, 0.65)', margin: 0}}>Conti</Title>
+                            <Title level={5} style={{color: 'rgba(255, 255, 255, 0.65)', margin: 0}}>Accounts</Title>
                             <Button icon={<PlusOutlined/>} size="small" onClick={handleOpenCreateAccountModal}/>
                         </Flex>
                         <div style={{padding: '0 16px 16px'}}>
                             <Statistic
-                                title={<Text style={{color: 'rgba(255, 255, 255, 0.45)'}}>Bilancio Totale</Text>}
+                                title={<Text style={{color: 'rgba(255, 255, 255, 0.45)'}}>Total Balance</Text>}
                                 value={totalBalance}
                                 precision={2}
                                 valueStyle={{color: '#fff'}}
@@ -419,11 +442,15 @@ export const Layout = () => {
                 </Sider>
                 <AntLayout className="site-layout">
                     <Header style={{
-                        padding: '0 16px',
+                        padding: isMobile ? '0 12px' : '0 16px',
                         background: colorBgContainer,
                         display: 'flex',
                         justifyContent: 'space-between',
-                        alignItems: 'center'
+                        alignItems: 'center',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 1000,
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
                     }}>
                         <Button
                             type="text"
@@ -431,15 +458,30 @@ export const Layout = () => {
                             onClick={() => setCollapsed(!collapsed)}
                             style={{fontSize: '16px', width: 64, height: 64}}
                         />
-                        <div style={{flex: 1}}/>
+                        <Title
+                            level={3}
+                            style={{
+                                margin: 0,
+                                fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
+                                fontWeight: 700,
+                                background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                backgroundClip: 'text',
+                                fontSize: isMobile ? '20px' : '24px',
+                                letterSpacing: '-0.5px'
+                            }}
+                        >
+                            NexaBudget
+                        </Title>
                         <Button type="primary" icon={<LogoutOutlined/>} onClick={handleLogout}>
                             {!isMobile && 'Logout'}
                         </Button>
                     </Header>
                     <Content
                         style={{
-                            margin: '24px 16px',
-                            padding: 24,
+                            margin: isMobile ? '16px 8px' : '24px 16px',
+                            padding: isMobile ? 12 : 24,
                             minHeight: 280,
                             background: colorBgContainer,
                             borderRadius: borderRadiusLG,
@@ -655,6 +697,9 @@ export const Layout = () => {
                     </Form>
                 )}
             </Modal>
+
+            {/* PWA Install Prompt */}
+            <PWAInstallPrompt />
         </>
     );
 };

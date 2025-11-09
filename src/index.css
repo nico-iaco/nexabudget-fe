@@ -12,6 +12,11 @@
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    -webkit-tap-highlight-color: transparent;
+}
+
+* {
+    box-sizing: border-box;
 }
 
 a {
@@ -23,16 +28,24 @@ a:hover {
     color: #535bf2;
 }
 
-/* Modifica qui */
 body {
     margin: 0;
     min-width: 320px;
     min-height: 100vh;
+    overflow-x: hidden;
 }
 
 h1 {
-    font-size: 3.2em;
+    font-size: clamp(1.8rem, 4vw, 3.2rem);
     line-height: 1.1;
+}
+
+h2 {
+    font-size: clamp(1.5rem, 3vw, 2.4rem);
+}
+
+h3 {
+    font-size: clamp(1.2rem, 2.5vw, 1.8rem);
 }
 
 button {
@@ -45,9 +58,99 @@ button {
     background-color: #1a1a1a;
     cursor: pointer;
     transition: border-color 0.25s;
+    touch-action: manipulation;
 }
+
 button:hover {
     border-color: #646cff;
+}
+
+button:active {
+    transform: scale(0.98);
+}
+
+/* Mobile-specific improvements */
+@media (max-width: 768px) {
+    body {
+        font-size: 14px;
+    }
+
+    .ant-layout-header {
+        padding: 0 12px !important;
+    }
+
+    .ant-card {
+        margin-bottom: 16px;
+    }
+
+    .ant-table-wrapper {
+        overflow-x: auto;
+    }
+
+    .ant-modal {
+        max-width: calc(100vw - 32px) !important;
+        margin: 16px auto !important;
+    }
+
+    .ant-modal-body {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+    }
+}
+
+/* Prevent text selection on buttons and UI elements */
+button, .ant-btn {
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Smooth scrolling */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Better touch targets for mobile */
+@media (max-width: 768px) {
+    .ant-btn {
+        min-height: 44px;
+        padding: 8px 16px;
+    }
+
+    .ant-input, .ant-input-number, .ant-picker, .ant-select-selector {
+        min-height: 44px !important;
+    }
+
+    /* Ensure search input and button are perfectly aligned */
+    .ant-input-search-button {
+        height: 40px !important;
+    }
+
+    .ant-input-group-wrapper .ant-input-wrapper .ant-input-affix-wrapper {
+        height: 40px !important;
+    }
+
+    .ant-input-group-wrapper .ant-input-group .ant-input {
+        height: 40px !important;
+    }
+
+    .ant-input-group-addon {
+        height: 40px !important;
+        padding: 0 !important;
+    }
+
+    .ant-input-group-addon .ant-btn {
+        height: 40px !important;
+        min-height: 40px !important;
+    }
+}
+
+/* Safe area for notched devices */
+@supports (padding: max(0px)) {
+    body {
+        padding-left: max(0px, env(safe-area-inset-left));
+        padding-right: max(0px, env(safe-area-inset-right));
+        padding-bottom: max(0px, env(safe-area-inset-bottom));
+    }
 }
 button:focus,
 button:focus-visible {
@@ -67,9 +170,34 @@ button:focus-visible {
     }
 }
 
-/* Rimuovi questa regola, non è più necessaria */
-/*
-.site-layout-background {
-    width: 100%;
+/* Global input placeholder centering for all devices */
+.ant-input::placeholder,
+.ant-input-affix-wrapper input::placeholder,
+.ant-picker input::placeholder,
+.ant-input-number input::placeholder {
+    line-height: normal !important;
+    vertical-align: middle !important;
 }
-*/
+
+.ant-input,
+.ant-input-affix-wrapper,
+.ant-picker {
+    display: flex !important;
+    align-items: center !important;
+}
+
+.ant-input-affix-wrapper > input {
+    line-height: normal !important;
+}
+
+.ant-select-selector {
+    display: flex !important;
+    align-items: center !important;
+}
+
+.ant-select-selection-placeholder {
+    line-height: normal !important;
+    display: flex !important;
+    align-items: center !important;
+}
+

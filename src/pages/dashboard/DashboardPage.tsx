@@ -1,14 +1,14 @@
 // src/pages/dashboard/DashboardPage.tsx
-import { useState, useEffect, useMemo } from 'react';
-import { useOutletContext } from 'react-router-dom';
-import { Row, Col, Typography, Spin, DatePicker, Card, Statistic, Empty } from 'antd';
-import { ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons';
-import dayjs, { type Dayjs } from 'dayjs';
+import {useEffect, useMemo, useState} from 'react';
+import {useOutletContext} from 'react-router-dom';
+import {Card, Col, DatePicker, Empty, Row, Spin, Statistic, Typography} from 'antd';
+import {ArrowDownOutlined, ArrowUpOutlined} from '@ant-design/icons';
+import dayjs, {type Dayjs} from 'dayjs';
 import * as api from '../../services/api';
-import type { Transaction } from '../../types/api';
-import { CustomPieChart } from '../../components/CustomPieChart';
-import { CustomBarChart, type BarData } from '../../components/CustomBarChart';
-import { CustomLineChart, type LineData } from '../../components/CustomLineChart';
+import type {Transaction} from '../../types/api';
+import {CustomPieChart} from '../../components/CustomPieChart';
+import {type BarData, CustomBarChart} from '../../components/CustomBarChart';
+import {CustomLineChart, type LineData} from '../../components/CustomLineChart';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -175,12 +175,16 @@ export const DashboardPage = () => {
 
     return (
         <>
-            <Row justify="space-between" align="middle">
-                <Col>
-                    <Title level={2}>Dashboard</Title>
+            <Row justify="space-between" align="middle" gutter={[8, 16]} style={{ marginBottom: 16 }}>
+                <Col xs={24} sm={12}>
+                    <Title level={2} style={{ margin: 0 }}>Dashboard</Title>
                 </Col>
-                <Col>
-                    <RangePicker value={dateRange} onChange={setDateRange} />
+                <Col xs={24} sm={12} style={{ textAlign: 'right' }}>
+                    <RangePicker
+                        value={dateRange}
+                        onChange={setDateRange}
+                        style={{ width: '100%', maxWidth: 350 }}
+                    />
                 </Col>
             </Row>
 
@@ -188,7 +192,7 @@ export const DashboardPage = () => {
                 <Empty description="Nessuna transazione trovata per il periodo selezionato." style={{ marginTop: 48 }} />
             ) : (
                 <>
-                    <Row gutter={16} style={{ marginTop: 24 }}>
+                    <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                         <Col xs={24} sm={8}>
                             <Card>
                                 <Statistic
@@ -235,7 +239,7 @@ export const DashboardPage = () => {
                         </Col>
                     </Row>
 
-                    <Row gutter={16} style={{ marginTop: 24 }}>
+                    <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                         <Col xs={24} md={12}>
                             <Card title="Entrate per Categoria">
                                 {incomeByCategory.length > 0 ? <CustomPieChart data={incomeByCategory} /> : <Empty description="Nessuna entrata categorizzata" />}
@@ -248,7 +252,7 @@ export const DashboardPage = () => {
                         </Col>
                     </Row>
 
-                    <Row gutter={16} style={{ marginTop: 24 }}>
+                    <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                         <Col xs={24}>
                             <Card title="Andamento Mensile (Entrate/Uscite)">
                                 {monthlyTrend.length > 0 ? <CustomBarChart data={monthlyTrend} /> : <Empty description="Dati insufficienti" />}
@@ -256,7 +260,7 @@ export const DashboardPage = () => {
                         </Col>
                     </Row>
 
-                    <Row gutter={16} style={{ marginTop: 24 }}>
+                    <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                         <Col xs={24}>
                             <Card title="Andamento Saldo Netto Mensile">
                                 {monthlyNetBalance.length > 0 ? <CustomLineChart data={monthlyNetBalance} dataKey="label" valueKey="value" /> : <Empty description="Dati insufficienti" />}

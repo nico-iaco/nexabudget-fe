@@ -105,5 +105,5 @@ export interface GoCardlessCompleteBankLinkRequest {
 }
 
 export interface SyncBankTransactionsRequest {
-    actualBalance: number;
+    actualBalance: number | null;
 }

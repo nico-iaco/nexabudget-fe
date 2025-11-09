@@ -1,5 +1,6 @@
 // src/components/CustomPieChart.tsx
-import { Tooltip, Typography, Flex } from 'antd';
+import {Flex, Tooltip, Typography} from 'antd';
+import {useMediaQuery} from '../hooks/useMediaQuery';
 
 const { Text } = Typography;
 
@@ -21,6 +22,7 @@ const getCoordinatesForPercent = (percent: number) => {
 };
 
 export const CustomPieChart = ({ data }: CustomPieChartProps) => {
+    const isMobile = useMediaQuery('(max-width: 768px)');
     const total = data.reduce((acc, item) => acc + item.value, 0);
     if (total === 0) return null;
 
@@ -54,18 +56,20 @@ export const CustomPieChart = ({ data }: CustomPieChartProps) => {
         );
     });
 
+    const chartSize = isMobile ? 160 : 200;
+
     return (
-        <Flex align="center" justify="space-around" wrap="wrap">
-            <div style={{ width: 200, height: 200 }}>
+        <Flex align="center" justify="space-around" wrap="wrap" gap="middle">
+            <div style={{ width: chartSize, height: chartSize, minWidth: chartSize }}>
                 <svg viewBox="-1 -1 2 2" style={{ transform: 'rotate(-90deg)' }}>
                     {slices}
                 </svg>
             </div>
-            <Flex vertical gap="small" style={{ maxWidth: '50%' }}>
+            <Flex vertical gap="small" style={{ maxWidth: isMobile ? '100%' : '50%', width: isMobile ? '100%' : 'auto' }}>
                 {data.map((item, index) => (
                     <Flex key={index} align="center" gap="small">
-                        <div style={{ width: 10, height: 10, backgroundColor: COLORS[index % COLORS.length], borderRadius: '50%' }} />
-                        <Text>{item.type} ({(item.value / total * 100).toFixed(1)}%)</Text>
+                        <div style={{ width: 10, height: 10, backgroundColor: COLORS[index % COLORS.length], borderRadius: '50%', flexShrink: 0 }} />
+                        <Text style={{ fontSize: isMobile ? '12px' : '14px' }}>{item.type} ({(item.value / total * 100).toFixed(1)}%)</Text>
                     </Flex>
                 ))}
             </Flex>

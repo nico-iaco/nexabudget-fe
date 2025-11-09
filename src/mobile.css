@@ -1,0 +1,328 @@
+/* Mobile-specific styles and optimizations */
+
+/* Improve touch interactions */
+* {
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Better scrolling on iOS */
+.ant-layout,
+.ant-layout-content {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Optimize font sizes for mobile */
+@media (max-width: 768px) {
+    /* Reduce padding in cards */
+    .ant-card-body {
+        padding: 16px !important;
+    }
+
+    .ant-card-head {
+        padding: 12px 16px !important;
+        min-height: auto !important;
+    }
+
+    .ant-card-head-title {
+        padding: 8px 0 !important;
+        font-size: 16px !important;
+    }
+
+    /* Make statistic cards more compact */
+    .ant-statistic {
+        text-align: center;
+    }
+
+    .ant-statistic-title {
+        font-size: 14px !important;
+    }
+
+    .ant-statistic-content {
+        font-size: 20px !important;
+    }
+
+    /* Optimize row gutters */
+    .ant-row {
+        margin-left: -8px !important;
+        margin-right: -8px !important;
+    }
+
+    .ant-col {
+        padding-left: 8px !important;
+        padding-right: 8px !important;
+    }
+
+    /* Improve form layouts */
+    .ant-form-item {
+        margin-bottom: 16px !important;
+    }
+
+    .ant-form-item-label > label {
+        font-size: 14px !important;
+    }
+
+    /* Better spacing for buttons in space */
+    .ant-space-item {
+        margin-right: 8px !important;
+    }
+
+    /* Optimize buttons with text and icons */
+    .ant-btn {
+        font-size: 13px !important;
+        padding: 6px 12px !important;
+        white-space: nowrap !important;
+    }
+
+    .ant-btn-lg {
+        font-size: 14px !important;
+        padding: 8px 14px !important;
+    }
+
+    .ant-btn > .anticon + span {
+        margin-left: 6px !important;
+    }
+
+    /* Optimize table for mobile (when visible) */
+    .ant-table {
+        font-size: 12px !important;
+    }
+
+    .ant-table-thead > tr > th {
+        padding: 8px !important;
+        font-size: 12px !important;
+    }
+
+    .ant-table-tbody > tr > td {
+        padding: 8px !important;
+        font-size: 12px !important;
+    }
+
+    /* Improve list items */
+    .ant-list-item {
+        padding: 12px 16px !important;
+    }
+
+    /* Make modals better on mobile */
+    .ant-modal {
+        top: 20px !important;
+        padding-bottom: 20px !important;
+    }
+
+    .ant-modal-content {
+        border-radius: 8px !important;
+    }
+
+    .ant-modal-header {
+        padding: 16px 20px !important;
+    }
+
+    .ant-modal-body {
+        padding: 20px !important;
+    }
+
+    .ant-modal-footer {
+        padding: 10px 16px !important;
+    }
+
+    /* Optimize select and input heights */
+    .ant-select-single:not(.ant-select-customize-input) .ant-select-selector {
+        height: auto !important;
+        min-height: 40px !important;
+        padding: 4px 11px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .ant-input {
+        padding: 8px 11px !important;
+        height: 40px !important;
+        line-height: 24px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .ant-input::placeholder {
+        line-height: 24px !important;
+        vertical-align: middle !important;
+    }
+
+    /* Fix search input and button alignment */
+    .ant-input-search-large,
+    .ant-input-search-middle,
+    .ant-input-search {
+        height: 40px !important;
+    }
+
+    .ant-input-search-large > .ant-input-group > .ant-input-group-addon:last-child .ant-input-search-button,
+    .ant-input-search-middle > .ant-input-group > .ant-input-group-addon:last-child .ant-input-search-button,
+    .ant-input-search > .ant-input-group > .ant-input-group-addon:last-child .ant-input-search-button {
+        height: 40px !important;
+    }
+
+    .ant-input-search-large .ant-input,
+    .ant-input-search-middle .ant-input,
+    .ant-input-search .ant-input {
+        height: 40px !important;
+        line-height: 24px !important;
+    }
+
+    .ant-input-search .ant-input-affix-wrapper {
+        height: 40px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .ant-input-affix-wrapper {
+        height: 40px !important;
+        padding: 4px 11px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .ant-input-affix-wrapper > input.ant-input {
+        height: 32px !important;
+        padding: 0 !important;
+        line-height: 32px !important;
+    }
+
+    .ant-input-affix-wrapper > input.ant-input::placeholder {
+        line-height: 32px !important;
+    }
+
+    .ant-input-number {
+        width: 100%;
+    }
+
+    .ant-picker {
+        padding: 8px 11px !important;
+        height: 40px !important;
+        display: flex !important;
+        align-items: center !important;
+    }
+
+    .ant-picker input {
+        line-height: 24px !important;
+    }
+
+    .ant-picker input::placeholder {
+        line-height: 24px !important;
+    }
+
+    /* Better spacing for title sections */
+    .ant-typography h1,
+    .ant-typography h2,
+    .ant-typography h3 {
+        margin-bottom: 0.5em !important;
+    }
+
+    /* Optimize chart containers */
+    .ant-card .ant-card-body > div {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Make range picker responsive */
+    .ant-picker-range {
+        width: 100% !important;
+    }
+
+    /* Optimize steps component */
+    .ant-steps {
+        font-size: 12px !important;
+    }
+
+    .ant-steps-item-title {
+        font-size: 14px !important;
+    }
+
+    /* Optimize menu items with vertical layout */
+    .ant-menu-item .ant-flex {
+        padding: 4px 0 !important;
+    }
+
+    .ant-menu-item .ant-flex .ant-typography {
+        line-height: 1.4 !important;
+    }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+    .ant-card-body {
+        padding: 12px !important;
+    }
+
+    .ant-statistic-content {
+        font-size: 18px !important;
+    }
+
+    .ant-btn {
+        padding: 6px 12px !important;
+    }
+
+    /* Make modal full-screen on very small devices */
+    .ant-modal {
+        max-width: calc(100vw - 16px) !important;
+        margin: 8px !important;
+    }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+    .ant-modal {
+        max-height: calc(100vh - 40px);
+    }
+
+    .ant-modal-body {
+        max-height: calc(100vh - 200px);
+        overflow-y: auto;
+    }
+}
+
+/* PWA-specific styles */
+@media all and (display-mode: standalone) {
+    /* Add padding for notched devices when in PWA mode */
+    body {
+        padding-top: env(safe-area-inset-top);
+    }
+
+    .ant-layout-header {
+        padding-top: calc(16px + env(safe-area-inset-top));
+    }
+}
+
+/* Improve accessibility for touch targets */
+@media (pointer: coarse) {
+    .ant-btn {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    .ant-checkbox-wrapper {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
+    .ant-radio-wrapper {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+}
+
+/* Loading spinner centering */
+.ant-spin-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 200px;
+}
+
+/* Smooth transitions for better UX */
+.ant-card,
+.ant-btn,
+.ant-input,
+.ant-select-selector {
+    transition: all 0.3s ease;
+}
+
