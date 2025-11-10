@@ -117,10 +117,10 @@ export const TransactionsPage = () => {
                 console.log('Showing notification...');
 
                 apiNotification.success({
-                        message: 'Sincronizzazione Avviata',
-                        description: 'Le transazioni verranno aggiornate in background nei prossimi minuti.',
-                        placement: 'topRight',
-                        duration: 5,
+                    message: 'Sincronizzazione Avviata',
+                    description: 'Le transazioni verranno aggiornate in background nei prossimi minuti.',
+                    placement: 'topRight',
+                    duration: 5,
                 });
 
             }, 500);
@@ -436,11 +436,32 @@ export const TransactionsPage = () => {
                             onConvertToTransfer={handleOpenLinkTransferModal}
                         />
                     )}
+                    pagination={{
+                        total: processedTransactions.length,
+                        pageSize: 10,
+                        showSizeChanger: true,
+                        showQuickJumper: true,
+                    }}
                 />
             );
         }
-        return <Table columns={columns} dataSource={processedTransactions} rowKey="id" loading={loading}
-                      onChange={handleTableChange}/>;
+        return (
+            <Table
+                columns={columns}
+                dataSource={processedTransactions}
+                rowKey="id"
+                loading={loading}
+                onChange={handleTableChange}
+                size={'small'}
+                pagination={{
+                    total: processedTransactions.length,
+                    position: ['bottomCenter'],
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                }}
+            />
+        );
     };
 
     const filteredCategories = categories.filter(cat => cat.transactionType === transactionType);
@@ -680,11 +701,11 @@ export const TransactionsPage = () => {
                         Se vuoi solo sincronizzare le transazioni senza modificare il bilancio corrente, lascia vuoto questo campo."
                         type="info"
                         showIcon
-                        style={{ marginBottom: 16 }}
+                        style={{marginBottom: 16}}
                     />
                     <Form.Item label="Bilancio Corrente">
                         <InputNumber
-                            style={{ width: '100%' }}
+                            style={{width: '100%'}}
                             value={currentBalance}
                             onChange={(value) => setCurrentBalance(value)}
                             placeholder="Es: 1000.00"
