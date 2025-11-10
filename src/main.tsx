@@ -7,6 +7,11 @@ import './mobile.css'
 import 'antd/dist/reset.css';
 import {AuthProvider} from './contexts/AuthContext.tsx';
 import {registerPWA} from './pwaRegister';
+import dayjs from 'dayjs';
+import customParseFormat from 'dayjs/plugin/customParseFormat';
+
+
+dayjs.extend(customParseFormat);
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
     <React.StrictMode>

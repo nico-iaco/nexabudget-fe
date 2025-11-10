@@ -1,10 +1,7 @@
 // src/components/CustomBarChart.tsx
-import { Typography, Tooltip, Flex } from 'antd';
+import {Flex, Tooltip, Typography} from 'antd';
 import dayjs from 'dayjs';
-import customParseFormat from 'dayjs/plugin/customParseFormat';
-import { useState, useRef, useLayoutEffect } from 'react';
-
-dayjs.extend(customParseFormat);
+import {useLayoutEffect, useRef, useState} from 'react';
 
 const { Text } = Typography;
 
