@@ -4,14 +4,18 @@ import type {
     Account,
     AccountRequest,
     AuthResponse,
+    BinanceKeysRequest,
     Category,
     CategoryRequest,
+    CryptoHolding,
     GoCardlessBank,
     GoCardlessBankDetails,
     GoCardlessBankLinkRequest,
     GoCardlessCompleteBankLinkRequest,
     LinkTransferRequest,
     LoginRequest,
+    ManualHoldingsRequest,
+    PortfolioValueResponse,
     SyncBankTransactionsRequest,
     Transaction,
     TransactionRequest,
@@ -79,3 +83,9 @@ export const getGoCardlessBankLink = (data: GoCardlessBankLinkRequest): Promise<
 export const getGoCardlessBankAccounts = (localAccountId: string): Promise<AxiosResponse<GoCardlessBankDetails[]>> => apiClient.get(`/gocardless/bank/${localAccountId}/account`);
 export const linkGoCardlessBankAccount = (localAccountId: string, data: GoCardlessCompleteBankLinkRequest): Promise<AxiosResponse<void>> => apiClient.post(`/gocardless/bank/${localAccountId}/link`, data);
 export const syncGoCardlessBankAccount = (localAccountId: string, data: SyncBankTransactionsRequest): Promise<AxiosResponse<void>> => apiClient.post(`/gocardless/bank/${localAccountId}/sync`, data);
+
+// Crypto
+export const getPortfolioValue = (currency: string): Promise<AxiosResponse<PortfolioValueResponse>> => apiClient.get('/crypto/portfolio?currency=' + currency);
+export const addManualHolding = (data: ManualHoldingsRequest): Promise<AxiosResponse<CryptoHolding>> => apiClient.post('/crypto/holdings', data);
+export const saveBinanceKeys = (data: BinanceKeysRequest): Promise<AxiosResponse<void>> => apiClient.post('/crypto/binance/keys', data);
+export const syncFromBinance = (): Promise<AxiosResponse<void>> => apiClient.post('/crypto/binance/sync');

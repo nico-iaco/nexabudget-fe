@@ -9,6 +9,7 @@ import {TransactionsPage} from './pages/transactions/TransactionsPage';
 import {DashboardPage} from './pages/dashboard/DashboardPage';
 import type {JSX} from "react";
 import {GoCardlessCallbackPage} from "./pages/gocardless/GoCardlessCallbackPage.tsx";
+import {CryptoPage} from "./pages/crypto/CryptoPage";
 
 const PublicLayout = () => (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
@@ -48,6 +49,10 @@ const router = createBrowserRouter([
             {
                 path: 'gocardless/callback/:accountId',
                 element: <GoCardlessCallbackPage />,
+            },
+            {
+                path: 'crypto',
+                element: <CryptoPage />,
             },
         ],
     },

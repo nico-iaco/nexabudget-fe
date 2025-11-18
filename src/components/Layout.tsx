@@ -24,6 +24,7 @@ import {
     DeleteOutlined,
     DisconnectOutlined,
     EditOutlined,
+    FundOutlined,
     LinkOutlined,
     LogoutOutlined,
     MenuFoldOutlined,
@@ -40,9 +41,9 @@ import dayjs, {type Dayjs} from 'dayjs';
 import {europeanCountries} from '../utils/countries';
 import {PWAInstallPrompt} from './PWAInstallPrompt';
 
-const {Header, Sider, Content} = AntLayout;
-const {Title, Text} = Typography;
-const {Option} = Select;
+const { Header, Sider, Content } = AntLayout;
+const { Title, Text } = Typography;
+const { Option } = Select;
 
 interface TransferFormValues {
     sourceAccountId: string;
@@ -76,14 +77,14 @@ export const Layout = () => {
     const [loadingBanks, setLoadingBanks] = useState(false);
     const [selectedBank, setSelectedBank] = useState<string | null>(null);
 
-    const {auth, logout} = useAuth();
+    const { auth, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const [accountForm] = Form.useForm<AccountRequest>();
     const [transferForm] = Form.useForm<TransferFormValues>();
 
     const {
-        token: {colorBgContainer, borderRadiusLG},
+        token: { colorBgContainer, borderRadiusLG },
     } = theme.useToken();
 
     const triggerTransactionRefresh = () => {
@@ -187,7 +188,7 @@ export const Layout = () => {
 
     const handleOpenTransferModal = () => {
         transferForm.resetFields();
-        transferForm.setFieldsValue({transferDate: dayjs()});
+        transferForm.setFieldsValue({ transferDate: dayjs() });
         setIsTransferModalOpen(true);
     };
 
@@ -288,7 +289,7 @@ export const Layout = () => {
 
         return {
             key: path,
-            icon: <WalletOutlined/>,
+            icon: <WalletOutlined />,
             label: (
                 <Flex justify="space-between" align="center" wrap="wrap" gap="small">
                     <Flex vertical style={{ flex: 1, minWidth: 0 }}>
@@ -314,7 +315,7 @@ export const Layout = () => {
                                 <Button
                                     type="text"
                                     size="small"
-                                    icon={<DisconnectOutlined style={{color: 'rgba(255, 255, 255, 0.85)'}}/>}
+                                    icon={<DisconnectOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         message.info('Disconnect feature coming soon');
@@ -324,7 +325,7 @@ export const Layout = () => {
                                 <Button
                                     type="text"
                                     size="small"
-                                    icon={<LinkOutlined style={{color: 'rgba(255, 255, 255, 0.85)'}}/>}
+                                    icon={<LinkOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />}
                                     onClick={(e) => {
                                         e.stopPropagation();
                                         handleOpenGoCardlessModal(acc);
@@ -335,7 +336,7 @@ export const Layout = () => {
                         <Button
                             type="text"
                             size="small"
-                            icon={<EditOutlined style={{color: 'rgba(255, 255, 255, 0.85)'}}/>}
+                            icon={<EditOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleOpenEditAccountModal(acc);
@@ -345,7 +346,7 @@ export const Layout = () => {
                             type="text"
                             size="small"
                             danger
-                            icon={<DeleteOutlined/>}
+                            icon={<DeleteOutlined />}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleOpenDeleteModal(acc);
@@ -365,12 +366,12 @@ export const Layout = () => {
             }, transactionRefreshKey: 0, categories: [], fetchCategories: () => {
             }, handleOpenTransferModal: () => {
             }
-        }}/>;
+        }} />;
     }
 
     return (
         <>
-            <AntLayout style={{minHeight: '100vh'}}>
+            <AntLayout style={{ minHeight: '100vh' }}>
                 <Sider
                     trigger={null}
                     collapsible
@@ -383,20 +384,20 @@ export const Layout = () => {
                         setCollapsed(broken);
                     }}
                     onCollapse={(isCollapsed) => setCollapsed(isCollapsed)}
-                    style={isMobile ? {position: 'fixed', zIndex: 1001, height: '100vh', width: '100%'} : {}}
+                    style={isMobile ? { position: 'fixed', zIndex: 1001, height: '100vh', width: '100%' } : {}}
                 >
                     {isMobile && !collapsed && (
-                        <Flex justify="space-between" align="center" style={{padding: '16px', background: '#001529'}}>
-                            <Title level={4} style={{color: '#fff', margin: 0}}>Menu</Title>
+                        <Flex justify="space-between" align="center" style={{ padding: '16px', background: '#001529' }}>
+                            <Title level={4} style={{ color: '#fff', margin: 0 }}>Menu</Title>
                             <Button
                                 type="text"
-                                icon={<MenuFoldOutlined style={{color: '#fff', fontSize: '20px'}}/>}
+                                icon={<MenuFoldOutlined style={{ color: '#fff', fontSize: '20px' }} />}
                                 onClick={() => setCollapsed(true)}
                                 size="large"
                             />
                         </Flex>
                     )}
-                    {!isMobile && <div className="demo-logo-vertical" style={{height: '32px', margin: '16px'}}/>}
+                    {!isMobile && <div className="demo-logo-vertical" style={{ height: '32px', margin: '16px' }} />}
                     <Menu
                         theme="dark"
                         mode="inline"
@@ -404,7 +405,7 @@ export const Layout = () => {
                         items={[
                             {
                                 key: '/dashboard',
-                                icon: <PieChartOutlined/>,
+                                icon: <PieChartOutlined />,
                                 label: 'Dashboard',
                                 onClick: () => {
                                     navigate('/dashboard');
@@ -413,32 +414,41 @@ export const Layout = () => {
                             },
                             {
                                 key: '/transactions',
-                                icon: <TransactionOutlined/>,
+                                icon: <TransactionOutlined />,
                                 label: 'All Transactions',
                                 onClick: () => {
                                     navigate('/transactions');
                                     if (isMobile) setCollapsed(true);
                                 }
                             },
+                            {
+                                key: '/crypto',
+                                icon: <FundOutlined />,
+                                label: 'Crypto Assets',
+                                onClick: () => {
+                                    navigate('/crypto');
+                                    if (isMobile) setCollapsed(true);
+                                }
+                            },
                         ]}
                     />
-                    <Flex vertical style={{padding: '0 8px'}}>
-                        <Flex justify="space-between" align="center" style={{padding: '16px 16px 8px'}}>
-                            <Title level={5} style={{color: 'rgba(255, 255, 255, 0.65)', margin: 0}}>Accounts</Title>
-                            <Button icon={<PlusOutlined/>} size="small" onClick={handleOpenCreateAccountModal}/>
+                    <Flex vertical style={{ padding: '0 8px' }}>
+                        <Flex justify="space-between" align="center" style={{ padding: '16px 16px 8px' }}>
+                            <Title level={5} style={{ color: 'rgba(255, 255, 255, 0.65)', margin: 0 }}>Accounts</Title>
+                            <Button icon={<PlusOutlined />} size="small" onClick={handleOpenCreateAccountModal} />
                         </Flex>
-                        <div style={{padding: '0 16px 16px'}}>
+                        <div style={{ padding: '0 16px 16px' }}>
                             <Statistic
-                                title={<Text style={{color: 'rgba(255, 255, 255, 0.45)'}}>Total Balance</Text>}
+                                title={<Text style={{ color: 'rgba(255, 255, 255, 0.45)' }}>Total Balance</Text>}
                                 value={totalBalance}
                                 precision={2}
-                                valueStyle={{color: '#fff'}}
+                                valueStyle={{ color: '#fff' }}
                                 suffix="€"
                             />
                         </div>
                     </Flex>
-                    {loading ? <Spin style={{padding: '20px'}}/> :
-                        <Menu theme="dark" mode="inline" selectedKeys={selectedKeys} items={accountMenuItems}/>}
+                    {loading ? <Spin style={{ padding: '20px' }} /> :
+                        <Menu theme="dark" mode="inline" selectedKeys={selectedKeys} items={accountMenuItems} />}
                 </Sider>
                 <AntLayout className="site-layout">
                     <Header style={{
@@ -454,9 +464,9 @@ export const Layout = () => {
                     }}>
                         <Button
                             type="text"
-                            icon={collapsed ? <MenuUnfoldOutlined/> : <MenuFoldOutlined/>}
+                            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
                             onClick={() => setCollapsed(!collapsed)}
-                            style={{fontSize: '16px', width: 64, height: 64}}
+                            style={{ fontSize: '16px', width: 64, height: 64 }}
                         />
                         <Title
                             level={3}
@@ -474,7 +484,7 @@ export const Layout = () => {
                         >
                             NexaBudget
                         </Title>
-                        <Button type="primary" icon={<LogoutOutlined/>} onClick={handleLogout}>
+                        <Button type="primary" icon={<LogoutOutlined />} onClick={handleLogout}>
                             {!isMobile && 'Logout'}
                         </Button>
                     </Header>
@@ -495,7 +505,7 @@ export const Layout = () => {
                             categories,
                             fetchCategories,
                             handleOpenTransferModal
-                        }}/>
+                        }} />
                     </Content>
                 </AntLayout>
             </AntLayout>
@@ -516,15 +526,15 @@ export const Layout = () => {
             )}
 
             <Modal title={editingAccount ? "Modifica Conto" : "Nuovo Conto"} open={isAccountModalOpen}
-                   onCancel={handleCancelAccountModal} footer={null}>
-                <Form form={accountForm} layout="vertical" onFinish={onFinishAccount} style={{marginTop: 24}}
-                      initialValues={{currency: 'EUR'}}>
+                onCancel={handleCancelAccountModal} footer={null}>
+                <Form form={accountForm} layout="vertical" onFinish={onFinishAccount} style={{ marginTop: 24 }}
+                    initialValues={{ currency: 'EUR' }}>
                     <Form.Item name="name" label="Nome Conto"
-                               rules={[{required: true, message: 'Inserisci il nome del conto'}]}>
-                        <Input placeholder="Es. Conto Principale"/>
+                        rules={[{ required: true, message: 'Inserisci il nome del conto' }]}>
+                        <Input placeholder="Es. Conto Principale" />
                     </Form.Item>
                     <Form.Item name="type" label="Tipo di Conto"
-                               rules={[{required: true, message: 'Seleziona il tipo di conto'}]}>
+                        rules={[{ required: true, message: 'Seleziona il tipo di conto' }]}>
                         <Select placeholder="Seleziona un tipo">
                             <Option value="CONTO_CORRENTE">Conto Corrente</Option>
                             <Option value="RISPARMIO">Risparmio</Option>
@@ -533,12 +543,12 @@ export const Layout = () => {
                         </Select>
                     </Form.Item>
                     <Form.Item name="starterBalance" label="Saldo Iniziale" initialValue={0}
-                               rules={[{required: true, message: 'Inserisci il saldo iniziale'}]}>
-                        <InputNumber style={{width: '100%'}} min={0} addonAfter="€" disabled={!!editingAccount}/>
+                        rules={[{ required: true, message: 'Inserisci il saldo iniziale' }]}>
+                        <InputNumber style={{ width: '100%' }} min={0} addonAfter="€" disabled={!!editingAccount} />
                     </Form.Item>
                     <Form.Item name="currency" label="Valuta"
-                               rules={[{required: true, message: 'Inserisci la valuta'}]}>
-                        <Input placeholder="Es. EUR"/>
+                        rules={[{ required: true, message: 'Inserisci la valuta' }]}>
+                        <Input placeholder="Es. EUR" />
                     </Form.Item>
                     <Form.Item>
                         <Button type="primary" htmlType="submit" block>Salva Conto</Button>
@@ -553,20 +563,20 @@ export const Layout = () => {
                 onCancel={handleCancelDeleteModal}
                 okText="Elimina"
                 cancelText="Annulla"
-                okButtonProps={{danger: true}}
+                okButtonProps={{ danger: true }}
             >
                 <p>Sei sicuro di voler eliminare il conto "{deletingAccount?.name}"?</p>
                 <p>Questa azione è irreversibile e cancellerà anche tutte le transazioni associate.</p>
             </Modal>
 
             <Modal title="Nuovo Trasferimento" open={isTransferModalOpen} onCancel={handleCancelTransferModal}
-                   footer={null}>
-                <Form form={transferForm} layout="vertical" onFinish={onFinishTransfer} style={{marginTop: 24}}
-                      initialValues={{transferDate: dayjs()}}>
+                footer={null}>
+                <Form form={transferForm} layout="vertical" onFinish={onFinishTransfer} style={{ marginTop: 24 }}
+                    initialValues={{ transferDate: dayjs() }}>
                     <Form.Item
                         name="sourceAccountId"
                         label="Conto di Origine"
-                        rules={[{required: true, message: 'Seleziona il conto di origine'}]}
+                        rules={[{ required: true, message: 'Seleziona il conto di origine' }]}
                     >
                         <Select placeholder="Da quale conto?">
                             {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
@@ -576,8 +586,8 @@ export const Layout = () => {
                         name="destinationAccountId"
                         label="Conto di Destinazione"
                         rules={[
-                            {required: true, message: 'Seleziona il conto di destinazione'},
-                            ({getFieldValue}) => ({
+                            { required: true, message: 'Seleziona il conto di destinazione' },
+                            ({ getFieldValue }) => ({
                                 validator(_, value) {
                                     if (!value || getFieldValue('sourceAccountId') !== value) {
                                         return Promise.resolve();
@@ -592,19 +602,19 @@ export const Layout = () => {
                         </Select>
                     </Form.Item>
                     <Form.Item name="amount" label="Importo"
-                               rules={[{required: true, message: 'Inserisci l\'importo'}]}>
-                        <InputNumber style={{width: '100%'}} min={0.01} addonAfter="€"/>
+                        rules={[{ required: true, message: 'Inserisci l\'importo' }]}>
+                        <InputNumber style={{ width: '100%' }} min={0.01} addonAfter="€" />
                     </Form.Item>
                     <Form.Item name="transferDate" label="Data del Trasferimento"
-                               rules={[{required: true, message: 'Seleziona la data'}]}>
-                        <DatePicker style={{width: '100%'}}/>
+                        rules={[{ required: true, message: 'Seleziona la data' }]}>
+                        <DatePicker style={{ width: '100%' }} />
                     </Form.Item>
                     <Form.Item name="description" label="Descrizione"
-                               rules={[{required: true, message: 'Inserisci una descrizione'}]}>
-                        <Input placeholder="Es. Giroconto"/>
+                        rules={[{ required: true, message: 'Inserisci una descrizione' }]}>
+                        <Input placeholder="Es. Giroconto" />
                     </Form.Item>
                     <Form.Item name="notes" label="Note">
-                        <Input.TextArea placeholder="Note aggiuntive (opzionale)"/>
+                        <Input.TextArea placeholder="Note aggiuntive (opzionale)" />
                     </Form.Item>
                     <Form.Item>
                         <Button type="primary" htmlType="submit" block>Esegui Trasferimento</Button>
@@ -632,10 +642,10 @@ export const Layout = () => {
             >
                 <Steps
                     current={currentStep}
-                    style={{marginBottom: 24}}
+                    style={{ marginBottom: 24 }}
                     items={[
-                        {title: 'Seleziona Nazione'},
-                        {title: 'Seleziona Banca'},
+                        { title: 'Seleziona Nazione' },
+                        { title: 'Seleziona Banca' },
                     ]}
                 />
 
@@ -666,7 +676,7 @@ export const Layout = () => {
                     <Form layout="vertical">
                         <Form.Item label="Seleziona la tua banca">
                             {loadingBanks ? (
-                                <Spin/>
+                                <Spin />
                             ) : (
                                 <Select
                                     showSearch
@@ -684,7 +694,7 @@ export const Layout = () => {
                                                     <img
                                                         src={bank.logo}
                                                         alt={bank.name}
-                                                        style={{width: 24, height: 24, objectFit: 'contain'}}
+                                                        style={{ width: 24, height: 24, objectFit: 'contain' }}
                                                     />
                                                 )}
                                                 <span>{bank.name}</span>
