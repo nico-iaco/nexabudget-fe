@@ -7,7 +7,7 @@ interface PieChartProps {
     data: { type: string; value: number }[];
 }
 
-export const IncomePieChart = ({ data }: PieChartProps) => {
+export const GenericPieChart = ({ data }: PieChartProps) => {
     if (!data || data.length === 0) return <Empty description="Nessun dato disponibile" />;
 
     const total = data.reduce((acc, item) => acc + item.value, 0);
@@ -45,49 +45,7 @@ export const IncomePieChart = ({ data }: PieChartProps) => {
             },
         ],
     };
-    // @ts-ignore
-    return <Pie {...config} />;
-};
 
-export const ExpensePieChart = ({ data }: PieChartProps) => {
-    if (!data || data.length === 0) return <Empty description="Nessun dato disponibile" />;
-
-    const total = data.reduce((acc, item) => acc + item.value, 0);
-
-    const isMobile = useMediaQuery('(max-width: 768px)');
-
-    const config = {
-        data,
-        angleField: 'value',
-        colorField: 'type',
-        radius: 0.8,
-        label: false,
-        tooltip: {
-            title: 'type',
-            items: [
-                {
-                    field: 'value',
-                    valueFormatter: (v: number) => {
-                        const percent = total > 0 ? (v / total) * 100 : 0;
-                        return `${v.toFixed(2)}€ (${percent.toFixed(2)}%)`;
-                    }
-                }
-            ]
-        },
-        legend: {
-            color: {
-                title: false,
-                position: isMobile ? 'bottom' : 'right',
-                rowPadding: 5,
-            },
-        },
-        interactions: [
-            {
-                type: 'element-active',
-            },
-        ],
-    };
-    // @ts-ignore
     return <Pie {...config} />;
 };
 
@@ -113,7 +71,7 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
             position: isMobile ? 'bottom' : 'top-left',
         },
     };
-    // @ts-ignore
+
     return <Column {...config} />;
 };
 
@@ -141,6 +99,6 @@ export const NetBalanceLineChart = ({ data }: LineChartProps) => {
             lineWidth: 2,
         },
     };
-    // @ts-ignore
+    
     return <Line {...config} />;
 };

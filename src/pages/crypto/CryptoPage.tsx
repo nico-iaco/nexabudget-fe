@@ -4,9 +4,9 @@ import { KeyOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
 import { getPortfolioValue, syncFromBinance } from '../../services/api';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import type { PortfolioValueResponse } from '../../types/api';
-import { PortfolioSummary } from '../../components/PortfolioSummary.tsx';
-import { BinanceKeysModal } from '../../components/BinanceKeysModal.tsx';
-import { ManualHoldingModal } from '../../components/ManualHoldingModal.tsx';
+import { PortfolioSummary } from '../../components/PortfolioSummary';
+import { BinanceKeysModal } from '../../components/BinanceKeysModal';
+import { ManualHoldingModal } from '../../components/ManualHoldingModal';
 
 const { Title } = Typography;
 

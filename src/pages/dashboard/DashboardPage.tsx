@@ -3,7 +3,7 @@ import { useOutletContext } from 'react-router-dom';
 import { Card, Col, DatePicker, Empty, Row, Skeleton, Statistic, Typography } from 'antd';
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import { useDashboardData } from '../../hooks/useDashboardData';
-import { ExpensePieChart, IncomePieChart, NetBalanceLineChart, TrendBarChart } from '../../components/dashboard/DashboardCharts';
+import { GenericPieChart, NetBalanceLineChart, TrendBarChart } from '../../components/dashboard/DashboardCharts';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -116,12 +116,12 @@ export const DashboardPage = () => {
                     <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                         <Col xs={24} md={12}>
                             <Card title="Entrate per Categoria">
-                                <IncomePieChart data={incomeByCategory} />
+                                <GenericPieChart data={incomeByCategory} />
                             </Card>
                         </Col>
                         <Col xs={24} md={12}>
                             <Card title="Uscite per Categoria">
-                                <ExpensePieChart data={expensesByCategory} />
+                                <GenericPieChart data={expensesByCategory} />
                             </Card>
                         </Col>
                     </Row>

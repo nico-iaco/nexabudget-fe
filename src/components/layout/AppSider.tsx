@@ -22,7 +22,6 @@ import {
 } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import type { Account } from '../../types/api';
-import type { JSX } from 'react';
 
 const { Sider } = Layout;
 const { Title, Text } = Typography;
@@ -146,7 +145,12 @@ export const AppSider = ({
                     />
                 </Flex>
             )}
-            {!isMobile && <div className="demo-logo-vertical" style={{ height: '32px', margin: '16px' }} />}
+            {!isMobile && (
+                <div style={{ height: '32px', margin: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <img src="/pwa-192x192.png" alt="NexaBudget" style={{ height: '32px', width: '32px' }} />
+                    <Title level={4} style={{ color: 'white', margin: '0 0 0 10px', fontSize: '18px' }}>NexaBudget</Title>
+                </div>
+            )}
             <Menu
                 theme="dark"
                 mode="inline"

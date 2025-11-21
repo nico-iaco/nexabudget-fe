@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {Button, Form, Input, message, Modal} from 'antd';
-import {saveBinanceKeys} from '../services/api.ts';
-import type {BinanceKeysRequest} from '../types/api.ts';
+import {saveBinanceKeys} from '../services/api';
+import type {BinanceKeysRequest} from '../types/api';
 
 interface BinanceKeysModalProps {
     open: boolean;

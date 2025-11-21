@@ -1,7 +1,7 @@
 import React, {useState} from 'react';
 import {Button, Form, Input, InputNumber, message, Modal} from 'antd';
-import {addManualHolding} from '../services/api.ts';
-import type {ManualHoldingsRequest} from '../types/api.ts';
+import {addManualHolding} from '../services/api';
+import type {ManualHoldingsRequest} from '../types/api';
 
 interface ManualHoldingModalProps {
     open: boolean;

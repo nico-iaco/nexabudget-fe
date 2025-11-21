@@ -1,9 +1,9 @@
-import {defineConfig, loadEnv} from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
-import {VitePWA} from 'vite-plugin-pwa'
+import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
-export default defineConfig(({mode}) => {
+export default defineConfig(({ mode }) => {
     // Carica le variabili d'ambiente per la modalità corrente (development, production, etc.)
     const env = loadEnv(mode, process.cwd(), '');
 
