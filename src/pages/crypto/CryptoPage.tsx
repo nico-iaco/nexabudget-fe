@@ -1,11 +1,12 @@
-import React, {useEffect, useState} from 'react';
-import {Button, message, Space, Typography} from 'antd';
-import {KeyOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
-import {getPortfolioValue, syncFromBinance} from '../../services/api';
-import type {PortfolioValueResponse} from '../../types/api';
-import {PortfolioSummary} from '../../components/PortfolioSummary.tsx';
-import {BinanceKeysModal} from '../../components/BinanceKeysModal.tsx';
-import {ManualHoldingModal} from '../../components/ManualHoldingModal.tsx';
+import React, { useEffect, useState } from 'react';
+import { Button, message, Space, Typography } from 'antd';
+import { KeyOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { getPortfolioValue, syncFromBinance } from '../../services/api';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
+import type { PortfolioValueResponse } from '../../types/api';
+import { PortfolioSummary } from '../../components/PortfolioSummary.tsx';
+import { BinanceKeysModal } from '../../components/BinanceKeysModal.tsx';
+import { ManualHoldingModal } from '../../components/ManualHoldingModal.tsx';
 
 const { Title } = Typography;
 
@@ -50,20 +51,31 @@ export const CryptoPage: React.FC = () => {
         }
     };
 
+    const isMobile = useMediaQuery('(max-width: 768px)');
+
     return (
-        <div style={{ padding: '24px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div style={{ padding: isMobile ? '16px' : '24px' }}>
+            <div style={{
+                display: 'flex',
+                flexDirection: isMobile ? 'column' : 'row',
+                justifyContent: 'space-between',
+                alignItems: isMobile ? 'flex-start' : 'center',
+                marginBottom: '24px',
+                gap: isMobile ? '16px' : '0'
+            }}>
                 <Title level={2} style={{ margin: 0 }}>Crypto Portfolio</Title>
-                <Space>
+                <Space wrap style={{ width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
                     <Button
                         icon={<KeyOutlined />}
                         onClick={() => setShowBinanceModal(true)}
+                        block={isMobile}
                     >
                         Connect Binance
                     </Button>
                     <Button
                         icon={<PlusOutlined />}
                         onClick={() => setShowManualModal(true)}
+                        block={isMobile}
                     >
                         Add Holding
                     </Button>
@@ -72,6 +84,7 @@ export const CryptoPage: React.FC = () => {
                         icon={<ReloadOutlined />}
                         loading={syncing}
                         onClick={handleSyncBinance}
+                        block={isMobile}
                     >
                         Sync Binance
                     </Button>

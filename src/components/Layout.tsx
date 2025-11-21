@@ -1,58 +1,19 @@
 // src/components/Layout.tsx
-import {useEffect, useMemo, useState} from 'react';
-import {Outlet, useLocation, useNavigate} from 'react-router-dom';
-import {
-    Button,
-    DatePicker,
-    Flex,
-    Form,
-    Input,
-    InputNumber,
-    Layout as AntLayout,
-    Menu,
-    message,
-    Modal,
-    Select,
-    Space,
-    Spin,
-    Statistic,
-    Steps,
-    theme,
-    Typography
-} from 'antd';
-import {
-    DeleteOutlined,
-    DisconnectOutlined,
-    EditOutlined,
-    FundOutlined,
-    LinkOutlined,
-    LogoutOutlined,
-    MenuFoldOutlined,
-    MenuUnfoldOutlined,
-    PieChartOutlined,
-    PlusOutlined,
-    TransactionOutlined,
-    WalletOutlined
-} from '@ant-design/icons';
-import {useAuth} from '../contexts/AuthContext';
+import { useEffect, useMemo, useState } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Layout as AntLayout, message, Modal, theme } from 'antd';
+import { useAuth } from '../contexts/AuthContext';
 import * as api from '../services/api';
-import type {Account, AccountRequest, Category, GoCardlessBank, TransferRequest} from '../types/api';
-import dayjs, {type Dayjs} from 'dayjs';
-import {europeanCountries} from '../utils/countries';
-import {PWAInstallPrompt} from './PWAInstallPrompt';
+import type { Account, AccountRequest, Category, GoCardlessBank, TransferRequest } from '../types/api';
+import dayjs from 'dayjs';
+import { PWAInstallPrompt } from './PWAInstallPrompt';
+import { AppSider } from './layout/AppSider';
+import { AppHeader } from './layout/AppHeader';
+import { AccountModal } from './modals/AccountModal';
+import { TransferModal, type TransferFormValues } from './modals/TransferModal';
+import { GoCardlessModal } from './modals/GoCardlessModal';
 
-const { Header, Sider, Content } = AntLayout;
-const { Title, Text } = Typography;
-const { Option } = Select;
-
-interface TransferFormValues {
-    sourceAccountId: string;
-    destinationAccountId: string;
-    amount: number;
-    description: string;
-    transferDate?: Dayjs | null;
-    notes?: string;
-}
+const { Content } = AntLayout;
 
 export const Layout = () => {
     const [collapsed, setCollapsed] = useState(true);
@@ -80,8 +41,6 @@ export const Layout = () => {
     const { auth, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const [accountForm] = Form.useForm<AccountRequest>();
-    const [transferForm] = Form.useForm<TransferFormValues>();
 
     const {
         token: { colorBgContainer, borderRadiusLG },
@@ -129,13 +88,11 @@ export const Layout = () => {
 
     const handleOpenCreateAccountModal = () => {
         setEditingAccount(null);
-        accountForm.resetFields();
         setIsAccountModalOpen(true);
     };
 
     const handleOpenEditAccountModal = (account: Account) => {
         setEditingAccount(account);
-        accountForm.setFieldsValue(account);
         setIsAccountModalOpen(true);
     };
 
@@ -187,8 +144,6 @@ export const Layout = () => {
     };
 
     const handleOpenTransferModal = () => {
-        transferForm.resetFields();
-        transferForm.setFieldsValue({ transferDate: dayjs() });
         setIsTransferModalOpen(true);
     };
 
@@ -270,94 +225,9 @@ export const Layout = () => {
         }
     };
 
-    const handleMenuClick = (path: string) => {
-        const targetPath = selectedKeys.includes(path) ? '/transactions' : path;
-        navigate(targetPath);
-        if (isMobile) {
-            setCollapsed(true);
-        }
-    };
-
     const totalBalance = useMemo(() => {
         return accounts.reduce((sum, account) => sum + account.actualBalance, 0);
     }, [accounts]);
-
-    const accountMenuItems = accounts.map(acc => {
-        const path = `/accounts/${acc.id}/transactions`;
-        const isConnectedToGoCardless = acc.linkedToExternal;
-        const isCheckingAccount = acc.type === 'CONTO_CORRENTE';
-
-        return {
-            key: path,
-            icon: <WalletOutlined />,
-            label: (
-                <Flex justify="space-between" align="center" wrap="wrap" gap="small">
-                    <Flex vertical style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={{
-                            color: 'rgba(255, 255, 255, 0.85)',
-                            fontWeight: 500,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                        }}>
-                            {acc.name}
-                        </Text>
-                        <Text style={{
-                            fontSize: '0.85em',
-                            color: 'rgba(255, 255, 255, 0.65)'
-                        }}>
-                            {acc.actualBalance.toFixed(2)}€
-                        </Text>
-                    </Flex>
-                    <Space style={{ marginLeft: 8 }}>
-                        {isCheckingAccount && (
-                            isConnectedToGoCardless ? (
-                                <Button
-                                    type="text"
-                                    size="small"
-                                    icon={<DisconnectOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        message.info('Disconnect feature coming soon');
-                                    }}
-                                />
-                            ) : (
-                                <Button
-                                    type="text"
-                                    size="small"
-                                    icon={<LinkOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleOpenGoCardlessModal(acc);
-                                    }}
-                                />
-                            )
-                        )}
-                        <Button
-                            type="text"
-                            size="small"
-                            icon={<EditOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenEditAccountModal(acc);
-                            }}
-                        />
-                        <Button
-                            type="text"
-                            size="small"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenDeleteModal(acc);
-                            }}
-                        />
-                    </Space>
-                </Flex>
-            ),
-            onClick: () => handleMenuClick(path),
-        };
-    });
 
 
     if (!auth) {
@@ -372,122 +242,27 @@ export const Layout = () => {
     return (
         <>
             <AntLayout style={{ minHeight: '100vh' }}>
-                <Sider
-                    trigger={null}
-                    collapsible
+                <AppSider
                     collapsed={collapsed}
-                    width={isMobile ? '100%' : 300}
-                    breakpoint="lg"
-                    collapsedWidth={0}
-                    onBreakpoint={broken => {
-                        setIsMobile(broken);
-                        setCollapsed(broken);
-                    }}
-                    onCollapse={(isCollapsed) => setCollapsed(isCollapsed)}
-                    style={isMobile ? { position: 'fixed', zIndex: 1001, height: '100vh', width: '100%' } : {}}
-                >
-                    {isMobile && !collapsed && (
-                        <Flex justify="space-between" align="center" style={{ padding: '16px', background: '#001529' }}>
-                            <Title level={4} style={{ color: '#fff', margin: 0 }}>Menu</Title>
-                            <Button
-                                type="text"
-                                icon={<MenuFoldOutlined style={{ color: '#fff', fontSize: '20px' }} />}
-                                onClick={() => setCollapsed(true)}
-                                size="large"
-                            />
-                        </Flex>
-                    )}
-                    {!isMobile && <div className="demo-logo-vertical" style={{ height: '32px', margin: '16px' }} />}
-                    <Menu
-                        theme="dark"
-                        mode="inline"
-                        selectedKeys={selectedKeys}
-                        items={[
-                            {
-                                key: '/dashboard',
-                                icon: <PieChartOutlined />,
-                                label: 'Dashboard',
-                                onClick: () => {
-                                    navigate('/dashboard');
-                                    if (isMobile) setCollapsed(true);
-                                }
-                            },
-                            {
-                                key: '/transactions',
-                                icon: <TransactionOutlined />,
-                                label: 'All Transactions',
-                                onClick: () => {
-                                    navigate('/transactions');
-                                    if (isMobile) setCollapsed(true);
-                                }
-                            },
-                            {
-                                key: '/crypto',
-                                icon: <FundOutlined />,
-                                label: 'Crypto Assets',
-                                onClick: () => {
-                                    navigate('/crypto');
-                                    if (isMobile) setCollapsed(true);
-                                }
-                            },
-                        ]}
-                    />
-                    <Flex vertical style={{ padding: '0 8px' }}>
-                        <Flex justify="space-between" align="center" style={{ padding: '16px 16px 8px' }}>
-                            <Title level={5} style={{ color: 'rgba(255, 255, 255, 0.65)', margin: 0 }}>Accounts</Title>
-                            <Button icon={<PlusOutlined />} size="small" onClick={handleOpenCreateAccountModal} />
-                        </Flex>
-                        <div style={{ padding: '0 16px 16px' }}>
-                            <Statistic
-                                title={<Text style={{ color: 'rgba(255, 255, 255, 0.45)' }}>Total Balance</Text>}
-                                value={totalBalance}
-                                precision={2}
-                                valueStyle={{ color: '#fff' }}
-                                suffix="€"
-                            />
-                        </div>
-                    </Flex>
-                    {loading ? <Spin style={{ padding: '20px' }} /> :
-                        <Menu theme="dark" mode="inline" selectedKeys={selectedKeys} items={accountMenuItems} />}
-                </Sider>
+                    setCollapsed={setCollapsed}
+                    isMobile={isMobile}
+                    setIsMobile={setIsMobile}
+                    accounts={accounts}
+                    loading={loading}
+                    totalBalance={totalBalance}
+                    selectedKeys={selectedKeys}
+                    onOpenCreateAccount={handleOpenCreateAccountModal}
+                    onOpenEditAccount={handleOpenEditAccountModal}
+                    onOpenDeleteAccount={handleOpenDeleteModal}
+                    onOpenGoCardless={handleOpenGoCardlessModal}
+                />
                 <AntLayout className="site-layout">
-                    <Header style={{
-                        padding: isMobile ? '0 12px' : '0 16px',
-                        background: colorBgContainer,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        position: 'sticky',
-                        top: 0,
-                        zIndex: 1000,
-                        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                    }}>
-                        <Button
-                            type="text"
-                            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-                            onClick={() => setCollapsed(!collapsed)}
-                            style={{ fontSize: '16px', width: 64, height: 64 }}
-                        />
-                        <Title
-                            level={3}
-                            style={{
-                                margin: 0,
-                                fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
-                                fontWeight: 700,
-                                background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
-                                WebkitBackgroundClip: 'text',
-                                WebkitTextFillColor: 'transparent',
-                                backgroundClip: 'text',
-                                fontSize: isMobile ? '20px' : '24px',
-                                letterSpacing: '-0.5px'
-                            }}
-                        >
-                            NexaBudget
-                        </Title>
-                        <Button type="primary" icon={<LogoutOutlined />} onClick={handleLogout}>
-                            {!isMobile && 'Logout'}
-                        </Button>
-                    </Header>
+                    <AppHeader
+                        collapsed={collapsed}
+                        setCollapsed={setCollapsed}
+                        isMobile={isMobile}
+                        onLogout={handleLogout}
+                    />
                     <Content
                         style={{
                             margin: isMobile ? '16px 8px' : '24px 16px',
@@ -525,36 +300,12 @@ export const Layout = () => {
                 />
             )}
 
-            <Modal title={editingAccount ? "Modifica Conto" : "Nuovo Conto"} open={isAccountModalOpen}
-                onCancel={handleCancelAccountModal} footer={null}>
-                <Form form={accountForm} layout="vertical" onFinish={onFinishAccount} style={{ marginTop: 24 }}
-                    initialValues={{ currency: 'EUR' }}>
-                    <Form.Item name="name" label="Nome Conto"
-                        rules={[{ required: true, message: 'Inserisci il nome del conto' }]}>
-                        <Input placeholder="Es. Conto Principale" />
-                    </Form.Item>
-                    <Form.Item name="type" label="Tipo di Conto"
-                        rules={[{ required: true, message: 'Seleziona il tipo di conto' }]}>
-                        <Select placeholder="Seleziona un tipo">
-                            <Option value="CONTO_CORRENTE">Conto Corrente</Option>
-                            <Option value="RISPARMIO">Risparmio</Option>
-                            <Option value="INVESTIMENTO">Investimento</Option>
-                            <Option value="CONTANTI">Contanti</Option>
-                        </Select>
-                    </Form.Item>
-                    <Form.Item name="starterBalance" label="Saldo Iniziale" initialValue={0}
-                        rules={[{ required: true, message: 'Inserisci il saldo iniziale' }]}>
-                        <InputNumber style={{ width: '100%' }} min={0} addonAfter="€" disabled={!!editingAccount} />
-                    </Form.Item>
-                    <Form.Item name="currency" label="Valuta"
-                        rules={[{ required: true, message: 'Inserisci la valuta' }]}>
-                        <Input placeholder="Es. EUR" />
-                    </Form.Item>
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit" block>Salva Conto</Button>
-                    </Form.Item>
-                </Form>
-            </Modal>
+            <AccountModal
+                open={isAccountModalOpen}
+                onCancel={handleCancelAccountModal}
+                onFinish={onFinishAccount}
+                editingAccount={editingAccount}
+            />
 
             <Modal
                 title={`Elimina Conto`}
@@ -569,147 +320,30 @@ export const Layout = () => {
                 <p>Questa azione è irreversibile e cancellerà anche tutte le transazioni associate.</p>
             </Modal>
 
-            <Modal title="Nuovo Trasferimento" open={isTransferModalOpen} onCancel={handleCancelTransferModal}
-                footer={null}>
-                <Form form={transferForm} layout="vertical" onFinish={onFinishTransfer} style={{ marginTop: 24 }}
-                    initialValues={{ transferDate: dayjs() }}>
-                    <Form.Item
-                        name="sourceAccountId"
-                        label="Conto di Origine"
-                        rules={[{ required: true, message: 'Seleziona il conto di origine' }]}
-                    >
-                        <Select placeholder="Da quale conto?">
-                            {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
-                        </Select>
-                    </Form.Item>
-                    <Form.Item
-                        name="destinationAccountId"
-                        label="Conto di Destinazione"
-                        rules={[
-                            { required: true, message: 'Seleziona il conto di destinazione' },
-                            ({ getFieldValue }) => ({
-                                validator(_, value) {
-                                    if (!value || getFieldValue('sourceAccountId') !== value) {
-                                        return Promise.resolve();
-                                    }
-                                    return Promise.reject(new Error('Il conto di destinazione deve essere diverso da quello di origine.'));
-                                },
-                            }),
-                        ]}
-                    >
-                        <Select placeholder="A quale conto?">
-                            {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
-                        </Select>
-                    </Form.Item>
-                    <Form.Item name="amount" label="Importo"
-                        rules={[{ required: true, message: 'Inserisci l\'importo' }]}>
-                        <InputNumber style={{ width: '100%' }} min={0.01} addonAfter="€" />
-                    </Form.Item>
-                    <Form.Item name="transferDate" label="Data del Trasferimento"
-                        rules={[{ required: true, message: 'Seleziona la data' }]}>
-                        <DatePicker style={{ width: '100%' }} />
-                    </Form.Item>
-                    <Form.Item name="description" label="Descrizione"
-                        rules={[{ required: true, message: 'Inserisci una descrizione' }]}>
-                        <Input placeholder="Es. Giroconto" />
-                    </Form.Item>
-                    <Form.Item name="notes" label="Note">
-                        <Input.TextArea placeholder="Note aggiuntive (opzionale)" />
-                    </Form.Item>
-                    <Form.Item>
-                        <Button type="primary" htmlType="submit" block>Esegui Trasferimento</Button>
-                    </Form.Item>
-                </Form>
-            </Modal>
+            <TransferModal
+                open={isTransferModalOpen}
+                onCancel={handleCancelTransferModal}
+                onFinish={onFinishTransfer}
+                accounts={accounts}
+            />
 
-            {/* Modale GoCardless */}
-            <Modal
-                title={`Collega "${linkingAccount?.name}" a GoCardless`}
+            <GoCardlessModal
                 open={isGoCardlessModalOpen}
                 onCancel={handleCancelGoCardlessModal}
-                footer={[
-                    <Button key="back" onClick={handleCancelGoCardlessModal}>Annulla</Button>,
-                    <Button
-                        key="submit"
-                        type="primary"
-                        onClick={handleConfirmBankLink}
-                        disabled={!selectedBank}
-                    >
-                        Collega Banca
-                    </Button>,
-                ]}
-                width={700}
-            >
-                <Steps
-                    current={currentStep}
-                    style={{ marginBottom: 24 }}
-                    items={[
-                        { title: 'Seleziona Nazione' },
-                        { title: 'Seleziona Banca' },
-                    ]}
-                />
-
-                {currentStep === 0 && (
-                    <Form layout="vertical">
-                        <Form.Item label="Seleziona la tua nazione">
-                            <Select
-                                showSearch
-                                placeholder="Seleziona una nazione"
-                                onChange={handleCountrySelect}
-                                value={selectedCountry}
-                                loading={loadingBanks}
-                                filterOption={(input, option) =>
-                                    (option?.label as string ?? '').toLowerCase().includes(input.toLowerCase())
-                                }
-                            >
-                                {europeanCountries.map(country => (
-                                    <Option key={country.code} value={country.code} label={country.name}>
-                                        {country.name}
-                                    </Option>
-                                ))}
-                            </Select>
-                        </Form.Item>
-                    </Form>
-                )}
-
-                {currentStep === 1 && (
-                    <Form layout="vertical">
-                        <Form.Item label="Seleziona la tua banca">
-                            {loadingBanks ? (
-                                <Spin />
-                            ) : (
-                                <Select
-                                    showSearch
-                                    placeholder="Seleziona una banca"
-                                    onChange={handleBankSelect}
-                                    value={selectedBank}
-                                    filterOption={(input, option) =>
-                                        (option?.label as string ?? '').toLowerCase().includes(input.toLowerCase())
-                                    }
-                                >
-                                    {banks.map(bank => (
-                                        <Option key={bank.id} value={bank.id} label={bank.name}>
-                                            <Flex align="center" gap="small">
-                                                {bank.logo && (
-                                                    <img
-                                                        src={bank.logo}
-                                                        alt={bank.name}
-                                                        style={{ width: 24, height: 24, objectFit: 'contain' }}
-                                                    />
-                                                )}
-                                                <span>{bank.name}</span>
-                                            </Flex>
-                                        </Option>
-                                    ))}
-                                </Select>
-                            )}
-                        </Form.Item>
-                    </Form>
-                )}
-            </Modal>
+                account={linkingAccount}
+                currentStep={currentStep}
+                selectedCountry={selectedCountry}
+                banks={banks}
+                loadingBanks={loadingBanks}
+                selectedBank={selectedBank}
+                onCountrySelect={handleCountrySelect}
+                onBankSelect={handleBankSelect}
+                onConfirm={handleConfirmBankLink}
+            />
 
             {/* PWA Install Prompt */}
             <PWAInstallPrompt />
         </>
     );
 };
+

@@ -1,6 +1,6 @@
 import React from 'react';
-import {Card, Col, Row, Statistic, Table, Typography} from 'antd';
-import type {PortfolioValueResponse} from '../types/api.ts';
+import { Card, Col, Row, Statistic, Table, Typography } from 'antd';
+import type { PortfolioValueResponse } from '../types/api.ts';
 
 interface PortfolioSummaryProps {
     data: PortfolioValueResponse | null;
@@ -61,6 +61,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                     rowKey="symbol"
                     loading={loading}
                     pagination={false}
+                    scroll={{ x: true }}
                 />
             </Card>
         </div>
