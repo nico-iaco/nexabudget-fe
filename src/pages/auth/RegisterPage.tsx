@@ -1,10 +1,10 @@
 // src/pages/auth/RegisterPage.tsx
-import {LockOutlined, MailOutlined, UserOutlined} from '@ant-design/icons';
-import {Alert, Button, Card, Form, Input, Layout, Typography} from 'antd';
-import {useState} from 'react';
-import {Link, useNavigate} from 'react-router-dom';
+import { LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons';
+import { Alert, Button, Card, Form, Input, Layout, Typography } from 'antd';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import * as api from '../../services/api';
-import type {UserRequest} from '../../types/api';
+import type { UserRequest } from '../../types/api';
 
 const { Title } = Typography;
 const { Content } = Layout;
@@ -41,6 +41,9 @@ export const RegisterPage = () => {
                     maxWidth: 400,
                     boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
                 }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+                        <img src="/pwa-192x192.png" alt="NexaBudget Logo" style={{ width: '64px', height: '64px' }} />
+                    </div>
                     <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>Sign Up</Title>
                     {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 24 }} />}
                     <Form name="register" onFinish={onFinish} autoComplete="off" size="large">

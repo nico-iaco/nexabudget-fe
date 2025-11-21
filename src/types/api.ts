@@ -108,3 +108,33 @@ export interface GoCardlessCompleteBankLinkRequest {
 export interface SyncBankTransactionsRequest {
     actualBalance: number | null;
 }
+
+export interface PortfolioValueResponse {
+    totalValue: number;
+    currency: string;
+    assets: CryptoAsset[]
+}
+
+export interface CryptoAsset {
+    symbol: string;
+    amount: number;
+    price: number;
+    value: number;
+}
+
+export interface BinanceKeysRequest {
+    apiKey: string;
+    apiSecret: string;
+}
+
+export interface ManualHoldingsRequest {
+    symbol: string;
+    amount: number;
+}
+
+export interface CryptoHolding {
+    id: string;
+    symbol: string;
+    amount: number;
+    source: string;
+}
