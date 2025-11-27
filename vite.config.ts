@@ -51,6 +51,7 @@ export default defineConfig(({ mode }) => {
                     ]
                 },
                 workbox: {
+                    maximumFileSizeToCacheInBytes: 4000000,
                     globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
                     runtimeCaching: [
                         {
