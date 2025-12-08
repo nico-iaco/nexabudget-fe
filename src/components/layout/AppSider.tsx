@@ -66,7 +66,7 @@ export const AppSider = ({
     };
 
     const accountMenuItems = accounts.map(acc => {
-        const path = `/ accounts / ${acc.id}/transactions`;
+        const path = `/accounts/${acc.id}/transactions`;
         const isConnectedToGoCardless = acc.linkedToExternal;
         const isCheckingAccount = acc.type === 'CONTO_CORRENTE';
 
