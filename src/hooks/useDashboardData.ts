@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as api from '../services/api';
-import type { Transaction } from '../types/api';
+import type { Transaction, PortfolioValueResponse } from '../types/api';
 
 export type DateRange = [Dayjs | null, Dayjs | null] | null;
 
@@ -21,12 +21,22 @@ export const useDashboardData = (transactionRefreshKey: number) => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [dateRange, setDateRange] = useState<DateRange>([dayjs().startOf('year'), dayjs().endOf('year')]);
+    const [portfolioValue, setPortfolioValue] = useState<PortfolioValueResponse | null>(null);
 
     useEffect(() => {
         setLoading(true);
-        api.getTransactionsByUserId()
-            .then(response => {
-                setTransactions(response.data);
+        Promise.all([
+            api.getTransactionsByUserId(),
+            api.getPortfolioValue('EUR').catch(err => {
+                console.warn('Crypto fetch failed', err);
+                return { data: null };
+            })
+        ])
+            .then(([transactionsResp, cryptoResp]) => {
+                setTransactions(transactionsResp.data);
+                if (cryptoResp?.data) {
+                    setPortfolioValue(cryptoResp.data);
+                }
             })
             .catch(console.error)
             .finally(() => setLoading(false));
@@ -179,6 +189,7 @@ export const useDashboardData = (transactionRefreshKey: number) => {
         incomeByCategory,
         monthlyTrend,
         monthlyNetBalance,
-        expenseComparison
+        expenseComparison,
+        portfolioValue
     };
 };

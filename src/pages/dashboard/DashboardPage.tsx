@@ -26,8 +26,12 @@ export const DashboardPage = () => {
         incomeByCategory,
         monthlyTrend,
         monthlyNetBalance,
-        expenseComparison
+        expenseComparison,
+        portfolioValue
     } = useDashboardData(transactionRefreshKey);
+
+    const showCrypto = portfolioValue && portfolioValue.totalValue > 0;
+    const colSpan = showCrypto ? { xs: 24, sm: 12, md: 6 } : { xs: 24, sm: 8 };
 
     if (loading) {
         return (
@@ -67,7 +71,7 @@ export const DashboardPage = () => {
             ) : (
                 <>
                     <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-                        <Col xs={24} sm={8}>
+                        <Col {...colSpan}>
                             <Card>
                                 <Statistic
                                     title="Saldo Netto"
@@ -79,7 +83,7 @@ export const DashboardPage = () => {
                                 />
                             </Card>
                         </Col>
-                        <Col xs={24} sm={8}>
+                        <Col {...colSpan}>
                             <Card>
                                 <Statistic
                                     title="Entrate Totali"
@@ -91,7 +95,7 @@ export const DashboardPage = () => {
                                 />
                             </Card>
                         </Col>
-                        <Col xs={24} sm={8}>
+                        <Col {...colSpan}>
                             <Card>
                                 <Statistic
                                     title="Uscite Totali"
@@ -111,6 +115,19 @@ export const DashboardPage = () => {
                                 )}
                             </Card>
                         </Col>
+                        {showCrypto && (
+                            <Col {...colSpan}>
+                                <Card>
+                                    <Statistic
+                                        title="Portafoglio Crypto"
+                                        value={portfolioValue.totalValue}
+                                        precision={2}
+                                        valueStyle={{ color: '#1890ff' }}
+                                        prefix={portfolioValue.currency === 'EUR' ? '€' : '$'}
+                                    />
+                                </Card>
+                            </Col>
+                        )}
                     </Row>
 
                     <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
