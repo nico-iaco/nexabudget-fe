@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Button, message, Space, Typography } from 'antd';
 import { KeyOutlined, PlusOutlined, ReloadOutlined } from '@ant-design/icons';
-import { getPortfolioValue, syncFromBinance } from '../../services/api';
+import { deleteManualHolding, getPortfolioValue, syncFromBinance } from '../../services/api';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import type { PortfolioValueResponse } from '../../types/api';
+import type { CryptoAsset, PortfolioValueResponse } from '../../types/api';
 import { PortfolioSummary } from '../../components/PortfolioSummary';
 import { BinanceKeysModal } from '../../components/BinanceKeysModal';
 import { ManualHoldingModal } from '../../components/ManualHoldingModal';
@@ -16,6 +16,7 @@ export const CryptoPage: React.FC = () => {
     const [syncing, setSyncing] = useState(false);
     const [showBinanceModal, setShowBinanceModal] = useState(false);
     const [showManualModal, setShowManualModal] = useState(false);
+    const [editingAsset, setEditingAsset] = useState<CryptoAsset | null>(null);
 
     const fetchPortfolio = async () => {
         setLoading(true);
@@ -49,6 +50,27 @@ export const CryptoPage: React.FC = () => {
         } finally {
             setSyncing(false);
         }
+    };
+
+    const handleEditAsset = (asset: CryptoAsset) => {
+        setEditingAsset(asset);
+        setShowManualModal(true);
+    };
+
+    const handleDeleteAsset = async (asset: CryptoAsset) => {
+        try {
+            await deleteManualHolding(asset.id);
+            message.success('Holding deleted successfully');
+            fetchPortfolio();
+        } catch (error) {
+            console.error('Failed to delete holding:', error);
+            message.error('Failed to delete holding.');
+        }
+    };
+
+    const handleCloseManualModal = () => {
+        setShowManualModal(false);
+        setEditingAsset(null);
     };
 
     const isMobile = useMediaQuery('(max-width: 768px)');
@@ -91,7 +113,12 @@ export const CryptoPage: React.FC = () => {
                 </Space>
             </div>
 
-            <PortfolioSummary data={portfolioData} loading={loading} />
+            <PortfolioSummary
+                data={portfolioData}
+                loading={loading}
+                onEditAsset={handleEditAsset}
+                onDeleteAsset={handleDeleteAsset}
+            />
 
             <BinanceKeysModal
                 open={showBinanceModal}
@@ -101,8 +128,9 @@ export const CryptoPage: React.FC = () => {
 
             <ManualHoldingModal
                 open={showManualModal}
-                onClose={() => setShowManualModal(false)}
+                onClose={handleCloseManualModal}
                 onSuccess={fetchPortfolio}
+                editingAsset={editingAsset}
             />
         </div>
     );

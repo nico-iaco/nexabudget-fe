@@ -1,5 +1,5 @@
 // src/services/api.ts
-import axios, {type AxiosResponse} from 'axios';
+import axios, { type AxiosResponse } from 'axios';
 import type {
     Account,
     AccountRequest,
@@ -20,6 +20,7 @@ import type {
     Transaction,
     TransactionRequest,
     TransferRequest,
+    UpdateCryptoAsset,
     UserRequest
 } from '../types/api';
 
@@ -87,5 +88,7 @@ export const syncGoCardlessBankAccount = (localAccountId: string, data: SyncBank
 // Crypto
 export const getPortfolioValue = (currency: string): Promise<AxiosResponse<PortfolioValueResponse>> => apiClient.get('/crypto/portfolio?currency=' + currency);
 export const addManualHolding = (data: ManualHoldingsRequest): Promise<AxiosResponse<CryptoHolding>> => apiClient.post('/crypto/holdings', data);
+export const updateManualHolding = (id: string, data: UpdateCryptoAsset): Promise<AxiosResponse<CryptoHolding>> => apiClient.patch(`/crypto/holdings/${id}`, data);
+export const deleteManualHolding = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/crypto/holdings/${id}`);
 export const saveBinanceKeys = (data: BinanceKeysRequest): Promise<AxiosResponse<void>> => apiClient.post('/crypto/binance/keys', data);
 export const syncFromBinance = (): Promise<AxiosResponse<void>> => apiClient.post('/crypto/binance/sync');

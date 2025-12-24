@@ -116,10 +116,16 @@ export interface PortfolioValueResponse {
 }
 
 export interface CryptoAsset {
+    id: string;
+    source: string;
     symbol: string;
     amount: number;
     price: number;
     value: number;
+}
+
+export interface UpdateCryptoAsset {
+    amount: number;
 }
 
 export interface BinanceKeysRequest {
