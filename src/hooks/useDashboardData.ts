@@ -19,39 +19,74 @@ export interface LineData {
 
 export const useDashboardData = (transactionRefreshKey: number) => {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [previousTransactions, setPreviousTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [dateRange, setDateRange] = useState<DateRange>([dayjs().startOf('year'), dayjs().endOf('year')]);
     const [portfolioValue, setPortfolioValue] = useState<PortfolioValueResponse | null>(null);
 
     useEffect(() => {
         setLoading(true);
-        Promise.all([
-            api.getTransactionsByUserId(),
-            api.getPortfolioValue('EUR').catch(err => {
-                console.warn('Crypto fetch failed', err);
-                return { data: null };
-            })
-        ])
-            .then(([transactionsResp, cryptoResp]) => {
-                setTransactions(transactionsResp.data);
-                if (cryptoResp?.data) {
-                    setPortfolioValue(cryptoResp.data);
-                }
-            })
-            .catch(console.error)
-            .finally(() => setLoading(false));
-    }, [transactionRefreshKey]);
 
-    const filteredTransactions = useMemo(() => {
-        if (!dateRange || !dateRange[0] || !dateRange[1]) {
-            return transactions;
-        }
-        const [startDate, endDate] = dateRange;
-        return transactions.filter(t => {
-            const transactionDate = dayjs(t.date);
-            return transactionDate.isAfter(startDate) && transactionDate.isBefore(endDate);
-        });
-    }, [transactions, dateRange]);
+        const fetchTransactions = async () => {
+            try {
+                if (dateRange && dateRange[0] && dateRange[1]) {
+                    const [startDate, endDate] = dateRange;
+                    const formattedStart = startDate.format('YYYY-MM-DD');
+                    const formattedEnd = endDate.format('YYYY-MM-DD');
+
+                    // Calculate previous period
+                    // prevEnd = start - 1 day
+                    const prevEnd = startDate.subtract(1, 'day');
+                    const duration = endDate.diff(startDate, 'day');
+                    // prevStart = prevEnd - duration
+                    const prevStart = prevEnd.subtract(duration, 'day');
+
+                    const formattedPrevStart = prevStart.format('YYYY-MM-DD');
+                    const formattedPrevEnd = prevEnd.format('YYYY-MM-DD');
+
+                    const [currentResp, prevResp, cryptoResp] = await Promise.all([
+                        api.getTransactionsBetweenDates(formattedStart, formattedEnd),
+                        api.getTransactionsBetweenDates(formattedPrevStart, formattedPrevEnd),
+                        api.getPortfolioValue('EUR').catch(err => {
+                            console.warn('Crypto fetch failed', err);
+                            return { data: null };
+                        })
+                    ]);
+
+                    setTransactions(currentResp.data);
+                    setPreviousTransactions(prevResp.data);
+                    if (cryptoResp?.data) {
+                        setPortfolioValue(cryptoResp.data);
+                    }
+                } else {
+                    // Fallback to fetching all if no date range (or handle differently)
+                    // For now, let's default to fetching all transactions if no range is selected, 
+                    // though the UI initializes with a range.
+                    const [transactionsResp, cryptoResp] = await Promise.all([
+                        api.getTransactionsByUserId(),
+                        api.getPortfolioValue('EUR').catch(err => {
+                            console.warn('Crypto fetch failed', err);
+                            return { data: null };
+                        })
+                    ]);
+                    setTransactions(transactionsResp.data);
+                    setPreviousTransactions([]); // No previous period comparison possible without range
+                    if (cryptoResp?.data) {
+                        setPortfolioValue(cryptoResp.data);
+                    }
+                }
+            } catch (error) {
+                console.error(error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchTransactions();
+    }, [transactionRefreshKey, dateRange]);
+
+    // Since transactions are already filtered by the API, filteredTransactions is just transactions
+    const filteredTransactions = transactions;
 
     const { totalIncome, totalExpenses, netBalance } = useMemo(() => {
         return filteredTransactions.reduce((acc, t) => {
@@ -152,20 +187,12 @@ export const useDashboardData = (transactionRefreshKey: number) => {
     const expenseComparison = useMemo(() => {
         if (!dateRange || !dateRange[0] || !dateRange[1]) return null;
 
-        const [start, end] = dateRange;
-        const duration = end.diff(start, 'day');
-        const prevStart = start.subtract(duration + 1, 'day');
-        const prevEnd = end.subtract(duration + 1, 'day');
-
         const currentExpenses = filteredTransactions
             .filter(t => t.type === 'OUT')
             .reduce((sum, t) => sum + t.amount, 0);
 
-        const previousExpenses = transactions
-            .filter(t => {
-                const tDate = dayjs(t.date);
-                return t.type === 'OUT' && tDate.isAfter(prevStart) && tDate.isBefore(prevEnd);
-            })
+        const previousExpenses = previousTransactions
+            .filter(t => t.type === 'OUT')
             .reduce((sum, t) => sum + t.amount, 0);
 
         if (previousExpenses === 0) {
@@ -174,7 +201,7 @@ export const useDashboardData = (transactionRefreshKey: number) => {
 
         const percentageChange = ((currentExpenses - previousExpenses) / previousExpenses) * 100;
         return { percentageChange, period: 'periodo precedente' };
-    }, [transactions, dateRange, filteredTransactions]);
+    }, [filteredTransactions, previousTransactions, dateRange]);
 
     return {
         transactions,

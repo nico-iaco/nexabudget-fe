@@ -65,6 +65,7 @@ export const deleteAccount = (id: string): Promise<AxiosResponse<void>> => apiCl
 // Transactions
 export const getTransactionsByUserId = (): Promise<AxiosResponse<Transaction[]>> => apiClient.get(`/transactions`);
 export const getTransactionsByAccountId = (accountId: string): Promise<AxiosResponse<Transaction[]>> => apiClient.get(`/transactions/account/${accountId}`);
+export const getTransactionsBetweenDates = (startDate: string, endDate: string): Promise<AxiosResponse<Transaction[]>> => apiClient.get(`/transactions/daterange?start=${startDate}&end=${endDate}`);
 export const createTransaction = (data: TransactionRequest): Promise<AxiosResponse<Transaction>> => apiClient.post('/transactions', data);
 export const updateTransaction = (id: string, data: TransactionRequest): Promise<AxiosResponse<Transaction>> => apiClient.put(`/transactions/${id}`, data);
 export const createTransfer = (data: TransferRequest): Promise<AxiosResponse<Transaction[]>> => apiClient.post('/transactions/transfer', data);
