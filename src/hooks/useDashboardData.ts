@@ -90,9 +90,9 @@ export const useDashboardData = (transactionRefreshKey: number) => {
 
     const { totalIncome, totalExpenses, netBalance } = useMemo(() => {
         return filteredTransactions.reduce((acc, t) => {
-            if (t.type === 'IN') {
+            if (t.type === 'IN' && t.transferId === null) {
                 acc.totalIncome += t.amount;
-            } else {
+            } else if (t.type === 'OUT' && t.transferId === null) {
                 acc.totalExpenses += t.amount;
             }
             acc.netBalance = acc.totalIncome - acc.totalExpenses;
