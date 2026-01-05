@@ -9,14 +9,17 @@ import {
     Typography
 } from 'antd';
 import {
+    BankOutlined,
     DeleteOutlined,
     DisconnectOutlined,
     EditOutlined,
     FundOutlined,
+    LineChartOutlined,
     LinkOutlined,
     MenuFoldOutlined,
     PieChartOutlined,
     PlusOutlined,
+    SafetyCertificateOutlined,
     TransactionOutlined,
     WalletOutlined
 } from '@ant-design/icons';
@@ -65,6 +68,20 @@ export const AppSider = ({
         }
     };
 
+    const getAccountIcon = (type: Account['type']) => {
+        switch (type) {
+            case 'CONTO_CORRENTE':
+                return <BankOutlined />;
+            case 'RISPARMIO':
+                return <SafetyCertificateOutlined />;
+            case 'INVESTIMENTO':
+                return <LineChartOutlined />;
+            case 'CONTANTI':
+            default:
+                return <WalletOutlined />;
+        }
+    };
+
     const accountMenuItems = accounts.map(acc => {
         const path = `/accounts/${acc.id}/transactions`;
         const isConnectedToGoCardless = acc.linkedToExternal;
@@ -72,7 +89,7 @@ export const AppSider = ({
 
         return {
             key: path,
-            icon: <WalletOutlined />,
+            icon: getAccountIcon(acc.type),
             label: (
                 <Flex justify="space-between" align="center" wrap="wrap" gap="small">
                     <Flex vertical style={{ flex: 1, minWidth: 0 }}>
