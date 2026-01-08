@@ -142,9 +142,9 @@ export const useDashboardData = (transactionRefreshKey: number) => {
             if (!trend[month]) {
                 trend[month] = { income: 0, expense: 0 };
             }
-            if (t.type === 'IN') {
+            if (t.type === 'IN' && t.transferId === null) {
                 trend[month].income += t.amount;
-            } else {
+            } else if (t.type === 'OUT' && t.transferId === null) {
                 trend[month].expense += t.amount;
             }
         });
