@@ -1,13 +1,4 @@
-
-import {
-    Button,
-    Flex,
-    Layout,
-    Menu,
-    Spin,
-    Statistic,
-    Typography
-} from 'antd';
+import {Button, Flex, Layout, Menu, Spin, Statistic, Typography} from 'antd';
 import {
     BankOutlined,
     DeleteOutlined,
@@ -23,11 +14,33 @@ import {
     TransactionOutlined,
     WalletOutlined
 } from '@ant-design/icons';
-import { useNavigate } from 'react-router-dom';
-import type { Account } from '../../types/api';
+import {useNavigate} from 'react-router-dom';
+import {useCallback, useMemo} from 'react';
+import type {Account} from '../../types/api';
 
 const { Sider } = Layout;
 const { Title, Text } = Typography;
+
+// Definisce l'ordine di priorità per i tipi di account
+const ACCOUNT_TYPE_ORDER: Record<Account['type'], number> = {
+    CONTO_CORRENTE: 0,
+    RISPARMIO: 1,
+    INVESTIMENTO: 2,
+    CONTANTI: 3,
+};
+
+// Funzione helper per ordinare gli account per tipo e poi alfabeticamente
+const sortAccounts = (accounts: Account[]): Account[] => {
+    return [...accounts].sort((a, b) => {
+        // Prima ordina per tipo
+        const typeComparison = ACCOUNT_TYPE_ORDER[a.type] - ACCOUNT_TYPE_ORDER[b.type];
+        if (typeComparison !== 0) {
+            return typeComparison;
+        }
+        // Poi ordina alfabeticamente per nome (case-insensitive, locale italiana)
+        return a.name.localeCompare(b.name, 'it-IT', { sensitivity: 'base' });
+    });
+};
 
 interface AppSiderProps {
     collapsed: boolean;
@@ -60,13 +73,13 @@ export const AppSider = ({
 }: AppSiderProps) => {
     const navigate = useNavigate();
 
-    const handleMenuClick = (path: string) => {
+    const handleMenuClick = useCallback((path: string) => {
         const targetPath = selectedKeys.includes(path) ? '/transactions' : path;
         navigate(targetPath);
         if (isMobile) {
             setCollapsed(true);
         }
-    };
+    }, [selectedKeys, navigate, isMobile, setCollapsed]);
 
     const getAccountIcon = (type: Account['type']) => {
         switch (type) {
@@ -82,59 +95,63 @@ export const AppSider = ({
         }
     };
 
-    const accountMenuItems = accounts.map(acc => {
-        const path = `/accounts/${acc.id}/transactions`;
-        const isConnectedToGoCardless = acc.linkedToExternal;
-        const isCheckingAccount = acc.type === 'CONTO_CORRENTE';
+    const accountMenuItems = useMemo(() => {
+        const sortedAccounts = sortAccounts(accounts);
 
-        return {
-            key: path,
-            icon: getAccountIcon(acc.type),
-            label: (
-                <Flex justify="space-between" align="center" wrap="wrap" gap="small">
-                    <Flex vertical style={{ flex: 1, minWidth: 0 }}>
-                        <Text style={{
-                            color: 'rgba(255, 255, 255, 0.85)',
-                            fontWeight: 500,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                        }}>
-                            {acc.name}
-                        </Text>
-                        <Text style={{
-                            fontSize: '0.85em',
-                            color: 'rgba(255, 255, 255, 0.65)'
-                        }}>
-                            {acc.actualBalance.toFixed(2)}€
-                        </Text>
+        return sortedAccounts.map(acc => {
+            const path = `/accounts/${acc.id}/transactions`;
+            const isConnectedToGoCardless = acc.linkedToExternal;
+            const isCheckingAccount = acc.type === 'CONTO_CORRENTE';
+
+            return {
+                key: path,
+                icon: getAccountIcon(acc.type),
+                label: (
+                    <Flex justify="space-between" align="center" wrap="wrap" gap="small">
+                        <Flex vertical style={{ flex: 1, minWidth: 0 }}>
+                            <Text style={{
+                                color: 'rgba(255, 255, 255, 0.85)',
+                                fontWeight: 500,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap'
+                            }}>
+                                {acc.name}
+                            </Text>
+                            <Text style={{
+                                fontSize: '0.85em',
+                                color: 'rgba(255, 255, 255, 0.65)'
+                            }}>
+                                {acc.actualBalance.toFixed(2)}€
+                            </Text>
+                        </Flex>
+                        <SpaceButtons
+                            isCheckingAccount={isCheckingAccount}
+                            isConnectedToGoCardless={isConnectedToGoCardless}
+                            onDisconnect={(e) => {
+                                e.stopPropagation();
+                                // message.info('Disconnect feature coming soon'); // Handled in parent or here?
+                                // Let's keep logic simple here
+                            }}
+                            onConnect={(e) => {
+                                e.stopPropagation();
+                                onOpenGoCardless(acc);
+                            }}
+                            onEdit={(e) => {
+                                e.stopPropagation();
+                                onOpenEditAccount(acc);
+                            }}
+                            onDelete={(e) => {
+                                e.stopPropagation();
+                                onOpenDeleteAccount(acc);
+                            }}
+                        />
                     </Flex>
-                    <SpaceButtons
-                        isCheckingAccount={isCheckingAccount}
-                        isConnectedToGoCardless={isConnectedToGoCardless}
-                        onDisconnect={(e) => {
-                            e.stopPropagation();
-                            // message.info('Disconnect feature coming soon'); // Handled in parent or here? 
-                            // Let's keep logic simple here
-                        }}
-                        onConnect={(e) => {
-                            e.stopPropagation();
-                            onOpenGoCardless(acc);
-                        }}
-                        onEdit={(e) => {
-                            e.stopPropagation();
-                            onOpenEditAccount(acc);
-                        }}
-                        onDelete={(e) => {
-                            e.stopPropagation();
-                            onOpenDeleteAccount(acc);
-                        }}
-                    />
-                </Flex>
-            ),
-            onClick: () => handleMenuClick(path),
-        };
-    });
+                ),
+                onClick: () => handleMenuClick(path),
+            };
+        });
+    }, [accounts, onOpenGoCardless, onOpenEditAccount, onOpenDeleteAccount, handleMenuClick]);
 
     return (
         <Sider
