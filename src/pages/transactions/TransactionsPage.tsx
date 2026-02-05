@@ -93,6 +93,17 @@ export const TransactionsPage = () => {
 
     const [apiNotification, contextHolder] = notification.useNotification();
 
+    const currentAccount = useMemo(() => {
+        if (!accountId) return null;
+        return accounts.find(acc => acc.id === accountId) || null;
+    }, [accounts, accountId]);
+
+    const formattedCurrentBalance = useMemo(() => {
+        if (!currentAccount) return null;
+        const currency = currentAccount.currency || 'EUR';
+        return new Intl.NumberFormat('it-IT', { style: 'currency', currency }).format(currentAccount.actualBalance);
+    }, [currentAccount]);
+
     const handleSyncGoCardlessTransactions = async () => {
         console.log('handleSyncGoCardlessTransactions called', {accountId, currentBalance});
 
@@ -426,23 +437,34 @@ export const TransactionsPage = () => {
     const renderContent = () => {
         if (isMobile) {
             return (
-                <List
-                    dataSource={processedTransactions}
-                    renderItem={item => (
-                        <TransactionCard
-                            transaction={item}
-                            onEdit={handleOpenEditModal}
-                            onDelete={handleDelete}
-                            onConvertToTransfer={handleOpenLinkTransferModal}
+                <>
+                    {accountId && (
+                        <Alert
+                            type="info"
+                            showIcon
+                            message={currentAccount?.name || 'Conto' }
+                            description={`Saldo corrente: ${formattedCurrentBalance ?? 'N/D'}`}
+                            style={{ marginBottom: 12 }}
                         />
                     )}
-                    pagination={{
-                        total: processedTransactions.length,
-                        pageSize: 10,
-                        showSizeChanger: true,
-                        showQuickJumper: true,
-                    }}
-                />
+                    <List
+                        dataSource={processedTransactions}
+                        renderItem={item => (
+                            <TransactionCard
+                                transaction={item}
+                                onEdit={handleOpenEditModal}
+                                onDelete={handleDelete}
+                                onConvertToTransfer={handleOpenLinkTransferModal}
+                            />
+                        )}
+                        pagination={{
+                            total: processedTransactions.length,
+                            pageSize: 10,
+                            showSizeChanger: true,
+                            showQuickJumper: true,
+                        }}
+                    />
+                </>
             );
         }
         return (

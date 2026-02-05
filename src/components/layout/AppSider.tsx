@@ -11,6 +11,7 @@ import {
     PieChartOutlined,
     PlusOutlined,
     SafetyCertificateOutlined,
+    SyncOutlined,
     TransactionOutlined,
     WalletOutlined
 } from '@ant-design/icons';
@@ -55,6 +56,8 @@ interface AppSiderProps {
     onOpenEditAccount: (account: Account) => void;
     onOpenDeleteAccount: (account: Account) => void;
     onOpenGoCardless: (account: Account) => void;
+    onSyncAllAccounts: () => void;
+    syncingAccounts: boolean;
 }
 
 export const AppSider = ({
@@ -69,7 +72,9 @@ export const AppSider = ({
     onOpenCreateAccount,
     onOpenEditAccount,
     onOpenDeleteAccount,
-    onOpenGoCardless
+    onOpenGoCardless,
+    onSyncAllAccounts,
+    syncingAccounts
 }: AppSiderProps) => {
     const navigate = useNavigate();
 
@@ -153,6 +158,11 @@ export const AppSider = ({
         });
     }, [accounts, onOpenGoCardless, onOpenEditAccount, onOpenDeleteAccount, handleMenuClick]);
 
+    // Calcola se ci sono conti correnti collegati a GoCardless
+    const hasSyncableAccounts = useMemo(() => {
+        return accounts.some(acc => acc.type === 'CONTO_CORRENTE' && acc.linkedToExternal);
+    }, [accounts]);
+
     return (
         <Sider
             trigger={null}
@@ -222,7 +232,18 @@ export const AppSider = ({
             <Flex vertical style={{ padding: '0 8px' }}>
                 <Flex justify="space-between" align="center" style={{ padding: '16px 16px 8px' }}>
                     <Title level={5} style={{ color: 'rgba(255, 255, 255, 0.65)', margin: 0 }}>Accounts</Title>
-                    <Button icon={<PlusOutlined />} size="small" onClick={onOpenCreateAccount} />
+                    <Flex gap="small">
+                        {hasSyncableAccounts && (
+                            <Button
+                                icon={<SyncOutlined spin={syncingAccounts} />}
+                                size="small"
+                                onClick={onSyncAllAccounts}
+                                disabled={syncingAccounts}
+                                title="Sincronizza tutti i conti correnti"
+                            />
+                        )}
+                        <Button icon={<PlusOutlined />} size="small" onClick={onOpenCreateAccount} />
+                    </Flex>
                 </Flex>
                 <div style={{ padding: '0 16px 16px' }}>
                     <Statistic

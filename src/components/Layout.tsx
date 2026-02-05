@@ -1,17 +1,17 @@
 // src/components/Layout.tsx
-import { useEffect, useMemo, useState } from 'react';
-import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Layout as AntLayout, message, Modal, theme } from 'antd';
-import { useAuth } from '../contexts/AuthContext';
+import {useEffect, useMemo, useState} from 'react';
+import {Outlet, useLocation, useNavigate} from 'react-router-dom';
+import {Layout as AntLayout, message, Modal, theme} from 'antd';
+import {useAuth} from '../contexts/AuthContext';
 import * as api from '../services/api';
-import type { Account, AccountRequest, Category, GoCardlessBank, TransferRequest } from '../types/api';
+import type {Account, AccountRequest, Category, GoCardlessBank, TransferRequest} from '../types/api';
 import dayjs from 'dayjs';
-import { PWAInstallPrompt } from './PWAInstallPrompt';
-import { AppSider } from './layout/AppSider';
-import { AppHeader } from './layout/AppHeader';
-import { AccountModal } from './modals/AccountModal';
-import { TransferModal, type TransferFormValues } from './modals/TransferModal';
-import { GoCardlessModal } from './modals/GoCardlessModal';
+import {PWAInstallPrompt} from './PWAInstallPrompt';
+import {AppSider} from './layout/AppSider';
+import {AppHeader} from './layout/AppHeader';
+import {AccountModal} from './modals/AccountModal';
+import {type TransferFormValues, TransferModal} from './modals/TransferModal';
+import {GoCardlessModal} from './modals/GoCardlessModal';
 
 const { Content } = AntLayout;
 
@@ -37,6 +37,7 @@ export const Layout = () => {
     const [banks, setBanks] = useState<GoCardlessBank[]>([]);
     const [loadingBanks, setLoadingBanks] = useState(false);
     const [selectedBank, setSelectedBank] = useState<string | null>(null);
+    const [syncingAccounts, setSyncingAccounts] = useState(false);
 
     const { auth, logout } = useAuth();
     const navigate = useNavigate();
@@ -225,6 +226,52 @@ export const Layout = () => {
         }
     };
 
+    const handleSyncAllAccounts = async () => {
+        // Filtra solo i conti correnti collegati a GoCardless
+        const syncableAccounts = accounts.filter(
+            acc => acc.type === 'CONTO_CORRENTE' && acc.linkedToExternal
+        );
+
+        if (syncableAccounts.length === 0) {
+            message.info('Nessun conto da sincronizzare');
+            return;
+        }
+
+        setSyncingAccounts(true);
+
+        try {
+            // Sincronizza tutti i conti in parallelo
+            const syncPromises = syncableAccounts.map(account =>
+                api.syncGoCardlessBankAccount(account.id, { actualBalance: null })
+                    .then(() => ({ success: true, accountName: account.name }))
+                    .catch(error => ({ success: false, accountName: account.name, error }))
+            );
+
+            const results = await Promise.all(syncPromises);
+
+            // Conta successi e fallimenti
+            const successCount = results.filter(r => r.success).length;
+            const failureCount = results.filter(r => !r.success).length;
+
+            if (failureCount === 0) {
+                message.success(`Sincronizzati con successo ${successCount} conti`);
+            } else if (successCount === 0) {
+                message.error(`Errore nella sincronizzazione di tutti i ${failureCount} conti`);
+            } else {
+                message.warning(`Sincronizzati ${successCount} conti, ${failureCount} con errori`);
+            }
+
+            // Aggiorna gli account e le transazioni anche in caso di errori parziali
+            fetchAccounts();
+            triggerTransactionRefresh();
+        } catch (error) {
+            message.error('Errore durante la sincronizzazione dei conti');
+            console.error(error);
+        } finally {
+            setSyncingAccounts(false);
+        }
+    };
+
     const totalBalance = useMemo(() => {
         return accounts.reduce((sum, account) => sum + account.actualBalance, 0);
     }, [accounts]);
@@ -255,6 +302,8 @@ export const Layout = () => {
                     onOpenEditAccount={handleOpenEditAccountModal}
                     onOpenDeleteAccount={handleOpenDeleteModal}
                     onOpenGoCardless={handleOpenGoCardlessModal}
+                    onSyncAllAccounts={handleSyncAllAccounts}
+                    syncingAccounts={syncingAccounts}
                 />
                 <AntLayout className="site-layout">
                     <AppHeader
