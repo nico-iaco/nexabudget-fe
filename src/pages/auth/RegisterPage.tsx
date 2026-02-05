@@ -1,15 +1,17 @@
 // src/pages/auth/RegisterPage.tsx
-import { LockOutlined, MailOutlined, UserOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Form, Input, Layout, Typography } from 'antd';
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import {LockOutlined, MailOutlined, UserOutlined} from '@ant-design/icons';
+import {Alert, Button, Card, Form, Input, Layout, Typography} from 'antd';
+import {useState} from 'react';
+import {useTranslation} from 'react-i18next';
+import {Link, useNavigate} from 'react-router-dom';
 import * as api from '../../services/api';
-import type { UserRequest } from '../../types/api';
+import type {UserRequest} from '../../types/api';
 
 const { Title } = Typography;
 const { Content } = Layout;
 
 export const RegisterPage = () => {
+    const { t } = useTranslation();
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -21,7 +23,7 @@ export const RegisterPage = () => {
             await api.register(values);
             navigate('/login');
         } catch (err) {
-            setError('Registration error. User may already exist.');
+            setError(t('auth.registrationError'));
             console.error(err);
         } finally {
             setLoading(false);
@@ -42,37 +44,37 @@ export const RegisterPage = () => {
                     boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-                        <img src="/pwa-192x192.png" alt="NexaBudget Logo" style={{ width: '64px', height: '64px' }} />
+                        <img src="/pwa-192x192.png" alt={t('app.name')} style={{ width: '64px', height: '64px' }} />
                     </div>
-                    <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>Sign Up</Title>
+                    <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>{t('auth.signUp')}</Title>
                     {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 24 }} />}
                     <Form name="register" onFinish={onFinish} autoComplete="off" size="large">
                         <Form.Item
                             name="username"
-                            rules={[{ required: true, message: 'Please enter a username!' }]}
+                            rules={[{ required: true, message: t('auth.usernameRequired') }]}
                         >
-                            <Input prefix={<UserOutlined />} placeholder="Username" />
+                            <Input prefix={<UserOutlined />} placeholder={t('auth.username')} />
                         </Form.Item>
                         <Form.Item
                             name="email"
-                            rules={[{ required: true, message: 'Please enter your email!', type: 'email' }]}
+                            rules={[{ required: true, message: t('auth.emailRequired'), type: 'email' }]}
                         >
-                            <Input prefix={<MailOutlined />} placeholder="Email" />
+                            <Input prefix={<MailOutlined />} placeholder={t('auth.email')} />
                         </Form.Item>
                         <Form.Item
                             name="password"
-                            rules={[{ required: true, message: 'Please enter a password!' }]}
+                            rules={[{ required: true, message: t('auth.passwordRequired') }]}
                         >
-                            <Input.Password prefix={<LockOutlined />} placeholder="Password" />
+                            <Input.Password prefix={<LockOutlined />} placeholder={t('auth.password')} />
                         </Form.Item>
                         <Form.Item>
                             <Button type="primary" htmlType="submit" loading={loading} style={{ width: '100%' }}>
-                                Sign Up
+                                {t('auth.registerButton')}
                             </Button>
                         </Form.Item>
                     </Form>
                     <div style={{ textAlign: 'center' }}>
-                        Already have an account? <Link to="/login">Sign In</Link>
+                        {t('auth.haveAccount')} <Link to="/login">{t('auth.signInNow')}</Link>
                     </div>
                 </Card>
             </Content>

@@ -2,6 +2,7 @@
 import {useEffect, useMemo, useState} from 'react';
 import {Outlet, useLocation, useNavigate} from 'react-router-dom';
 import {Layout as AntLayout, message, Modal, theme} from 'antd';
+import {useTranslation} from 'react-i18next';
 import {useAuth} from '../contexts/AuthContext';
 import * as api from '../services/api';
 import type {Account, AccountRequest, Category, GoCardlessBank, TransferRequest} from '../types/api';
@@ -16,6 +17,7 @@ import {GoCardlessModal} from './modals/GoCardlessModal';
 const { Content } = AntLayout;
 
 export const Layout = () => {
+    const { t } = useTranslation();
     const [collapsed, setCollapsed] = useState(true);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
     const [accounts, setAccounts] = useState<Account[]>([]);
@@ -106,15 +108,15 @@ export const Layout = () => {
         try {
             if (editingAccount) {
                 await api.updateAccount(editingAccount.id, values);
-                message.success('Conto aggiornato con successo');
+                message.success(t('accounts.updatedSuccess'));
             } else {
                 await api.createAccount(values);
-                message.success('Conto creato con successo');
+                message.success(t('accounts.createdSuccess'));
             }
             setIsAccountModalOpen(false);
             fetchAccounts();
         } catch (error) {
-            message.error('Errore durante il salvataggio del conto');
+            message.error(t('accounts.saveError'));
             console.error(error);
         }
     };
@@ -133,11 +135,11 @@ export const Layout = () => {
         if (!deletingAccount) return;
         try {
             await api.deleteAccount(deletingAccount.id);
-            message.success('Conto eliminato con successo');
+            message.success(t('accounts.deletedSuccess'));
             fetchAccounts();
             navigate('/transactions');
         } catch (error) {
-            message.error('Errore durante l\'eliminazione del conto');
+            message.error(t('accounts.deleteError'));
             console.error(error);
         } finally {
             handleCancelDeleteModal();
@@ -159,12 +161,12 @@ export const Layout = () => {
         };
         try {
             await api.createTransfer(transferData);
-            message.success('Trasferimento creato con successo');
+            message.success(t('transfers.createdSuccess'));
             setIsTransferModalOpen(false);
             fetchAccounts();
             triggerTransactionRefresh();
         } catch (error) {
-            message.error('Errore durante la creazione del trasferimento');
+            message.error(t('transfers.createError'));
             console.error(error);
         }
     };
@@ -196,7 +198,7 @@ export const Layout = () => {
             setBanks(response.data);
             setCurrentStep(1);
         } catch (error) {
-            message.error('Errore nel caricamento delle banche');
+            message.error(t('gocardless.loadBanksError'));
             console.error(error);
         } finally {
             setLoadingBanks(false);
@@ -221,7 +223,7 @@ export const Layout = () => {
 
             handleCancelGoCardlessModal();
         } catch (error) {
-            message.error('Errore durante la generazione del link di collegamento');
+            message.error(t('gocardless.linkError'));
             console.error(error);
         }
     };
@@ -233,7 +235,7 @@ export const Layout = () => {
         );
 
         if (syncableAccounts.length === 0) {
-            message.info('Nessun conto da sincronizzare');
+            message.info(t('gocardless.noAccountsToSync'));
             return;
         }
 
@@ -254,18 +256,18 @@ export const Layout = () => {
             const failureCount = results.filter(r => !r.success).length;
 
             if (failureCount === 0) {
-                message.success(`Sincronizzati con successo ${successCount} conti`);
+                message.success(t('gocardless.syncSuccessAll', { count: successCount }));
             } else if (successCount === 0) {
-                message.error(`Errore nella sincronizzazione di tutti i ${failureCount} conti`);
+                message.error(t('gocardless.syncErrorAll', { count: failureCount }));
             } else {
-                message.warning(`Sincronizzati ${successCount} conti, ${failureCount} con errori`);
+                message.warning(t('gocardless.syncPartial', { successCount, failureCount }));
             }
 
             // Aggiorna gli account e le transazioni anche in caso di errori parziali
             fetchAccounts();
             triggerTransactionRefresh();
         } catch (error) {
-            message.error('Errore durante la sincronizzazione dei conti');
+            message.error(t('gocardless.syncError'));
             console.error(error);
         } finally {
             setSyncingAccounts(false);
@@ -357,16 +359,16 @@ export const Layout = () => {
             />
 
             <Modal
-                title={`Elimina Conto`}
+                title={t('accounts.deleteTitle')}
                 open={isDeleteModalOpen}
                 onOk={handleConfirmDelete}
                 onCancel={handleCancelDeleteModal}
-                okText="Elimina"
-                cancelText="Annulla"
+                okText={t('common.delete')}
+                cancelText={t('common.cancel')}
                 okButtonProps={{ danger: true }}
             >
-                <p>Sei sicuro di voler eliminare il conto "{deletingAccount?.name}"?</p>
-                <p>Questa azione è irreversibile e cancellerà anche tutte le transazioni associate.</p>
+                <p>{t('accounts.deleteConfirm', { name: deletingAccount?.name ?? '' })}</p>
+                <p>{t('accounts.deleteConfirmWarning')}</p>
             </Modal>
 
             <TransferModal

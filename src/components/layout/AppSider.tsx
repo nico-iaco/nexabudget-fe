@@ -11,12 +11,14 @@ import {
     PieChartOutlined,
     PlusOutlined,
     SafetyCertificateOutlined,
+    SettingOutlined,
     SyncOutlined,
     TransactionOutlined,
     WalletOutlined
 } from '@ant-design/icons';
 import {useNavigate} from 'react-router-dom';
 import {useCallback, useMemo} from 'react';
+import {useTranslation} from 'react-i18next';
 import type {Account} from '../../types/api';
 
 const { Sider } = Layout;
@@ -76,6 +78,7 @@ export const AppSider = ({
     onSyncAllAccounts,
     syncingAccounts
 }: AppSiderProps) => {
+    const { t } = useTranslation();
     const navigate = useNavigate();
 
     const handleMenuClick = useCallback((path: string) => {
@@ -180,7 +183,7 @@ export const AppSider = ({
         >
             {isMobile && !collapsed && (
                 <Flex justify="space-between" align="center" style={{ padding: '16px', background: '#001529' }}>
-                    <Title level={4} style={{ color: '#fff', margin: 0 }}>Menu</Title>
+                    <Title level={4} style={{ color: '#fff', margin: 0 }}>{t('common.menu')}</Title>
                     <Button
                         type="text"
                         icon={<MenuFoldOutlined style={{ color: '#fff', fontSize: '20px' }} />}
@@ -191,8 +194,8 @@ export const AppSider = ({
             )}
             {!isMobile && (
                 <div style={{ height: '32px', margin: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src="/pwa-192x192.png" alt="NexaBudget" style={{ height: '32px', width: '32px' }} />
-                    <Title level={4} style={{ color: 'white', margin: '0 0 0 10px', fontSize: '18px' }}>NexaBudget</Title>
+                    <img src="/pwa-192x192.png" alt={t('app.name')} style={{ height: '32px', width: '32px' }} />
+                    <Title level={4} style={{ color: 'white', margin: '0 0 0 10px', fontSize: '18px' }}>{t('app.name')}</Title>
                 </div>
             )}
             <Menu
@@ -203,7 +206,7 @@ export const AppSider = ({
                     {
                         key: '/dashboard',
                         icon: <PieChartOutlined />,
-                        label: 'Dashboard',
+                        label: t('nav.dashboard'),
                         onClick: () => {
                             navigate('/dashboard');
                             if (isMobile) setCollapsed(true);
@@ -212,7 +215,7 @@ export const AppSider = ({
                     {
                         key: '/transactions',
                         icon: <TransactionOutlined />,
-                        label: 'All Transactions',
+                        label: t('nav.allTransactions'),
                         onClick: () => {
                             navigate('/transactions');
                             if (isMobile) setCollapsed(true);
@@ -221,9 +224,18 @@ export const AppSider = ({
                     {
                         key: '/crypto',
                         icon: <FundOutlined />,
-                        label: 'Crypto Assets',
+                        label: t('nav.crypto'),
                         onClick: () => {
                             navigate('/crypto');
+                            if (isMobile) setCollapsed(true);
+                        }
+                    },
+                    {
+                        key: '/settings',
+                        icon: <SettingOutlined />,
+                        label: t('nav.settings'),
+                        onClick: () => {
+                            navigate('/settings');
                             if (isMobile) setCollapsed(true);
                         }
                     },
@@ -231,7 +243,7 @@ export const AppSider = ({
             />
             <Flex vertical style={{ padding: '0 8px' }}>
                 <Flex justify="space-between" align="center" style={{ padding: '16px 16px 8px' }}>
-                    <Title level={5} style={{ color: 'rgba(255, 255, 255, 0.65)', margin: 0 }}>Accounts</Title>
+                    <Title level={5} style={{ color: 'rgba(255, 255, 255, 0.65)', margin: 0 }}>{t('nav.accounts')}</Title>
                     <Flex gap="small">
                         {hasSyncableAccounts && (
                             <Button
@@ -239,7 +251,7 @@ export const AppSider = ({
                                 size="small"
                                 onClick={onSyncAllAccounts}
                                 disabled={syncingAccounts}
-                                title="Sincronizza tutti i conti correnti"
+                                title={t('gocardless.syncAllTitle')}
                             />
                         )}
                         <Button icon={<PlusOutlined />} size="small" onClick={onOpenCreateAccount} />
@@ -247,7 +259,7 @@ export const AppSider = ({
                 </Flex>
                 <div style={{ padding: '0 16px 16px' }}>
                     <Statistic
-                        title={<Text style={{ color: 'rgba(255, 255, 255, 0.45)' }}>Total Balance</Text>}
+                        title={<Text style={{ color: 'rgba(255, 255, 255, 0.45)' }}>{t('accounts.totalBalance')}</Text>}
                         value={totalBalance}
                         precision={2}
                         valueStyle={{ color: '#fff' }}

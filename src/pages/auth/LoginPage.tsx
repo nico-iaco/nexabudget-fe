@@ -1,16 +1,18 @@
 // src/pages/auth/LoginPage.tsx
-import { LockOutlined, UserOutlined } from '@ant-design/icons';
-import { Alert, Button, Card, Form, Input, Layout, Typography } from 'antd';
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../contexts/AuthContext';
+import {LockOutlined, UserOutlined} from '@ant-design/icons';
+import {Alert, Button, Card, Form, Input, Layout, Typography} from 'antd';
+import {useState} from 'react';
+import {useTranslation} from 'react-i18next';
+import {Link, useNavigate} from 'react-router-dom';
+import {useAuth} from '../../contexts/AuthContext';
 import * as api from '../../services/api';
-import type { LoginRequest } from '../../types/api';
+import type {LoginRequest} from '../../types/api';
 
 const { Title } = Typography;
 const { Content } = Layout;
 
 export const LoginPage = () => {
+    const { t } = useTranslation();
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
@@ -24,7 +26,7 @@ export const LoginPage = () => {
             login(loginResponse.data);
             navigate('/');
         } catch (err) {
-            setError('Invalid credentials. Please try again.');
+            setError(t('auth.invalidCredentials'));
             console.error(err);
         } finally {
             setLoading(false);
@@ -45,31 +47,31 @@ export const LoginPage = () => {
                     boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-                        <img src="/pwa-192x192.png" alt="NexaBudget Logo" style={{ width: '64px', height: '64px' }} />
+                        <img src="/pwa-192x192.png" alt={t('app.name')} style={{ width: '64px', height: '64px' }} />
                     </div>
-                    <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>Login</Title>
+                    <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>{t('auth.loginTitle')}</Title>
                     {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 24 }} />}
                     <Form name="login" onFinish={onFinish} autoComplete="off" size="large">
                         <Form.Item
                             name="username"
-                            rules={[{ required: true, message: 'Please enter your username!' }]}
+                            rules={[{ required: true, message: t('auth.usernameRequired') }]}
                         >
-                            <Input prefix={<UserOutlined />} placeholder="Username" />
+                            <Input prefix={<UserOutlined />} placeholder={t('auth.username')} />
                         </Form.Item>
                         <Form.Item
                             name="password"
-                            rules={[{ required: true, message: 'Please enter your password!' }]}
+                            rules={[{ required: true, message: t('auth.passwordRequired') }]}
                         >
-                            <Input.Password prefix={<LockOutlined />} placeholder="Password" />
+                            <Input.Password prefix={<LockOutlined />} placeholder={t('auth.password')} />
                         </Form.Item>
                         <Form.Item>
                             <Button type="primary" htmlType="submit" loading={loading} style={{ width: '100%' }}>
-                                Sign In
+                                {t('auth.loginButton')}
                             </Button>
                         </Form.Item>
                     </Form>
                     <div style={{ textAlign: 'center' }}>
-                        Don't have an account? <Link to="/register">Sign up now!</Link>
+                        {t('auth.noAccount')} <Link to="/register">{t('auth.signUpNow')}</Link>
                     </div>
                 </Card>
             </Content>

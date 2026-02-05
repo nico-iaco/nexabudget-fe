@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {Button, Form, Input, message, Modal} from 'antd';
+import {useTranslation} from 'react-i18next';
 import {saveBinanceKeys} from '../services/api';
 import type {BinanceKeysRequest} from '../types/api';
 
@@ -10,6 +11,7 @@ interface BinanceKeysModalProps {
 }
 
 export const BinanceKeysModal: React.FC<BinanceKeysModalProps> = ({ open, onClose, onSuccess }) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [form] = Form.useForm();
 
@@ -17,13 +19,13 @@ export const BinanceKeysModal: React.FC<BinanceKeysModalProps> = ({ open, onClos
         setLoading(true);
         try {
             await saveBinanceKeys(values);
-            message.success('Binance keys saved successfully');
+            message.success(t('binanceKeys.saveSuccess'));
             form.resetFields();
             onSuccess();
             onClose();
         } catch (error) {
             console.error('Failed to save Binance keys:', error);
-            message.error('Failed to save Binance keys. Please try again.');
+            message.error(t('binanceKeys.saveError'));
         } finally {
             setLoading(false);
         }
@@ -31,7 +33,7 @@ export const BinanceKeysModal: React.FC<BinanceKeysModalProps> = ({ open, onClos
 
     return (
         <Modal
-            title="Connect Binance Account"
+            title={t('binanceKeys.title')}
             open={open}
             onCancel={onClose}
             footer={null}
@@ -43,25 +45,25 @@ export const BinanceKeysModal: React.FC<BinanceKeysModalProps> = ({ open, onClos
             >
                 <Form.Item
                     name="apiKey"
-                    label="API Key"
-                    rules={[{ required: true, message: 'Please enter your Binance API Key' }]}
+                    label={t('binanceKeys.apiKey')}
+                    rules={[{ required: true, message: t('binanceKeys.apiKeyRequired') }]}
                 >
-                    <Input.Password placeholder="Enter your API Key" />
+                    <Input.Password placeholder={t('binanceKeys.apiKey')} />
                 </Form.Item>
 
                 <Form.Item
                     name="apiSecret"
-                    label="API Secret"
-                    rules={[{ required: true, message: 'Please enter your Binance API Secret' }]}
+                    label={t('binanceKeys.apiSecret')}
+                    rules={[{ required: true, message: t('binanceKeys.apiSecretRequired') }]}
                 >
-                    <Input.Password placeholder="Enter your API Secret" />
+                    <Input.Password placeholder={t('binanceKeys.apiSecret')} />
                 </Form.Item>
 
                 <Form.Item>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                        <Button onClick={onClose}>Cancel</Button>
+                        <Button onClick={onClose}>{t('common.cancel')}</Button>
                         <Button type="primary" htmlType="submit" loading={loading}>
-                            Save Keys
+                            {t('binanceKeys.saveKeys')}
                         </Button>
                     </div>
                 </Form.Item>

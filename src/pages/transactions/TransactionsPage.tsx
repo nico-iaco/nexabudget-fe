@@ -22,6 +22,7 @@ import {
     Typography
 } from 'antd';
 import {DeleteOutlined, EditOutlined, PlusOutlined, RetweetOutlined, SwapOutlined} from '@ant-design/icons';
+import {useTranslation} from 'react-i18next';
 import * as api from '../../services/api';
 import type {Account, Category, LinkTransferRequest, Transaction, TransactionRequest} from '../../types/api';
 import {useAuth} from '../../contexts/AuthContext';
@@ -53,6 +54,7 @@ interface TableFilters {
 }
 
 export const TransactionsPage = () => {
+    const { t } = useTranslation();
     const {accountId} = useParams<{ accountId?: string }>();
     const {auth} = useAuth();
     const {
@@ -104,11 +106,13 @@ export const TransactionsPage = () => {
         return new Intl.NumberFormat('it-IT', { style: 'currency', currency }).format(currentAccount.actualBalance);
     }, [currentAccount]);
 
+    const typeLabel = (type: 'IN' | 'OUT') => type === 'IN' ? t('transactions.typeIn') : t('transactions.typeOut');
+
     const handleSyncGoCardlessTransactions = async () => {
         console.log('handleSyncGoCardlessTransactions called', {accountId, currentBalance});
 
         if (!accountId) {
-            message.error('ID conto non valido');
+            message.error(t('transactions.invalidAccountId'));
             return;
         }
 
@@ -128,8 +132,8 @@ export const TransactionsPage = () => {
                 console.log('Showing notification...');
 
                 apiNotification.success({
-                    message: 'Sincronizzazione Avviata',
-                    description: 'Le transazioni verranno aggiornate in background nei prossimi minuti.',
+                    message: t('transactions.syncStartedTitle'),
+                    description: t('transactions.syncStartedDescription'),
                     placement: 'topRight',
                     duration: 5,
                 });
@@ -145,8 +149,8 @@ export const TransactionsPage = () => {
             console.error('Error during sync:', error);
             setIsBalanceModalOpen(false);
             apiNotification.error({
-                message: 'Errore di Sincronizzazione',
-                description: 'Si è verificato un errore durante la sincronizzazione delle transazioni. Riprova più tardi.',
+                message: t('transactions.syncErrorTitle'),
+                description: t('transactions.syncErrorDescription'),
                 placement: 'topRight',
                 duration: 5,
             })
@@ -196,7 +200,7 @@ export const TransactionsPage = () => {
                 setDestinationTransactions(filtered);
             } catch (error) {
                 console.error("Failed to fetch destination transactions", error);
-                message.error("Errore nel recupero delle transazioni di destinazione.");
+                message.error(t('transactions.linkTransferLoadError'));
             } finally {
                 setLoadingDestTransactions(false);
             }
@@ -213,6 +217,7 @@ export const TransactionsPage = () => {
             fetchLayoutAccounts();
         } catch (error) {
             console.error("Failed to delete transaction", error);
+            message.error(t('transactions.deleteError'));
         }
     };
 
@@ -262,6 +267,7 @@ export const TransactionsPage = () => {
             fetchLayoutAccounts();
         } catch (error) {
             console.error("Failed to save transaction", error);
+            message.error(t('transactions.saveError'));
         }
     };
 
@@ -288,18 +294,18 @@ export const TransactionsPage = () => {
 
         try {
             await api.linkTransactionsAsTransfer(request);
-            message.success("Transazioni collegate con successo!");
+            message.success(t('transactions.linkTransferSuccess'));
             handleCancelLinkTransferModal();
             fetchTransactions();
         } catch (error) {
             console.error("Failed to link transactions", error);
-            message.error("Errore durante il collegamento delle transazioni.");
+            message.error(t('transactions.linkTransferError'));
         }
     };
 
     const columns: ColumnsType<Transaction> = [
         {
-            title: 'Data',
+            title: t('transactions.data'),
             dataIndex: 'date',
             key: 'date',
             render: (text: string) => dayjs(text).format('DD/MM/YYYY'),
@@ -308,28 +314,28 @@ export const TransactionsPage = () => {
             defaultSortOrder: 'descend',
         },
         {
-            title: 'Descrizione',
+            title: t('transactions.description'),
             dataIndex: 'description',
             key: 'description',
             sorter: (a, b) => a.description.localeCompare(b.description),
             sortOrder: sortConfig.field === 'description' ? sortConfig.order : null,
         },
         {
-            title: 'Conto',
+            title: t('transactions.account'),
             dataIndex: 'accountName',
             key: 'accountName',
             sorter: (a, b) => a.accountName.localeCompare(b.accountName),
             sortOrder: sortConfig.field === 'accountName' ? sortConfig.order : null,
         },
         {
-            title: 'Categoria',
+            title: t('transactions.category'),
             dataIndex: 'categoryName',
             key: 'categoryName',
             sorter: (a, b) => (a.categoryName || '').localeCompare(b.categoryName || ''),
             sortOrder: sortConfig.field === 'categoryName' ? sortConfig.order : null,
         },
         {
-            title: 'Importo',
+            title: t('transactions.amount'),
             dataIndex: 'amount',
             key: 'amount',
             sorter: (a, b) => {
@@ -345,19 +351,19 @@ export const TransactionsPage = () => {
             )
         },
         {
-            title: 'Tipo',
+            title: t('transactions.type'),
             dataIndex: 'type',
             key: 'type',
             render: (type: 'IN' | 'OUT') => (
-                <Tag color={type === 'IN' ? 'success' : 'error'}>{type}</Tag>
+                <Tag color={type === 'IN' ? 'success' : 'error'}>{typeLabel(type)}</Tag>
             ),
             filters: [
-                {text: 'Entrata', value: 'IN'},
-                {text: 'Uscita', value: 'OUT'},
+                {text: t('transactions.typeIn'), value: 'IN'},
+                {text: t('transactions.typeOut'), value: 'OUT'},
             ],
         },
         {
-            title: 'Azioni',
+            title: t('transactions.actions'),
             key: 'actions',
             render: (_: unknown, record: Transaction) => (
                 <Flex gap="small">
@@ -429,8 +435,8 @@ export const TransactionsPage = () => {
     }, [transactions, sortConfig, filters, accounts]);
 
     const pageTitle = accountId
-        ? `Transazioni per ${accounts.find(acc => acc.id === accountId)?.name}`
-        : 'Tutte le Transazioni';
+        ? t('transactions.titleAccount', { account: accounts.find(acc => acc.id === accountId)?.name })
+        : t('transactions.titleAll');
 
     if (loading && transactions.length === 0) return <Spin size="large"/>;
 
@@ -442,8 +448,8 @@ export const TransactionsPage = () => {
                         <Alert
                             type="info"
                             showIcon
-                            message={currentAccount?.name || 'Conto' }
-                            description={`Saldo corrente: ${formattedCurrentBalance ?? 'N/D'}`}
+                            message={currentAccount?.name || t('transactions.accountLabelFallback') }
+                            description={t('transactions.currentBalanceLabel', { balance: formattedCurrentBalance ?? t('transactions.currentBalanceFallback') })}
                             style={{ marginBottom: 12 }}
                         />
                     )}
@@ -501,7 +507,7 @@ export const TransactionsPage = () => {
                             loading={syncingTransactions}
                             size={isMobile ? 'middle' : 'large'}
                         >
-                            Sync GoCardless
+                            {t('transactions.syncGoCardless')}
                         </Button>
                     )}
                     <Button
@@ -509,7 +515,7 @@ export const TransactionsPage = () => {
                         onClick={handleOpenTransferModal}
                         size={isMobile ? 'middle' : 'large'}
                     >
-                        New Transfer
+                        {t('transactions.newTransfer')}
                     </Button>
                     <Button
                         type="primary"
@@ -517,7 +523,7 @@ export const TransactionsPage = () => {
                         onClick={handleOpenCreateModal}
                         size={isMobile ? 'middle' : 'large'}
                     >
-                        New Transaction
+                        {t('transactions.newTransaction')}
                     </Button>
                 </Space>
             </Flex>
@@ -525,7 +531,7 @@ export const TransactionsPage = () => {
 
             <Flex vertical gap="middle" style={{marginBottom: 16}}>
                 <Input.Search
-                    placeholder="Search by description, account, category"
+                    placeholder={t('transactions.searchPlaceholder')}
                     onSearch={(value) => setFilters(prev => ({...prev, search: value}))}
                     onChange={(e) => {
                         if (e.target.value === '') {
@@ -539,105 +545,106 @@ export const TransactionsPage = () => {
                 <Flex gap="small" wrap="wrap">
                     <Select
                         mode="multiple"
-                        placeholder="Filtra per tipo"
+                        placeholder={t('transactions.filterType')}
                         value={filters.type}
                         onChange={(value) => setFilters(prev => ({...prev, type: value}))}
                         style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
                         allowClear
                     >
-                        <Option value="IN">Entrata</Option>
-                        <Option value="OUT">Uscita</Option>
+                        <Option value="IN">{t('transactions.typeIn')}</Option>
+                        <Option value="OUT">{t('transactions.typeOut')}</Option>
                     </Select>
                     <DatePicker
-                        placeholder="Da"
+                        placeholder={t('transactions.fromDate')}
                         style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
                         onChange={(date) => setFilters(prev => ({...prev, data: [date, prev.data?.[1] ?? null]}))}
                     />
                     <DatePicker
-                        placeholder="A"
+                        placeholder={t('transactions.toDate')}
                         style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
                         onChange={(date) => setFilters(prev => ({...prev, data: [prev.data?.[0] ?? null, date]}))}
                     />
                     <Select
-                        placeholder="Ordina per"
+                        placeholder={t('transactions.sortBy')}
                         value={sortConfig.field as string}
                         onChange={(value) => setSortConfig(prev => ({...prev, field: value}))}
                         style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
                     >
-                        <Option value="date">Data</Option>
-                        <Option value="description">Descrizione</Option>
-                        <Option value="amount">Importo</Option>
-                        <Option value="accountName">Conto</Option>
-                        <Option value="categoryName">Categoria</Option>
+                        <Option value="date">{t('transactions.data')}</Option>
+                        <Option value="description">{t('transactions.description')}</Option>
+                        <Option value="amount">{t('transactions.amount')}</Option>
+                        <Option value="accountName">{t('transactions.account')}</Option>
+                        <Option value="categoryName">{t('transactions.category')}</Option>
                     </Select>
                     <Select
-                        placeholder="Ordine"
+                        placeholder={t('transactions.sortOrder')}
                         value={sortConfig.order}
                         onChange={(value) => setSortConfig(prev => ({...prev, order: value}))}
                         style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
                     >
-                        <Option value="ascend">Crescente</Option>
-                        <Option value="descend">Decrescente</Option>
+                        <Option value="ascend">{t('transactions.sortAsc')}</Option>
+                        <Option value="descend">{t('transactions.sortDesc')}</Option>
                     </Select>
                 </Flex>
             </Flex>
 
             {renderContent()}
 
-            <Modal title={editingRecord ? "Modifica Transazione" : "Nuova Transazione"} open={isModalOpen}
+            <Modal title={editingRecord ? t('transactions.editTransaction') : t('transactions.newTransaction')} open={isModalOpen}
                    onCancel={handleCancel} footer={null}>
                 <Form form={form} layout="vertical" onFinish={onFinish} style={{marginTop: 24}}>
-                    <Form.Item name="accountId" label="Conto" rules={[{required: true}]}>
-                        <Select placeholder="Seleziona un conto" disabled={!!accountId || !!editingRecord}>
+                    <Form.Item name="accountId" label={t('transactions.account')} rules={[{required: true}]}>
+                        <Select placeholder={t('transactions.selectAccount')} disabled={!!accountId || !!editingRecord}>
                             {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="amount" label="Importo" rules={[{required: true}]}>
+                    <Form.Item name="amount" label={t('transactions.amount')} rules={[{required: true}]}>
                         <InputNumber style={{width: '100%'}} min={0} addonAfter="€"/>
                     </Form.Item>
-                    <Form.Item name="type" label="Tipo" rules={[{required: true}]}>
-                        <Select placeholder="Entrata o Uscita"
+                    <Form.Item name="type" label={t('transactions.type')} rules={[{required: true}]}>
+                        <Select placeholder={t('transactions.selectType')}
                                 onChange={() => form.setFieldsValue({categoryId: undefined})}>
-                            <Option value="IN">Entrata</Option>
-                            <Option value="OUT">Uscita</Option>
+                            <Option value="IN">{t('transactions.typeIn')}</Option>
+                            <Option value="OUT">{t('transactions.typeOut')}</Option>
                         </Select>
                     </Form.Item>
-                    <Form.Item name="categoryId" label="Categoria">
-                        <Select placeholder="Seleziona una categoria" allowClear disabled={!transactionType}>
+                    <Form.Item name="categoryId" label={t('transactions.category')}>
+                        <Select placeholder={t('transactions.selectCategory')} allowClear disabled={!transactionType}>
                             {filteredCategories.map(cat => <Option key={cat.id} value={cat.id}>{cat.name}</Option>)}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="description" label="Descrizione" rules={[{required: true}]}>
+                    <Form.Item name="description" label={t('transactions.description')} rules={[{required: true}]}>
                         <Input/>
                     </Form.Item>
-                    <Form.Item name="date" label="Data" initialValue={dayjs()}>
+                    <Form.Item name="date" label={t('transactions.data')} initialValue={dayjs()}>
                         <DatePicker style={{width: '100%'}}/>
                     </Form.Item>
-                    <Form.Item name="note" label="Note">
+                    <Form.Item name="note" label={t('transactions.note')}>
                         <Input.TextArea/>
                     </Form.Item>
                     <Form.Item>
-                        <Button type="primary" htmlType="submit" block>Salva</Button>
+                        <Button type="primary" htmlType="submit" block>{t('transactions.save')}</Button>
+
                     </Form.Item>
                 </Form>
             </Modal>
 
             <Modal
-                title="Collega a Trasferimento"
+                title={t('transactions.linkTransfer')}
                 open={isLinkModalOpen}
                 onCancel={handleCancelLinkTransferModal}
                 footer={[
-                    <Button key="back" onClick={handleCancelLinkTransferModal}>Annulla</Button>,
+                    <Button key="back" onClick={handleCancelLinkTransferModal}>{t('common.cancel')}</Button>,
                     <Button key="submit" type="primary" onClick={handleConfirmLinkTransfer}
                             disabled={!selectedDestTransactionId}>
-                        Salva Collegamento
+                        {t('transactions.linkTransferSave')}
                     </Button>,
                 ]}
                 width={600}
             >
                 {sourceTransaction && (
                     <Space direction="vertical" style={{width: '100%'}}>
-                        <Text strong>Transazione di Origine</Text>
+                        <Text strong>{t('transactions.linkTransferSource')}</Text>
                         <p>
                             {dayjs(sourceTransaction.date).format('DD/MM/YYYY')} - {sourceTransaction.description} ({sourceTransaction.accountName})
                             -
@@ -646,9 +653,9 @@ export const TransactionsPage = () => {
                         </p>
 
                         <Form layout="vertical">
-                            <Form.Item label="Seleziona Conto di Destinazione">
+                            <Form.Item label={t('transactions.linkTransferSelectAccount')}>
                                 <Select
-                                    placeholder="Seleziona un conto"
+                                    placeholder={t('transactions.selectAccount')}
                                     onChange={(value) => setDestinationAccountId(value)}
                                     value={destinationAccountId}
                                 >
@@ -668,7 +675,7 @@ export const TransactionsPage = () => {
                                         style={{width: '100%'}}
                                     >
                                         <List
-                                            header={<div>Seleziona la transazione da collegare</div>}
+                                            header={<div>{t('transactions.linkTransferSelectTransaction')}</div>}
                                             bordered
                                             dataSource={destinationTransactions}
                                             renderItem={item => (
@@ -684,7 +691,7 @@ export const TransactionsPage = () => {
                                     </Radio.Group>
                                 ) : (
                                     <Alert
-                                        message="Nessuna transazione compatibile trovata nel periodo di ±3 giorni con lo stesso importo e tipo opposto."
+                                        message={t('transactions.linkTransferNoCompatible')}
                                         type="info" showIcon/>
                                 )
                             )
@@ -694,7 +701,7 @@ export const TransactionsPage = () => {
             </Modal>
 
             <Modal
-                title="Inserisci Bilancio Corrente"
+                title={t('transactions.balanceModalTitle')}
                 open={isBalanceModalOpen}
                 onCancel={() => {
                     setIsBalanceModalOpen(false);
@@ -705,32 +712,31 @@ export const TransactionsPage = () => {
                         setIsBalanceModalOpen(false);
                         setCurrentBalance(null);
                     }}>
-                        Annulla
+                        {t('common.cancel')}
                     </Button>,
                     <Button
                         key="submit"
                         type="primary"
                         onClick={handleSyncGoCardlessTransactions}
                     >
-                        Sincronizza
+                        {t('common.confirm')}
                     </Button>
                 ]}
             >
                 <Form layout="vertical">
                     <Alert
-                        message="Bilancio Corrente"
-                        description="Inserisci il bilancio attuale del conto bancario per allineare correttamente le transazioni dopo la sincronizzazione.
-                        Se vuoi solo sincronizzare le transazioni senza modificare il bilancio corrente, lascia vuoto questo campo."
+                        message={t('transactions.balanceCurrent')}
+                        description={t('transactions.balanceCurrentInfo')}
                         type="info"
                         showIcon
                         style={{marginBottom: 16}}
                     />
-                    <Form.Item label="Bilancio Corrente">
+                    <Form.Item label={t('transactions.balanceCurrent')}>
                         <InputNumber
                             style={{width: '100%'}}
                             value={currentBalance}
                             onChange={(value) => setCurrentBalance(value)}
-                            placeholder="Es: 1000.00"
+                            placeholder={t('transactions.balanceCurrentPlaceholder')}
                             addonAfter="€"
                             precision={2}
                             autoFocus

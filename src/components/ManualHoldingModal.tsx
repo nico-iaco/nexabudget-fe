@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { Button, Form, Input, InputNumber, message, Modal } from 'antd';
-import { addManualHolding, updateManualHolding } from '../services/api';
-import type { CryptoAsset, ManualHoldingsRequest, UpdateCryptoAsset } from '../types/api';
+import React, {useEffect, useState} from 'react';
+import {Button, Form, Input, InputNumber, message, Modal} from 'antd';
+import {useTranslation} from 'react-i18next';
+import {addManualHolding, updateManualHolding} from '../services/api';
+import type {CryptoAsset, ManualHoldingsRequest, UpdateCryptoAsset} from '../types/api';
 
 interface ManualHoldingModalProps {
     open: boolean;
@@ -11,6 +12,7 @@ interface ManualHoldingModalProps {
 }
 
 export const ManualHoldingModal: React.FC<ManualHoldingModalProps> = ({ open, onClose, onSuccess, editingAsset }) => {
+    const { t } = useTranslation();
     const [loading, setLoading] = useState(false);
     const [form] = Form.useForm();
 
@@ -31,17 +33,17 @@ export const ManualHoldingModal: React.FC<ManualHoldingModalProps> = ({ open, on
             if (editingAsset) {
                 const updateData: UpdateCryptoAsset = { amount: values.amount };
                 await updateManualHolding(editingAsset.id, updateData);
-                message.success('Holding updated successfully');
+                message.success(t('manualHolding.updatedSuccess'));
             } else {
                 await addManualHolding(values);
-                message.success('Holding added successfully');
+                message.success(t('manualHolding.addedSuccess'));
             }
             form.resetFields();
             onSuccess();
             onClose();
         } catch (error) {
             console.error('Failed to save holding:', error);
-            message.error('Failed to save holding. Please try again.');
+            message.error(t('manualHolding.saveError'));
         } finally {
             setLoading(false);
         }
@@ -49,7 +51,7 @@ export const ManualHoldingModal: React.FC<ManualHoldingModalProps> = ({ open, on
 
     return (
         <Modal
-            title={editingAsset ? "Edit Manual Holding" : "Add Manual Holding"}
+            title={editingAsset ? t('manualHolding.titleEdit') : t('manualHolding.titleAdd')}
             open={open}
             onCancel={onClose}
             footer={null}
@@ -61,16 +63,16 @@ export const ManualHoldingModal: React.FC<ManualHoldingModalProps> = ({ open, on
             >
                 <Form.Item
                     name="symbol"
-                    label="Crypto Symbol"
-                    rules={[{ required: true, message: 'Please enter the crypto symbol (e.g., BTC)' }]}
+                    label={t('manualHolding.symbol')}
+                    rules={[{ required: true, message: t('manualHolding.symbolRequired') }]}
                 >
                     <Input placeholder="BTC" style={{ textTransform: 'uppercase' }} disabled={!!editingAsset} />
                 </Form.Item>
 
                 <Form.Item
                     name="amount"
-                    label="Amount"
-                    rules={[{ required: true, message: 'Please enter the amount' }]}
+                    label={t('manualHolding.amount')}
+                    rules={[{ required: true, message: t('manualHolding.amountRequired') }]}
                 >
                     <InputNumber
                         style={{ width: '100%' }}
@@ -82,9 +84,9 @@ export const ManualHoldingModal: React.FC<ManualHoldingModalProps> = ({ open, on
 
                 <Form.Item>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                        <Button onClick={onClose}>Cancel</Button>
+                        <Button onClick={onClose}>{t('common.cancel')}</Button>
                         <Button type="primary" htmlType="submit" loading={loading}>
-                            {editingAsset ? "Update Holding" : "Add Holding"}
+                            {editingAsset ? t('manualHolding.update') : t('manualHolding.add')}
                         </Button>
                     </div>
                 </Form.Item>

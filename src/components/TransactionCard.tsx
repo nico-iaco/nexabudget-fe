@@ -2,6 +2,7 @@
 import {Button, Card, Flex, Tag, Typography} from 'antd';
 import {DeleteOutlined, EditOutlined, SwapOutlined} from '@ant-design/icons';
 import dayjs from 'dayjs';
+import {useTranslation} from 'react-i18next';
 import type {Transaction} from '../types/api';
 
 const { Text } = Typography;
@@ -14,8 +15,10 @@ interface TransactionCardProps {
 }
 
 export const TransactionCard = ({ transaction, onEdit, onDelete, onConvertToTransfer }: TransactionCardProps) => {
+    const { t } = useTranslation();
     const isIncome = transaction.type === 'IN';
     const amountColor = isIncome ? 'green' : 'red';
+    const typeLabel = isIncome ? t('transactions.typeIn') : t('transactions.typeOut');
 
     return (
         <Card
@@ -40,7 +43,7 @@ export const TransactionCard = ({ transaction, onEdit, onDelete, onConvertToTran
                         {isIncome ? '+' : '-'} {transaction.amount.toFixed(2)} €
                     </Text>
                     <Tag color={isIncome ? 'success' : 'error'} style={{ marginTop: 4 }}>
-                        {transaction.type}
+                        {typeLabel}
                     </Tag>
                 </Flex>
             </Flex>

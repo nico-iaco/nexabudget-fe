@@ -1,6 +1,6 @@
 // src/App.tsx
 import {createBrowserRouter, Navigate, Outlet, RouterProvider} from 'react-router-dom';
-import {App as AntApp} from 'antd';
+import {App as AntApp, ConfigProvider, theme as antTheme} from 'antd';
 import {useAuth} from './contexts/AuthContext';
 import {Layout} from './components/Layout';
 import {LoginPage} from './pages/auth/LoginPage';
@@ -10,6 +10,8 @@ import {DashboardPage} from './pages/dashboard/DashboardPage';
 import type {JSX} from "react";
 import {GoCardlessCallbackPage} from "./pages/gocardless/GoCardlessCallbackPage.tsx";
 import {CryptoPage} from "./pages/crypto/CryptoPage";
+import {SettingsPage} from "./pages/settings/SettingsPage";
+import {usePreferences} from './contexts/PreferencesContext';
 
 const PublicLayout = () => (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
@@ -54,6 +56,10 @@ const router = createBrowserRouter([
                 path: 'crypto',
                 element: <CryptoPage />,
             },
+            {
+                path: 'settings',
+                element: <SettingsPage />,
+            },
         ],
     },
     {
@@ -67,10 +73,15 @@ const router = createBrowserRouter([
 ]);
 
 function App() {
+    const { preferences } = usePreferences();
+    const algorithm = preferences.theme === 'dark' ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm;
+
     return (
-        <AntApp>
-            <RouterProvider router={router} />
-        </AntApp>
+        <ConfigProvider theme={{ algorithm }}>
+            <AntApp>
+                <RouterProvider router={router} />
+            </AntApp>
+        </ConfigProvider>
     );
 }
 

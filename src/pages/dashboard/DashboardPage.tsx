@@ -1,9 +1,10 @@
 // src/pages/dashboard/DashboardPage.tsx
-import { useOutletContext } from 'react-router-dom';
-import { Card, Col, DatePicker, Empty, Row, Skeleton, Statistic, Typography } from 'antd';
-import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
-import { useDashboardData } from '../../hooks/useDashboardData';
-import { GenericPieChart, NetBalanceLineChart, TrendBarChart } from '../../components/dashboard/DashboardCharts';
+import {useOutletContext} from 'react-router-dom';
+import {Card, Col, DatePicker, Empty, Row, Skeleton, Statistic, Typography} from 'antd';
+import {ArrowDownOutlined, ArrowUpOutlined} from '@ant-design/icons';
+import {useTranslation} from 'react-i18next';
+import {useDashboardData} from '../../hooks/useDashboardData';
+import {GenericPieChart, NetBalanceLineChart, TrendBarChart} from '../../components/dashboard/DashboardCharts';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -13,6 +14,7 @@ interface OutletContextType {
 }
 
 export const DashboardPage = () => {
+    const { t } = useTranslation();
     const { transactionRefreshKey } = useOutletContext<OutletContextType>();
     const {
         loading,
@@ -55,7 +57,7 @@ export const DashboardPage = () => {
         <>
             <Row justify="space-between" align="middle" gutter={[8, 16]} style={{ marginBottom: 16 }}>
                 <Col xs={24} sm={12}>
-                    <Title level={2} style={{ margin: 0 }}>Dashboard</Title>
+                    <Title level={2} style={{ margin: 0 }}>{t('dashboard.title')}</Title>
                 </Col>
                 <Col xs={24} sm={12} style={{ textAlign: 'right' }}>
                     <RangePicker
@@ -67,14 +69,14 @@ export const DashboardPage = () => {
             </Row>
 
             {filteredTransactions.length === 0 ? (
-                <Empty description="Nessuna transazione trovata per il periodo selezionato." style={{ marginTop: 48 }} />
+                <Empty description={t('dashboard.empty')} style={{ marginTop: 48 }} />
             ) : (
                 <>
                     <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                         <Col {...colSpan}>
                             <Card>
                                 <Statistic
-                                    title="Saldo Netto"
+                                    title={t('dashboard.netBalance')}
                                     value={netBalance}
                                     precision={2}
                                     valueStyle={{ color: netBalance >= 0 ? '#3f8600' : '#cf1322' }}
@@ -86,7 +88,7 @@ export const DashboardPage = () => {
                         <Col {...colSpan}>
                             <Card>
                                 <Statistic
-                                    title="Entrate Totali"
+                                    title={t('dashboard.totalIncome')}
                                     value={totalIncome}
                                     precision={2}
                                     valueStyle={{ color: '#3f8600' }}
@@ -98,7 +100,7 @@ export const DashboardPage = () => {
                         <Col {...colSpan}>
                             <Card>
                                 <Statistic
-                                    title="Uscite Totali"
+                                    title={t('dashboard.totalExpenses')}
                                     value={totalExpenses}
                                     precision={2}
                                     valueStyle={{ color: '#cf1322' }}
@@ -110,7 +112,7 @@ export const DashboardPage = () => {
                                         <Text type={expenseComparison.percentageChange >= 0 ? 'danger' : 'success'}>
                                             {expenseComparison.percentageChange.toFixed(2)}%
                                         </Text>
-                                        <Text type="secondary"> vs {expenseComparison.period}</Text>
+                                        <Text type="secondary"> {t('dashboard.vsPeriod', { period: expenseComparison.period })}</Text>
                                     </div>
                                 )}
                             </Card>
@@ -119,7 +121,7 @@ export const DashboardPage = () => {
                             <Col {...colSpan}>
                                 <Card>
                                     <Statistic
-                                        title="Portafoglio Crypto"
+                                        title={t('dashboard.cryptoPortfolio')}
                                         value={portfolioValue.totalValue}
                                         precision={2}
                                         valueStyle={{ color: '#1890ff' }}
@@ -132,12 +134,12 @@ export const DashboardPage = () => {
 
                     <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                         <Col xs={24} md={12}>
-                            <Card title="Entrate per Categoria">
+                            <Card title={t('dashboard.incomeByCategory')}>
                                 <GenericPieChart data={incomeByCategory} />
                             </Card>
                         </Col>
                         <Col xs={24} md={12}>
-                            <Card title="Uscite per Categoria">
+                            <Card title={t('dashboard.expensesByCategory')}>
                                 <GenericPieChart data={expensesByCategory} />
                             </Card>
                         </Col>
@@ -145,7 +147,7 @@ export const DashboardPage = () => {
 
                     <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                         <Col xs={24}>
-                            <Card title="Andamento Mensile (Entrate/Uscite)">
+                            <Card title={t('dashboard.monthlyTrend')}>
                                 <TrendBarChart data={monthlyTrend} />
                             </Card>
                         </Col>
@@ -153,7 +155,7 @@ export const DashboardPage = () => {
 
                     <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                         <Col xs={24}>
-                            <Card title="Andamento Saldo Netto Mensile">
+                            <Card title={t('dashboard.netBalanceTrend')}>
                                 <NetBalanceLineChart data={monthlyNetBalance} />
                             </Card>
                         </Col>

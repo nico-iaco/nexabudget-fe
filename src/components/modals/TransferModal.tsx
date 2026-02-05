@@ -1,7 +1,8 @@
-import { Button, DatePicker, Form, Input, InputNumber, Modal, Select } from 'antd';
-import dayjs, { type Dayjs } from 'dayjs';
-import { useEffect } from 'react';
-import type { Account } from '../../types/api';
+import {Button, DatePicker, Form, Input, InputNumber, Modal, Select} from 'antd';
+import dayjs, {type Dayjs} from 'dayjs';
+import {useEffect} from 'react';
+import {useTranslation} from 'react-i18next';
+import type {Account} from '../../types/api';
 
 const { Option } = Select;
 
@@ -22,6 +23,7 @@ interface TransferModalProps {
 }
 
 export const TransferModal = ({ open, onCancel, onFinish, accounts }: TransferModalProps) => {
+    const { t } = useTranslation();
     const [form] = Form.useForm<TransferFormValues>();
 
     useEffect(() => {
@@ -33,7 +35,7 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts }: TransferMo
 
     return (
         <Modal
-            title="Nuovo Trasferimento"
+            title={t('transfers.newTransfer')}
             open={open}
             onCancel={onCancel}
             footer={null}
@@ -47,58 +49,58 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts }: TransferMo
             >
                 <Form.Item
                     name="sourceAccountId"
-                    label="Conto di Origine"
-                    rules={[{ required: true, message: 'Seleziona il conto di origine' }]}
+                    label={t('transfers.sourceAccount')}
+                    rules={[{ required: true, message: t('transfers.sourceAccountRequired') }]}
                 >
-                    <Select placeholder="Da quale conto?">
+                    <Select placeholder={t('transfers.sourceAccountPlaceholder')}>
                         {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
                     </Select>
                 </Form.Item>
                 <Form.Item
                     name="destinationAccountId"
-                    label="Conto di Destinazione"
+                    label={t('transfers.destinationAccount')}
                     rules={[
-                        { required: true, message: 'Seleziona il conto di destinazione' },
+                        { required: true, message: t('transfers.destinationAccountRequired') },
                         ({ getFieldValue }) => ({
                             validator(_, value) {
                                 if (!value || getFieldValue('sourceAccountId') !== value) {
                                     return Promise.resolve();
                                 }
-                                return Promise.reject(new Error('Il conto di destinazione deve essere diverso da quello di origine.'));
+                                return Promise.reject(new Error(t('transfers.destinationAccountDifferent')));
                             },
                         }),
                     ]}
                 >
-                    <Select placeholder="A quale conto?">
+                    <Select placeholder={t('transfers.destinationAccountPlaceholder')}>
                         {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
                     </Select>
                 </Form.Item>
                 <Form.Item
                     name="amount"
-                    label="Importo"
-                    rules={[{ required: true, message: 'Inserisci l\'importo' }]}
+                    label={t('transfers.amount')}
+                    rules={[{ required: true, message: t('transfers.amountRequired') }]}
                 >
                     <InputNumber style={{ width: '100%' }} min={0.01} addonAfter="€" />
                 </Form.Item>
                 <Form.Item
                     name="transferDate"
-                    label="Data del Trasferimento"
-                    rules={[{ required: true, message: 'Seleziona la data' }]}
+                    label={t('transfers.transferDate')}
+                    rules={[{ required: true, message: t('transfers.transferDateRequired') }]}
                 >
                     <DatePicker style={{ width: '100%' }} />
                 </Form.Item>
                 <Form.Item
                     name="description"
-                    label="Descrizione"
-                    rules={[{ required: true, message: 'Inserisci una descrizione' }]}
+                    label={t('transfers.description')}
+                    rules={[{ required: true, message: t('transfers.descriptionRequired') }]}
                 >
-                    <Input placeholder="Es. Giroconto" />
+                    <Input placeholder={t('transfers.descriptionPlaceholder')} />
                 </Form.Item>
-                <Form.Item name="notes" label="Note">
-                    <Input.TextArea placeholder="Note aggiuntive (opzionale)" />
+                <Form.Item name="notes" label={t('transfers.notes')}>
+                    <Input.TextArea placeholder={t('transfers.notesPlaceholder')} />
                 </Form.Item>
                 <Form.Item>
-                    <Button type="primary" htmlType="submit" block>Esegui Trasferimento</Button>
+                    <Button type="primary" htmlType="submit" block>{t('transfers.executeTransfer')}</Button>
                 </Form.Item>
             </Form>
         </Modal>

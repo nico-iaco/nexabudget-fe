@@ -1,6 +1,7 @@
-import { Button, Flex, Form, Modal, Select, Spin, Steps } from 'antd';
-import { europeanCountries } from '../../utils/countries';
-import type { Account, GoCardlessBank } from '../../types/api';
+import {Button, Flex, Form, Modal, Select, Spin, Steps} from 'antd';
+import {europeanCountries} from '../../utils/countries';
+import type {Account, GoCardlessBank} from '../../types/api';
+import {useTranslation} from 'react-i18next';
 
 const { Option } = Select;
 
@@ -31,20 +32,21 @@ export const GoCardlessModal = ({
     onBankSelect,
     onConfirm
 }: GoCardlessModalProps) => {
+    const { t } = useTranslation();
     return (
         <Modal
-            title={`Collega "${account?.name}" a GoCardless`}
+            title={t('gocardless.connectTitle', { name: account?.name ?? '' })}
             open={open}
             onCancel={onCancel}
             footer={[
-                <Button key="back" onClick={onCancel}>Annulla</Button>,
+                <Button key="back" onClick={onCancel}>{t('common.cancel')}</Button>,
                 <Button
                     key="submit"
                     type="primary"
                     onClick={onConfirm}
                     disabled={!selectedBank}
                 >
-                    Collega Banca
+                    {t('gocardless.linkBank')}
                 </Button>,
             ]}
             width={700}
@@ -53,17 +55,17 @@ export const GoCardlessModal = ({
                 current={currentStep}
                 style={{ marginBottom: 24 }}
                 items={[
-                    { title: 'Seleziona Nazione' },
-                    { title: 'Seleziona Banca' },
+                    { title: t('gocardless.selectCountry') },
+                    { title: t('gocardless.selectBank') },
                 ]}
             />
 
             {currentStep === 0 && (
                 <Form layout="vertical">
-                    <Form.Item label="Seleziona la tua nazione">
+                    <Form.Item label={t('gocardless.selectYourCountry')}>
                         <Select
                             showSearch
-                            placeholder="Seleziona una nazione"
+                            placeholder={t('gocardless.selectCountryPlaceholder')}
                             onChange={onCountrySelect}
                             value={selectedCountry}
                             loading={loadingBanks}
@@ -83,13 +85,13 @@ export const GoCardlessModal = ({
 
             {currentStep === 1 && (
                 <Form layout="vertical">
-                    <Form.Item label="Seleziona la tua banca">
+                    <Form.Item label={t('gocardless.selectYourBank')}>
                         {loadingBanks ? (
                             <Spin />
                         ) : (
                             <Select
                                 showSearch
-                                placeholder="Seleziona una banca"
+                                placeholder={t('gocardless.selectBankPlaceholder')}
                                 onChange={onBankSelect}
                                 value={selectedBank}
                                 filterOption={(input, option) =>

@@ -1,18 +1,19 @@
-import { Column, Line, Pie } from '@ant-design/charts';
-import { Empty } from 'antd';
-import type { BarData, LineData } from '../../hooks/useDashboardData';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
+import {Column, Line, Pie} from '@ant-design/charts';
+import {Empty} from 'antd';
+import {useTranslation} from 'react-i18next';
+import type {BarData, LineData} from '../../hooks/useDashboardData';
+import {useMediaQuery} from '../../hooks/useMediaQuery';
 
 interface PieChartProps {
     data: { type: string; value: number }[];
 }
 
 export const GenericPieChart = ({ data }: PieChartProps) => {
-    if (!data || data.length === 0) return <Empty description="Nessun dato disponibile" />;
+    const { t } = useTranslation();
+    const isMobile = useMediaQuery('(max-width: 768px)');
+    if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
 
     const total = data.reduce((acc, item) => acc + item.value, 0);
-
-    const isMobile = useMediaQuery('(max-width: 768px)');
 
     const config = {
         data,
@@ -54,9 +55,9 @@ interface BarChartProps {
 }
 
 export const TrendBarChart = ({ data }: BarChartProps) => {
-    if (!data || data.length === 0) return <Empty description="Nessun dato disponibile" />;
-
+    const { t } = useTranslation();
     const isMobile = useMediaQuery('(max-width: 768px)');
+    if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
 
     const config = {
         data,
@@ -80,7 +81,8 @@ interface LineChartProps {
 }
 
 export const NetBalanceLineChart = ({ data }: LineChartProps) => {
-    if (!data || data.length === 0) return <Empty description="Nessun dato disponibile" />;
+    const { t } = useTranslation();
+    if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
 
     const config = {
         data,

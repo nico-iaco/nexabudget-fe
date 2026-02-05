@@ -1,5 +1,6 @@
-import { Button, Layout, theme, Typography } from 'antd';
-import { LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import {Button, Layout, theme, Typography} from 'antd';
+import {LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined} from '@ant-design/icons';
+import {useTranslation} from 'react-i18next';
 
 const { Header } = Layout;
 const { Title } = Typography;
@@ -12,6 +13,7 @@ interface AppHeaderProps {
 }
 
 export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout }: AppHeaderProps) => {
+    const { t } = useTranslation();
     const {
         token: { colorBgContainer },
     } = theme.useToken();
@@ -48,10 +50,10 @@ export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout }: AppHe
                     letterSpacing: '-0.5px'
                 }}
             >
-                NexaBudget
+                {t('app.name')}
             </Title>
             <Button type="primary" icon={<LogoutOutlined />} onClick={onLogout}>
-                {!isMobile && 'Logout'}
+                {!isMobile && t('common.logout')}
             </Button>
         </Header>
     );

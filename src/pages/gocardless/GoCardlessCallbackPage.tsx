@@ -3,12 +3,14 @@ import {useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import {Alert, Button, Card, Flex, Form, InputNumber, List, message, notification, Spin, Typography} from 'antd';
 import {BankOutlined} from '@ant-design/icons';
+import {useTranslation} from 'react-i18next';
 import * as api from '../../services/api';
 import type {GoCardlessBankDetails} from '../../types/api';
 
 const {Title, Text} = Typography;
 
 export const GoCardlessCallbackPage = () => {
+    const { t } = useTranslation();
     const {accountId} = useParams<{ accountId: string }>();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
@@ -22,7 +24,7 @@ export const GoCardlessCallbackPage = () => {
 
     useEffect(() => {
         if (!accountId) {
-            setError('ID conto non valido');
+            setError(t('gocardlessCallback.invalidAccountId'));
             setLoading(false);
             return;
         }
@@ -33,18 +35,18 @@ export const GoCardlessCallbackPage = () => {
                 setBankAccounts(response.data);
 
                 if (response.data.length === 0) {
-                    setError('Nessun conto bancario disponibile per la sincronizzazione');
+                    setError(t('gocardlessCallback.noAccounts'));
                 }
             } catch (err) {
                 console.error(err);
-                setError('Errore durante il caricamento dei conti bancari');
+                setError(t('gocardlessCallback.loadError'));
             } finally {
                 setLoading(false);
             }
         };
 
         fetchBankAccounts();
-    }, [accountId]);
+    }, [accountId, t]);
 
     const handleSelectAccount = (bankAccountId: string) => {
         setSelectedAccountId(bankAccountId);
@@ -52,7 +54,7 @@ export const GoCardlessCallbackPage = () => {
 
     const handleConfirmSelection = async () => {
         if (!selectedAccountId || !accountId || currentBalance === null) {
-            message.error('Seleziona un conto e inserisci il bilancio corrente');
+            message.error(t('gocardlessCallback.selectAccountAndBalance'));
             return;
         }
 
@@ -63,13 +65,13 @@ export const GoCardlessCallbackPage = () => {
                 accountId: selectedAccountId
             });
 
-            message.success('Conto bancario collegato con successo!');
+            message.success(t('gocardlessCallback.linkSuccess'));
 
             await api.syncGoCardlessBankAccount(accountId, {actualBalance: currentBalance});
 
             apiNotification.info({
-                message: 'Sincronizzazione Avviata',
-                description: 'Le transazioni verranno importate nei prossimi minuti.',
+                message: t('gocardlessCallback.syncStartedTitle'),
+                description: t('gocardlessCallback.syncStartedDescription'),
                 placement: 'bottomRight',
                 duration: 5,
             });
@@ -78,8 +80,8 @@ export const GoCardlessCallbackPage = () => {
         } catch (err) {
             console.error(err);
             apiNotification.error({
-                message: 'Errore di Sincronizzazione',
-                description: 'Si è verificato un errore durante la sincronizzazione delle transazioni. Riprova più tardi.',
+                message: t('gocardlessCallback.syncErrorTitle'),
+                description: t('gocardlessCallback.syncErrorDescription'),
                 placement: 'bottomRight',
                 duration: 5,
             })
@@ -100,8 +102,8 @@ export const GoCardlessCallbackPage = () => {
                 <Spin size="large"/>
                 <Text>
                     {bankAccounts.length > 0
-                        ? 'Collegamento e importazione transazioni in corso...'
-                        : 'Caricamento conti bancari...'}
+                        ? t('gocardlessCallback.loadingLinking')
+                        : t('gocardlessCallback.loadingAccounts')}
                 </Text>
             </Flex>
         );
@@ -117,7 +119,7 @@ export const GoCardlessCallbackPage = () => {
             >
                 <Card style={{maxWidth: 600, width: '100%'}}>
                     <Alert
-                        message="Errore"
+                        message={t('gocardlessCallback.errorTitle')}
                         description={error}
                         type="error"
                         showIcon
@@ -128,7 +130,7 @@ export const GoCardlessCallbackPage = () => {
                         style={{marginTop: 16}}
                         block
                     >
-                        Torna alle Transazioni
+                        {t('gocardlessCallback.backToTransactions')}
                     </Button>
                 </Card>
             </Flex>
@@ -145,14 +147,14 @@ export const GoCardlessCallbackPage = () => {
                         <Flex align="center" gap="small">
                             <BankOutlined/>
                             <Title level={3} style={{margin: 0}}>
-                                Seleziona il Conto da Sincronizzare
+                                {t('gocardlessCallback.selectAccountTitle')}
                             </Title>
                         </Flex>
                     }
                 >
                     <Alert
-                        message="Seleziona un conto bancario"
-                        description="Scegli quale conto bancario vuoi collegare e inserisci il bilancio corrente per allineare correttamente le transazioni."
+                        message={t('gocardlessCallback.selectAccountMessage')}
+                        description={t('gocardlessCallback.selectAccountDescription')}
                         type="info"
                         showIcon
                         style={{marginBottom: 24}}
@@ -192,11 +194,11 @@ export const GoCardlessCallbackPage = () => {
                                     )}
                                     <Flex vertical gap="small" style={{flex: 1}}>
                                         <Text strong style={{fontSize: '16px'}}>
-                                            {account.institution.name || 'Banca Sconosciuta'}
+                                            {account.institution.name || t('gocardlessCallback.bankUnknown')}
                                         </Text>
                                         {account.name && (
                                             <Text type="secondary">
-                                                Nome: {account.name}
+                                                {t('gocardlessCallback.accountNameLabel')}: {account.name}
                                             </Text>
                                         )}
                                     </Flex>
@@ -210,15 +212,15 @@ export const GoCardlessCallbackPage = () => {
 
                     {selectedAccountId && (
                         <Form.Item
-                            label="Bilancio Corrente"
+                            label={t('gocardlessCallback.currentBalanceLabel')}
                             style={{marginTop: 24}}
-                            help="Inserisci il bilancio attuale del conto bancario per allineare correttamente le transazioni"
+                            help={t('gocardlessCallback.currentBalanceHelp')}
                         >
                             <InputNumber
                                 style={{width: '100%'}}
                                 value={currentBalance}
                                 onChange={(value) => setCurrentBalance(value)}
-                                placeholder="Es: 1000.00"
+                                placeholder={t('gocardlessCallback.currentBalancePlaceholder')}
                                 addonAfter="€"
                                 precision={2}
                             />
@@ -227,7 +229,7 @@ export const GoCardlessCallbackPage = () => {
 
                     <Flex gap="small" style={{marginTop: 24}}>
                         <Button onClick={() => navigate('/transactions')} style={{flex: 1}}>
-                            Annulla
+                            {t('common.cancel')}
                         </Button>
                         <Button
                             type="primary"
@@ -235,7 +237,7 @@ export const GoCardlessCallbackPage = () => {
                             disabled={!selectedAccountId || currentBalance === null}
                             style={{flex: 1}}
                         >
-                            Conferma Selezione
+                            {t('gocardlessCallback.confirmSelection')}
                         </Button>
                     </Flex>
                 </Card>

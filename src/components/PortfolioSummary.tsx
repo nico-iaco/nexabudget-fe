@@ -1,7 +1,8 @@
-import React, { useMemo } from 'react';
-import { Button, Card, Col, Popconfirm, Row, Statistic, Table, Tag } from 'antd';
-import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
-import type { CryptoAsset, PortfolioValueResponse } from '../types/api.ts';
+import React, {useMemo} from 'react';
+import {Button, Card, Col, Popconfirm, Row, Statistic, Table, Tag} from 'antd';
+import {DeleteOutlined, EditOutlined} from '@ant-design/icons';
+import {useTranslation} from 'react-i18next';
+import type {CryptoAsset, PortfolioValueResponse} from '../types/api.ts';
 
 interface PortfolioSummaryProps {
     data: PortfolioValueResponse | null;
@@ -19,6 +20,8 @@ interface GroupedAsset {
 }
 
 export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loading, onEditAsset, onDeleteAsset }) => {
+    const { t, i18n } = useTranslation();
+    const locale = i18n.language === 'it' ? 'it-IT' : 'en-US';
     const groupedAssets = useMemo(() => {
         if (!data?.assets) return [];
         const groups: Record<string, GroupedAsset> = {};
@@ -45,7 +48,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
 
     const columns = [
         {
-            title: 'Asset',
+            title: t('portfolio.asset'),
             dataIndex: 'symbol',
             key: 'symbol',
             render: (text: string, _: GroupedAsset, index: number) => (
@@ -53,47 +56,47 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
             ),
         },
         {
-            title: 'Amount',
+            title: t('portfolio.amount'),
             dataIndex: 'amount',
             key: 'amount',
-            render: (amount: number) => amount.toLocaleString(undefined, { maximumFractionDigits: 8 }),
+            render: (amount: number) => amount.toLocaleString(locale, { maximumFractionDigits: 8 }),
         },
         {
-            title: 'Price',
+            title: t('portfolio.price'),
             dataIndex: 'price',
             key: 'price',
             render: (price: number) =>
-                new Intl.NumberFormat('en-US', { style: 'currency', currency: data?.currency || 'USD' }).format(price),
+                new Intl.NumberFormat(locale, { style: 'currency', currency: data?.currency || 'USD' }).format(price),
         },
         {
-            title: 'Value',
+            title: t('portfolio.value'),
             dataIndex: 'value',
             key: 'value',
             render: (value: number) =>
-                new Intl.NumberFormat('en-US', { style: 'currency', currency: data?.currency || 'USD' }).format(value),
+                new Intl.NumberFormat(locale, { style: 'currency', currency: data?.currency || 'USD' }).format(value),
         },
     ];
 
     const expandedRowRender = (record: GroupedAsset) => {
         const innerColumns = [
-            { title: 'Source', dataIndex: 'source', key: 'source' },
+            { title: t('portfolio.source'), dataIndex: 'source', key: 'source' },
             {
-                title: 'Amount',
+                title: t('portfolio.amount'),
                 dataIndex: 'amount',
                 key: 'amount',
-                render: (amount: number) => amount.toLocaleString(undefined, { maximumFractionDigits: 8 }),
+                render: (amount: number) => amount.toLocaleString(locale, { maximumFractionDigits: 8 }),
             },
             {
-                title: 'Value',
+                title: t('portfolio.value'),
                 dataIndex: 'value',
                 key: 'value',
                 render: (value: number) =>
-                    new Intl.NumberFormat('en-US', { style: 'currency', currency: data?.currency || 'USD' }).format(value),
+                    new Intl.NumberFormat(locale, { style: 'currency', currency: data?.currency || 'USD' }).format(value),
             },
             {
-                title: 'Actions',
+                title: t('portfolio.actions'),
                 key: 'actions',
-                render: (_: any, asset: CryptoAsset) => {
+                render: (_value: unknown, asset: CryptoAsset) => {
                     if (asset.source === 'MANUAL') {
                         return (
                             <span>
@@ -104,11 +107,11 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                                     onClick={() => onEditAsset?.(asset)}
                                 />
                                 <Popconfirm
-                                    title="Delete holding"
-                                    description="Are you sure you want to delete this holding?"
+                                    title={t('portfolio.deleteHolding')}
+                                    description={t('portfolio.deleteHoldingConfirm')}
                                     onConfirm={() => onDeleteAsset?.(asset)}
-                                    okText="Yes"
-                                    cancelText="No"
+                                    okText={t('common.yes')}
+                                    cancelText={t('common.no')}
                                 >
                                     <Button icon={<DeleteOutlined />} size="small" danger />
                                 </Popconfirm>
@@ -129,7 +132,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                 <Col xs={24} sm={12} md={8}>
                     <Card bordered={false}>
                         <Statistic
-                            title="Total Portfolio Value"
+                            title={t('portfolio.totalValue')}
                             value={data?.totalValue}
                             precision={2}
                             valueStyle={{ color: '#3f8600' }}
@@ -140,7 +143,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                 </Col>
             </Row>
 
-            <Card title="Your Assets" bordered={false}>
+            <Card title={t('portfolio.yourAssets')} bordered={false}>
                 <Table
                     dataSource={groupedAssets}
                     columns={columns}

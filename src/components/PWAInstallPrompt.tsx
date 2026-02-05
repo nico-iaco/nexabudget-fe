@@ -2,6 +2,7 @@
 import {useEffect, useState} from 'react';
 import {Button, Card, Flex, Typography} from 'antd';
 import {CloseOutlined, DownloadOutlined} from '@ant-design/icons';
+import {useTranslation} from 'react-i18next';
 
 const { Text } = Typography;
 
@@ -11,6 +12,7 @@ interface BeforeInstallPromptEvent extends Event {
 }
 
 export const PWAInstallPrompt = () => {
+    const { t } = useTranslation();
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [showPrompt, setShowPrompt] = useState(false);
 
@@ -68,9 +70,9 @@ export const PWAInstallPrompt = () => {
         >
             <Flex justify="space-between" align="center" gap="middle">
                 <Flex vertical gap="small" style={{ flex: 1 }}>
-                    <Text strong>Installa NexaBudget</Text>
+                    <Text strong>{t('pwa.title')}</Text>
                     <Text type="secondary" style={{ fontSize: '12px' }}>
-                        Aggiungi l'app alla tua schermata Home per un accesso rapido
+                        {t('pwa.description')}
                     </Text>
                 </Flex>
                 <Flex gap="small">
@@ -80,7 +82,7 @@ export const PWAInstallPrompt = () => {
                         onClick={handleInstall}
                         size="small"
                     >
-                        Installa
+                        {t('pwa.install')}
                     </Button>
                     <Button
                         type="text"
@@ -93,4 +95,3 @@ export const PWAInstallPrompt = () => {
         </Card>
     );
 };
-

@@ -1,5 +1,6 @@
 // src/contexts/AuthContext.tsx
-import { createContext, useState, useContext, type ReactNode, useEffect } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import {createContext, type ReactNode, useContext, useEffect, useState} from 'react';
 import type {AuthResponse} from '../types/api';
 
 interface AuthContextType {
