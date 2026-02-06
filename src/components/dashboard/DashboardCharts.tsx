@@ -3,6 +3,7 @@ import {Empty} from 'antd';
 import {useTranslation} from 'react-i18next';
 import type {BarData, LineData} from '../../hooks/useDashboardData';
 import {useMediaQuery} from '../../hooks/useMediaQuery';
+import {usePreferences} from '../../contexts/PreferencesContext';
 
 interface PieChartProps {
     data: { type: string; value: number }[];
@@ -11,6 +12,8 @@ interface PieChartProps {
 export const GenericPieChart = ({ data }: PieChartProps) => {
     const { t } = useTranslation();
     const isMobile = useMediaQuery('(max-width: 768px)');
+    const { preferences } = usePreferences();
+    const isDark = preferences.theme === 'dark';
     if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
 
     const total = data.reduce((acc, item) => acc + item.value, 0);
@@ -39,6 +42,11 @@ export const GenericPieChart = ({ data }: PieChartProps) => {
                 position: isMobile ? 'bottom' : 'right',
                 rowPadding: 5,
             },
+            itemName: {
+                style: {
+                    fill: isDark ? '#ffffff' : '#000000',
+                },
+            },
         },
         interactions: [
             {
@@ -57,6 +65,8 @@ interface BarChartProps {
 export const TrendBarChart = ({ data }: BarChartProps) => {
     const { t } = useTranslation();
     const isMobile = useMediaQuery('(max-width: 768px)');
+    const { preferences } = usePreferences();
+    const isDark = preferences.theme === 'dark';
     if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
 
     const config = {
@@ -70,6 +80,26 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
         },
         legend: {
             position: isMobile ? 'bottom' : 'top-left',
+            itemName: {
+                style: {
+                    fill: isDark ? '#ffffff' : '#000000',
+                },
+            },
+        },
+        axis: {
+            x: {
+                title: false,
+                labelFormatter: (text: string) => text,
+                labelStyle: {
+                    fill: isDark ? '#ffffff' : '#000000',
+                },
+            },
+            y: {
+                title: false,
+                labelStyle: {
+                    fill: isDark ? '#ffffff' : '#000000',
+                },
+            },
         },
     };
 
@@ -82,6 +112,8 @@ interface LineChartProps {
 
 export const NetBalanceLineChart = ({ data }: LineChartProps) => {
     const { t } = useTranslation();
+    const { preferences } = usePreferences();
+    const isDark = preferences.theme === 'dark';
     if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
 
     const config = {
@@ -99,6 +131,20 @@ export const NetBalanceLineChart = ({ data }: LineChartProps) => {
         },
         style: {
             lineWidth: 2,
+        },
+        axis: {
+            x: {
+                title: false,
+                labelStyle: {
+                    fill: isDark ? '#ffffff' : '#000000',
+                },
+            },
+            y: {
+                title: false,
+                labelStyle: {
+                    fill: isDark ? '#ffffff' : '#000000',
+                },
+            },
         },
     };
     
