@@ -1,9 +1,29 @@
-import {Column, Line, Pie} from '@ant-design/charts';
-import {Empty} from 'antd';
-import {useTranslation} from 'react-i18next';
-import type {BarData, LineData} from '../../hooks/useDashboardData';
-import {useMediaQuery} from '../../hooks/useMediaQuery';
-import {usePreferences} from '../../contexts/PreferencesContext';
+import { Column, Line, Pie } from '@ant-design/charts';
+import { Empty } from 'antd';
+import { useTranslation } from 'react-i18next';
+import type { BarData, LineData } from '../../hooks/useDashboardData';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { usePreferences } from '../../contexts/PreferencesContext';
+
+const TooltipGlobalStyles = ({ isDark }: { isDark: boolean }) => (
+    <style>{`
+        .g2-tooltip {
+            background-color: ${isDark ? '#1f1f1f' : '#ffffff'} !important;
+            color: ${isDark ? '#ffffff' : '#000000'} !important;
+            box-shadow: 0 3px 6px -4px rgba(0,0,0,0.48), 0 6px 16px 0 rgba(0,0,0,0.32), 0 9px 28px 8px rgba(0,0,0,0.2) !important;
+        }
+        /* Force all text inside tooltip to follow the theme color */
+        .g2-tooltip * {
+            color: ${isDark ? '#ffffff' : '#000000'} !important;
+        }
+        .g2-tooltip-title {
+            color: ${isDark ? '#ffffff' : '#000000'} !important;
+        }
+        .g2-tooltip-list-item-label {
+             color: ${isDark ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.65)'} !important;
+        }
+    `}</style>
+);
 
 interface PieChartProps {
     data: { type: string; value: number }[];
@@ -16,7 +36,7 @@ export const GenericPieChart = ({ data }: PieChartProps) => {
     const isDark = preferences.theme === 'dark';
     if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
 
-    const total = data.reduce((acc, item) => acc + item.value, 0);
+
 
     const config = {
         data,
@@ -24,29 +44,10 @@ export const GenericPieChart = ({ data }: PieChartProps) => {
         colorField: 'type',
         radius: 0.8,
         label: false,
-        tooltip: {
-            title: 'type',
-            items: [
-                {
-                    field: 'value',
-                    valueFormatter: (v: number) => {
-                        const percent = total > 0 ? (v / total) * 100 : 0;
-                        return `${v.toFixed(2)}€ (${percent.toFixed(2)}%)`;
-                    }
-                }
-            ]
-        },
+        theme: isDark ? 'dark' : undefined,
+
         legend: {
-            color: {
-                title: false,
-                position: isMobile ? 'bottom' : 'right',
-                rowPadding: 5,
-            },
-            itemName: {
-                style: {
-                    fill: isDark ? '#ffffff' : '#000000',
-                },
-            },
+            position: isMobile ? 'bottom' : 'right',
         },
         interactions: [
             {
@@ -55,7 +56,12 @@ export const GenericPieChart = ({ data }: PieChartProps) => {
         ],
     };
 
-    return <Pie {...config} />;
+    return (
+        <>
+            <TooltipGlobalStyles isDark={isDark} />
+            <Pie {...config} />
+        </>
+    );
 };
 
 interface BarChartProps {
@@ -74,36 +80,38 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
         xField: 'month',
         yField: 'value',
         colorField: 'type',
-        group: true,
-        style: {
-            inset: 5,
+        isGroup: true,
+        seriesField: 'type', // ensuring explicit series field
+        theme: isDark ? 'dark' : undefined,
+
+        columnStyle: {
+            radius: [2, 2, 0, 0],
         },
         legend: {
             position: isMobile ? 'bottom' : 'top-left',
-            itemName: {
+        },
+        xAxis: {
+            label: {
                 style: {
                     fill: isDark ? '#ffffff' : '#000000',
                 },
             },
         },
-        axis: {
-            x: {
-                title: false,
-                labelFormatter: (text: string) => text,
-                labelStyle: {
-                    fill: isDark ? '#ffffff' : '#000000',
-                },
-            },
-            y: {
-                title: false,
-                labelStyle: {
+        yAxis: {
+            label: {
+                style: {
                     fill: isDark ? '#ffffff' : '#000000',
                 },
             },
         },
     };
 
-    return <Column {...config} />;
+    return (
+        <>
+            <TooltipGlobalStyles isDark={isDark} />
+            <Column {...config} />
+        </>
+    );
 };
 
 interface LineChartProps {
@@ -121,32 +129,34 @@ export const NetBalanceLineChart = ({ data }: LineChartProps) => {
         xField: 'label',
         yField: 'value',
         point: {
-            shapeField: 'square',
-            sizeField: 4,
+            size: 4,
+            shape: 'square',
         },
-        interaction: {
-            tooltip: {
-                marker: false,
-            },
-        },
-        style: {
+
+        lineStyle: {
             lineWidth: 2,
         },
-        axis: {
-            x: {
-                title: false,
-                labelStyle: {
+        theme: isDark ? 'dark' : undefined,
+        xAxis: {
+            label: {
+                style: {
                     fill: isDark ? '#ffffff' : '#000000',
                 },
             },
-            y: {
-                title: false,
-                labelStyle: {
+        },
+        yAxis: {
+            label: {
+                style: {
                     fill: isDark ? '#ffffff' : '#000000',
                 },
             },
         },
     };
-    
-    return <Line {...config} />;
+
+    return (
+        <>
+            <TooltipGlobalStyles isDark={isDark} />
+            <Line {...config} />
+        </>
+    );
 };
