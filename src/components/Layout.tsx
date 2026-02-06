@@ -1,18 +1,18 @@
 // src/components/Layout.tsx
-import {useEffect, useMemo, useState} from 'react';
-import {Outlet, useLocation, useNavigate} from 'react-router-dom';
-import {Layout as AntLayout, message, Modal, theme} from 'antd';
-import {useTranslation} from 'react-i18next';
-import {useAuth} from '../contexts/AuthContext';
+import { useEffect, useMemo, useState } from 'react';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Layout as AntLayout, message, Modal, theme } from 'antd';
+import { useTranslation } from 'react-i18next';
+import { useAuth } from '../contexts/AuthContext';
 import * as api from '../services/api';
-import type {Account, AccountRequest, Category, GoCardlessBank, TransferRequest} from '../types/api';
+import type { Account, AccountRequest, Category, GoCardlessBank, TransferRequest } from '../types/api';
 import dayjs from 'dayjs';
-import {PWAInstallPrompt} from './PWAInstallPrompt';
-import {AppSider} from './layout/AppSider';
-import {AppHeader} from './layout/AppHeader';
-import {AccountModal} from './modals/AccountModal';
-import {type TransferFormValues, TransferModal} from './modals/TransferModal';
-import {GoCardlessModal} from './modals/GoCardlessModal';
+import { PWAInstallPrompt } from './PWAInstallPrompt';
+import { AppSider } from './layout/AppSider';
+import { AppHeader } from './layout/AppHeader';
+import { AccountModal } from './modals/AccountModal';
+import { type TransferFormValues, TransferModal } from './modals/TransferModal';
+import { GoCardlessModal } from './modals/GoCardlessModal';
 
 const { Content } = AntLayout;
 
@@ -307,7 +307,13 @@ export const Layout = () => {
                     onSyncAllAccounts={handleSyncAllAccounts}
                     syncingAccounts={syncingAccounts}
                 />
-                <AntLayout className="site-layout">
+                <AntLayout
+                    className="site-layout"
+                    style={{
+                        marginLeft: isMobile ? 0 : (collapsed ? 0 : 300),
+                        transition: 'all 0.2s'
+                    }}
+                >
                     <AppHeader
                         collapsed={collapsed}
                         setCollapsed={setCollapsed}

@@ -1,4 +1,4 @@
-import {Button, Flex, Layout, Menu, Spin, Statistic, Typography} from 'antd';
+import { Button, Flex, Layout, Menu, Spin, Statistic, Typography } from 'antd';
 import {
     BankOutlined,
     DeleteOutlined,
@@ -16,10 +16,10 @@ import {
     TransactionOutlined,
     WalletOutlined
 } from '@ant-design/icons';
-import {useNavigate} from 'react-router-dom';
-import {useCallback, useMemo} from 'react';
-import {useTranslation} from 'react-i18next';
-import type {Account} from '../../types/api';
+import { useNavigate } from 'react-router-dom';
+import { useCallback, useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { Account } from '../../types/api';
 
 const { Sider } = Layout;
 const { Title, Text } = Typography;
@@ -179,7 +179,16 @@ export const AppSider = ({
                 setCollapsed(broken);
             }}
             onCollapse={(isCollapsed) => setCollapsed(isCollapsed)}
-            style={isMobile ? { position: 'fixed', zIndex: 1001, height: '100vh', width: '100%' } : {}}
+            style={{
+                position: 'fixed',
+                height: '100vh',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                zIndex: 1001,
+                overflowY: 'auto',
+                ...(isMobile ? { width: '100%' } : {})
+            }}
         >
             {isMobile && !collapsed && (
                 <Flex justify="space-between" align="center" style={{ padding: '16px', background: '#001529' }}>
