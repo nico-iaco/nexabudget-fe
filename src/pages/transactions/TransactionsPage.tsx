@@ -1,6 +1,6 @@
 // src/pages/transactions/TransactionsPage.tsx
-import {useEffect, useMemo, useState} from 'react';
-import {useOutletContext, useParams} from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useOutletContext, useParams } from 'react-router-dom';
 import {
     Alert,
     Button,
@@ -21,19 +21,19 @@ import {
     Tag,
     Typography
 } from 'antd';
-import {DeleteOutlined, EditOutlined, PlusOutlined, RetweetOutlined, SwapOutlined} from '@ant-design/icons';
-import {useTranslation} from 'react-i18next';
+import { DeleteOutlined, EditOutlined, PlusOutlined, RetweetOutlined, SwapOutlined } from '@ant-design/icons';
+import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
-import type {Account, Category, LinkTransferRequest, Transaction, TransactionRequest} from '../../types/api';
-import {useAuth} from '../../contexts/AuthContext';
-import dayjs, {type Dayjs} from 'dayjs';
-import {useMediaQuery} from '../../hooks/useMediaQuery';
-import {TransactionCard} from '../../components/TransactionCard';
-import type {ColumnsType, TableProps} from 'antd/es/table';
-import type {SorterResult} from 'antd/es/table/interface';
+import type { Account, Category, LinkTransferRequest, Transaction, TransactionRequest } from '../../types/api';
+import { useAuth } from '../../contexts/AuthContext';
+import dayjs, { type Dayjs } from 'dayjs';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { TransactionCard } from '../../components/TransactionCard';
+import type { ColumnsType, TableProps } from 'antd/es/table';
+import type { SorterResult } from 'antd/es/table/interface';
 
-const {Title, Text} = Typography;
-const {Option} = Select;
+const { Title, Text } = Typography;
+const { Option } = Select;
 
 interface OutletContextType {
     accounts: Account[];
@@ -55,8 +55,8 @@ interface TableFilters {
 
 export const TransactionsPage = () => {
     const { t } = useTranslation();
-    const {accountId} = useParams<{ accountId?: string }>();
-    const {auth} = useAuth();
+    const { accountId } = useParams<{ accountId?: string }>();
+    const { auth } = useAuth();
     const {
         accounts,
         fetchAccounts: fetchLayoutAccounts,
@@ -109,7 +109,7 @@ export const TransactionsPage = () => {
     const typeLabel = (type: 'IN' | 'OUT') => type === 'IN' ? t('transactions.typeIn') : t('transactions.typeOut');
 
     const handleSyncGoCardlessTransactions = async () => {
-        console.log('handleSyncGoCardlessTransactions called', {accountId, currentBalance});
+        console.log('handleSyncGoCardlessTransactions called', { accountId, currentBalance });
 
         if (!accountId) {
             message.error(t('transactions.invalidAccountId'));
@@ -120,7 +120,7 @@ export const TransactionsPage = () => {
 
         try {
             console.log('Calling syncGoCardlessBankAccount...');
-            await api.syncGoCardlessBankAccount(accountId, {actualBalance: currentBalance});
+            await api.syncGoCardlessBankAccount(accountId, { actualBalance: currentBalance });
             console.log('Sync API call completed successfully');
 
             // Chiudi il modal PRIMA di mostrare la notifica
@@ -225,7 +225,7 @@ export const TransactionsPage = () => {
         setEditingRecord(null);
         form.resetFields();
         if (accountId) {
-            form.setFieldsValue({accountId: accountId});
+            form.setFieldsValue({ accountId: accountId });
         }
         setIsModalOpen(true);
     };
@@ -345,9 +345,9 @@ export const TransactionsPage = () => {
             },
             sortOrder: sortConfig.field === 'amount' ? sortConfig.order : null,
             render: (amount: number, record: Transaction) => (
-                <span style={{color: record.type === 'IN' ? 'green' : 'red'}}>
-            {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} €
-        </span>
+                <span style={{ color: record.type === 'IN' ? 'green' : 'red' }}>
+                    {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} €
+                </span>
             )
         },
         {
@@ -358,8 +358,8 @@ export const TransactionsPage = () => {
                 <Tag color={type === 'IN' ? 'success' : 'error'}>{typeLabel(type)}</Tag>
             ),
             filters: [
-                {text: t('transactions.typeIn'), value: 'IN'},
-                {text: t('transactions.typeOut'), value: 'OUT'},
+                { text: t('transactions.typeIn'), value: 'IN' },
+                { text: t('transactions.typeOut'), value: 'OUT' },
             ],
         },
         {
@@ -367,11 +367,11 @@ export const TransactionsPage = () => {
             key: 'actions',
             render: (_: unknown, record: Transaction) => (
                 <Flex gap="small">
-                    <Button icon={<EditOutlined/>} onClick={() => handleOpenEditModal(record)}/>
+                    <Button icon={<EditOutlined />} onClick={() => handleOpenEditModal(record)} />
                     {!record.transferId && (
-                        <Button icon={<SwapOutlined/>} onClick={() => handleOpenLinkTransferModal(record)}/>
+                        <Button icon={<SwapOutlined />} onClick={() => handleOpenLinkTransferModal(record)} />
                     )}
-                    <Button danger icon={<DeleteOutlined/>} onClick={() => handleDelete(record.id)}/>
+                    <Button danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />
                 </Flex>
             )
         },
@@ -393,7 +393,7 @@ export const TransactionsPage = () => {
         let data = transactions.map(t => {
             if (!t.accountName) {
                 const account = accounts.find(acc => acc.id === t.accountId);
-                return {...t, accountName: account?.name || 'N/A'};
+                return { ...t, accountName: account?.name || 'N/A' };
             }
             return t;
         });
@@ -438,7 +438,7 @@ export const TransactionsPage = () => {
         ? t('transactions.titleAccount', { account: accounts.find(acc => acc.id === accountId)?.name })
         : t('transactions.titleAll');
 
-    if (loading && transactions.length === 0) return <Spin size="large"/>;
+    if (loading && transactions.length === 0) return <Spin size="large" />;
 
     const renderContent = () => {
         if (isMobile) {
@@ -448,7 +448,7 @@ export const TransactionsPage = () => {
                         <Alert
                             type="info"
                             showIcon
-                            message={currentAccount?.name || t('transactions.accountLabelFallback') }
+                            message={currentAccount?.name || t('transactions.accountLabelFallback')}
                             description={t('transactions.currentBalanceLabel', { balance: formattedCurrentBalance ?? t('transactions.currentBalanceFallback') })}
                             style={{ marginBottom: 12 }}
                         />
@@ -497,21 +497,22 @@ export const TransactionsPage = () => {
     return (
         <>
             {contextHolder}
-            <Flex justify="space-between" align="center" style={{marginBottom: 16}} wrap="wrap" gap="small">
-                <Title level={2} style={{margin: 0, fontSize: isMobile ? '1.5rem' : '2rem'}}>{pageTitle}</Title>
+            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }} wrap="wrap" gap="small">
+                <Title level={2} style={{ margin: 0, fontSize: isMobile ? '1.5rem' : '2rem' }}>{pageTitle}</Title>
                 <Space wrap size={isMobile ? 'small' : 'middle'}>
                     {accountId && accounts.find(acc => acc.id === accountId)?.linkedToExternal && (
                         <Button
-                            icon={<RetweetOutlined/>}
+                            icon={<RetweetOutlined spin={accounts.find(acc => acc.id === accountId)?.synchronizing} />}
                             onClick={() => setIsBalanceModalOpen(true)}
-                            loading={syncingTransactions}
+                            loading={syncingTransactions || accounts.find(acc => acc.id === accountId)?.synchronizing}
+                            disabled={accounts.find(acc => acc.id === accountId)?.synchronizing}
                             size={isMobile ? 'middle' : 'large'}
                         >
-                            {t('transactions.syncGoCardless')}
+                            {accounts.find(acc => acc.id === accountId)?.synchronizing ? 'Sincronizzazione...' : t('transactions.syncGoCardless')}
                         </Button>
                     )}
                     <Button
-                        icon={<RetweetOutlined/>}
+                        icon={<RetweetOutlined />}
                         onClick={handleOpenTransferModal}
                         size={isMobile ? 'middle' : 'large'}
                     >
@@ -519,7 +520,7 @@ export const TransactionsPage = () => {
                     </Button>
                     <Button
                         type="primary"
-                        icon={<PlusOutlined/>}
+                        icon={<PlusOutlined />}
                         onClick={handleOpenCreateModal}
                         size={isMobile ? 'middle' : 'large'}
                     >
@@ -529,13 +530,13 @@ export const TransactionsPage = () => {
             </Flex>
 
 
-            <Flex vertical gap="middle" style={{marginBottom: 16}}>
+            <Flex vertical gap="middle" style={{ marginBottom: 16 }}>
                 <Input.Search
                     placeholder={t('transactions.searchPlaceholder')}
-                    onSearch={(value) => setFilters(prev => ({...prev, search: value}))}
+                    onSearch={(value) => setFilters(prev => ({ ...prev, search: value }))}
                     onChange={(e) => {
                         if (e.target.value === '') {
-                            setFilters(prev => ({...prev, search: undefined}));
+                            setFilters(prev => ({ ...prev, search: undefined }));
                         }
                     }}
                     allowClear
@@ -547,8 +548,8 @@ export const TransactionsPage = () => {
                         mode="multiple"
                         placeholder={t('transactions.filterType')}
                         value={filters.type}
-                        onChange={(value) => setFilters(prev => ({...prev, type: value}))}
-                        style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
+                        onChange={(value) => setFilters(prev => ({ ...prev, type: value }))}
+                        style={{ flex: isMobile ? '1 1 45%' : 1, minWidth: 120 }}
                         allowClear
                     >
                         <Option value="IN">{t('transactions.typeIn')}</Option>
@@ -556,19 +557,19 @@ export const TransactionsPage = () => {
                     </Select>
                     <DatePicker
                         placeholder={t('transactions.fromDate')}
-                        style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
-                        onChange={(date) => setFilters(prev => ({...prev, data: [date, prev.data?.[1] ?? null]}))}
+                        style={{ flex: isMobile ? '1 1 45%' : 1, minWidth: 120 }}
+                        onChange={(date) => setFilters(prev => ({ ...prev, data: [date, prev.data?.[1] ?? null] }))}
                     />
                     <DatePicker
                         placeholder={t('transactions.toDate')}
-                        style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
-                        onChange={(date) => setFilters(prev => ({...prev, data: [prev.data?.[0] ?? null, date]}))}
+                        style={{ flex: isMobile ? '1 1 45%' : 1, minWidth: 120 }}
+                        onChange={(date) => setFilters(prev => ({ ...prev, data: [prev.data?.[0] ?? null, date] }))}
                     />
                     <Select
                         placeholder={t('transactions.sortBy')}
                         value={sortConfig.field as string}
-                        onChange={(value) => setSortConfig(prev => ({...prev, field: value}))}
-                        style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
+                        onChange={(value) => setSortConfig(prev => ({ ...prev, field: value }))}
+                        style={{ flex: isMobile ? '1 1 45%' : 1, minWidth: 120 }}
                     >
                         <Option value="date">{t('transactions.data')}</Option>
                         <Option value="description">{t('transactions.description')}</Option>
@@ -579,8 +580,8 @@ export const TransactionsPage = () => {
                     <Select
                         placeholder={t('transactions.sortOrder')}
                         value={sortConfig.order}
-                        onChange={(value) => setSortConfig(prev => ({...prev, order: value}))}
-                        style={{flex: isMobile ? '1 1 45%' : 1, minWidth: 120}}
+                        onChange={(value) => setSortConfig(prev => ({ ...prev, order: value }))}
+                        style={{ flex: isMobile ? '1 1 45%' : 1, minWidth: 120 }}
                     >
                         <Option value="ascend">{t('transactions.sortAsc')}</Option>
                         <Option value="descend">{t('transactions.sortDesc')}</Option>
@@ -591,19 +592,19 @@ export const TransactionsPage = () => {
             {renderContent()}
 
             <Modal title={editingRecord ? t('transactions.editTransaction') : t('transactions.newTransaction')} open={isModalOpen}
-                   onCancel={handleCancel} footer={null}>
-                <Form form={form} layout="vertical" onFinish={onFinish} style={{marginTop: 24}}>
-                    <Form.Item name="accountId" label={t('transactions.account')} rules={[{required: true}]}>
+                onCancel={handleCancel} footer={null}>
+                <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: 24 }}>
+                    <Form.Item name="accountId" label={t('transactions.account')} rules={[{ required: true }]}>
                         <Select placeholder={t('transactions.selectAccount')} disabled={!!accountId || !!editingRecord}>
                             {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="amount" label={t('transactions.amount')} rules={[{required: true}]}>
-                        <InputNumber style={{width: '100%'}} min={0} addonAfter="€"/>
+                    <Form.Item name="amount" label={t('transactions.amount')} rules={[{ required: true }]}>
+                        <InputNumber style={{ width: '100%' }} min={0} addonAfter="€" />
                     </Form.Item>
-                    <Form.Item name="type" label={t('transactions.type')} rules={[{required: true}]}>
+                    <Form.Item name="type" label={t('transactions.type')} rules={[{ required: true }]}>
                         <Select placeholder={t('transactions.selectType')}
-                                onChange={() => form.setFieldsValue({categoryId: undefined})}>
+                            onChange={() => form.setFieldsValue({ categoryId: undefined })}>
                             <Option value="IN">{t('transactions.typeIn')}</Option>
                             <Option value="OUT">{t('transactions.typeOut')}</Option>
                         </Select>
@@ -613,14 +614,14 @@ export const TransactionsPage = () => {
                             {filteredCategories.map(cat => <Option key={cat.id} value={cat.id}>{cat.name}</Option>)}
                         </Select>
                     </Form.Item>
-                    <Form.Item name="description" label={t('transactions.description')} rules={[{required: true}]}>
-                        <Input/>
+                    <Form.Item name="description" label={t('transactions.description')} rules={[{ required: true }]}>
+                        <Input />
                     </Form.Item>
                     <Form.Item name="date" label={t('transactions.data')} initialValue={dayjs()}>
-                        <DatePicker style={{width: '100%'}}/>
+                        <DatePicker style={{ width: '100%' }} />
                     </Form.Item>
                     <Form.Item name="note" label={t('transactions.note')}>
-                        <Input.TextArea/>
+                        <Input.TextArea />
                     </Form.Item>
                     <Form.Item>
                         <Button type="primary" htmlType="submit" block>{t('transactions.save')}</Button>
@@ -636,14 +637,14 @@ export const TransactionsPage = () => {
                 footer={[
                     <Button key="back" onClick={handleCancelLinkTransferModal}>{t('common.cancel')}</Button>,
                     <Button key="submit" type="primary" onClick={handleConfirmLinkTransfer}
-                            disabled={!selectedDestTransactionId}>
+                        disabled={!selectedDestTransactionId}>
                         {t('transactions.linkTransferSave')}
                     </Button>,
                 ]}
                 width={600}
             >
                 {sourceTransaction && (
-                    <Space direction="vertical" style={{width: '100%'}}>
+                    <Space direction="vertical" style={{ width: '100%' }}>
                         <Text strong>{t('transactions.linkTransferSource')}</Text>
                         <p>
                             {dayjs(sourceTransaction.date).format('DD/MM/YYYY')} - {sourceTransaction.description} ({sourceTransaction.accountName})
@@ -666,13 +667,13 @@ export const TransactionsPage = () => {
                             </Form.Item>
                         </Form>
 
-                        {loadingDestTransactions ? <Spin/> : (
+                        {loadingDestTransactions ? <Spin /> : (
                             destinationAccountId && (
                                 destinationTransactions.length > 0 ? (
                                     <Radio.Group
                                         onChange={(e) => setSelectedDestTransactionId(e.target.value)}
                                         value={selectedDestTransactionId}
-                                        style={{width: '100%'}}
+                                        style={{ width: '100%' }}
                                     >
                                         <List
                                             header={<div>{t('transactions.linkTransferSelectTransaction')}</div>}
@@ -692,7 +693,7 @@ export const TransactionsPage = () => {
                                 ) : (
                                     <Alert
                                         message={t('transactions.linkTransferNoCompatible')}
-                                        type="info" showIcon/>
+                                        type="info" showIcon />
                                 )
                             )
                         )}
@@ -729,11 +730,11 @@ export const TransactionsPage = () => {
                         description={t('transactions.balanceCurrentInfo')}
                         type="info"
                         showIcon
-                        style={{marginBottom: 16}}
+                        style={{ marginBottom: 16 }}
                     />
                     <Form.Item label={t('transactions.balanceCurrent')}>
                         <InputNumber
-                            style={{width: '100%'}}
+                            style={{ width: '100%' }}
                             value={currentBalance}
                             onChange={(value) => setCurrentBalance(value)}
                             placeholder={t('transactions.balanceCurrentPlaceholder')}

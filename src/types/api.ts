@@ -23,7 +23,7 @@ export interface Account {
     actualBalance: number;
     currency: string;
     linkedToExternal: boolean;
-    isSynchronized: boolean;
+    synchronizing: boolean;
     createdAt: string;
 }
 

@@ -57,13 +57,15 @@ export const Layout = () => {
         setSelectedKeys([location.pathname]);
     }, [location.pathname]);
 
-    const fetchAccounts = () => {
+    const fetchAccounts = (background = false) => {
         if (auth) {
-            setLoading(true);
+            if (!background) setLoading(true);
             api.getAccounts()
                 .then(response => setAccounts(response.data))
                 .catch(console.error)
-                .finally(() => setLoading(false));
+                .finally(() => {
+                    if (!background) setLoading(false);
+                });
         } else {
             setAccounts([]);
         }
@@ -83,6 +85,22 @@ export const Layout = () => {
         fetchAccounts();
         fetchCategories();
     }, [auth]);
+
+    // Polling per aggiornare lo stato di sincronizzazione
+    useEffect(() => {
+        const isSyncing = accounts.some(acc => acc.synchronizing);
+        let intervalId: ReturnType<typeof setInterval>;
+
+        if (isSyncing) {
+            intervalId = setInterval(() => {
+                fetchAccounts(true);
+            }, 10000); // 10 secondi
+        }
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [accounts]);
 
     const handleLogout = () => {
         logout();
