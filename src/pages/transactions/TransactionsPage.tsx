@@ -127,6 +127,9 @@ export const TransactionsPage = () => {
             setIsBalanceModalOpen(false);
             setCurrentBalance(null);
 
+            // Aggiorna subito lo stato degli account per far partire il loader
+            fetchLayoutAccounts();
+
             // Aspetta che il modal si chiuda completamente prima di mostrare la notifica
             setTimeout(() => {
                 console.log('Showing notification...');
