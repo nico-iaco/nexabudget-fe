@@ -465,7 +465,7 @@ export const TransactionsPage = () => {
                         )}
                         pagination={{
                             total: processedTransactions.length,
-                            pageSize: 10,
+                            defaultPageSize: 10,
                             showSizeChanger: true,
                             showQuickJumper: true,
                         }}
@@ -484,7 +484,7 @@ export const TransactionsPage = () => {
                 pagination={{
                     total: processedTransactions.length,
                     position: ['bottomCenter'],
-                    pageSize: 10,
+                    defaultPageSize: 10,
                     showSizeChanger: true,
                     showQuickJumper: true,
                 }}
