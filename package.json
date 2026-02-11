@@ -14,7 +14,7 @@
     "@ant-design/charts": "^2.6.6",
     "@ant-design/icons": "^6.1.0",
     "antd": "^6.1.0",
-    "axios": "^1.13.2",
+    "axios": "^1.13.5",
     "i18next": "^23.12.2",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
