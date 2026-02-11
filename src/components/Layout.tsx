@@ -60,14 +60,21 @@ export const Layout = () => {
     const fetchAccounts = (background = false) => {
         if (auth) {
             if (!background) setLoading(true);
-            api.getAccounts()
-                .then(response => setAccounts(response.data))
-                .catch(console.error)
+            return api.getAccounts()
+                .then(response => {
+                    setAccounts(response.data);
+                    return response.data;
+                })
+                .catch(error => {
+                    console.error(error);
+                    throw error;
+                })
                 .finally(() => {
                     if (!background) setLoading(false);
                 });
         } else {
             setAccounts([]);
+            return Promise.resolve([]);
         }
     };
 

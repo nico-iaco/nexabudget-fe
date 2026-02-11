@@ -37,7 +37,7 @@ const { Option } = Select;
 
 interface OutletContextType {
     accounts: Account[];
-    fetchAccounts: () => void;
+    fetchAccounts: (background?: boolean) => Promise<any>;
     transactionRefreshKey: number;
     categories: Category[];
     handleOpenTransferModal: () => void;
@@ -128,7 +128,9 @@ export const TransactionsPage = () => {
             setCurrentBalance(null);
 
             // Aggiorna subito lo stato degli account per far partire il loader
-            fetchLayoutAccounts();
+            // Attendiamo che fetchLayoutAccounts finisca prima di proseguire,
+            // così lo stato "synchronizing" viene aggiornato nel context
+            await fetchLayoutAccounts(true);
 
             // Aspetta che il modal si chiuda completamente prima di mostrare la notifica
             setTimeout(() => {
@@ -146,7 +148,7 @@ export const TransactionsPage = () => {
             // Refresh automatico dopo 30 secondi per mostrare le nuove transazioni
             setTimeout(() => {
                 fetchTransactions();
-                fetchLayoutAccounts();
+                fetchLayoutAccounts(true);
             }, 30000);
         } catch (error) {
             console.error('Error during sync:', error);
