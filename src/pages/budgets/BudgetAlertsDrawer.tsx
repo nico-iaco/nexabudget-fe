@@ -34,7 +34,7 @@ export const BudgetAlertsDrawer = ({ open, onClose, budget }: Props) => {
             const resp = await api.getBudgetAlerts(budget.id);
             setAlerts(resp.data);
         } catch {
-            message.error(t('budgets.alerts.saveError'));
+            message.error(t('budgets.alerts.loadError', { defaultValue: 'Failed to load alerts' }));
         } finally {
             setLoading(false);
         }

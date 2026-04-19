@@ -34,7 +34,7 @@ export const BudgetsPage = () => {
             const resp = await api.getBudgetTemplates();
             setBudgets(resp.data);
         } catch {
-            message.error(t('budgets.saveError'));
+            message.error(t('budgets.loadError', { defaultValue: 'Failed to load budgets' }));
         } finally {
             setLoading(false);
         }

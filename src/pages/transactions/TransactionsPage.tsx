@@ -560,7 +560,7 @@ export const TransactionsPage = () => {
                     total: totalTransactions,
                     position: ['bottomCenter'],
                     showSizeChanger: false,
-                    showTotal: (total) => `${total} transazioni`,
+                    showTotal: (total) => t('transactions.totalLabel', { total }),
                     onChange: (page) => {
                         setCurrentPage(page);
                         fetchTransactions(page);
