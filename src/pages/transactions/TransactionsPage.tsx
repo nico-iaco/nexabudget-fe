@@ -24,6 +24,7 @@ import {
 import { DeleteOutlined, EditOutlined, PlusOutlined, RetweetOutlined, SwapOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
+import type { TransactionFilters } from '../../services/api';
 import type { Account, Category, LinkTransferRequest, Transaction, TransactionRequest } from '../../types/api';
 import { useAuth } from '../../contexts/AuthContext';
 import dayjs, { type Dayjs } from 'dayjs';
@@ -48,8 +49,10 @@ interface FormValues extends Omit<TransactionRequest, 'date'> {
 }
 
 interface TableFilters {
-    type?: ('IN' | 'OUT')[];
-    data?: [Dayjs | null, Dayjs | null] | null;
+    type?: 'IN' | 'OUT';
+    categoryId?: string;
+    startDate?: Dayjs | null;
+    endDate?: Dayjs | null;
     search?: string;
 }
 
@@ -165,16 +168,30 @@ export const TransactionsPage = () => {
     };
 
 
-    const fetchTransactions = () => {
+    const fetchTransactions = (page = currentPage, currentFilters = filters) => {
         if (!auth) return;
         setLoading(true);
 
-        const apiCall = accountId
-            ? api.getTransactionsByAccountId(accountId)
-            : api.getTransactionsByUserId();
+        const sortField = sortConfig.field as string | undefined;
+        const apiFilters: TransactionFilters = {
+            type: currentFilters.type,
+            categoryId: currentFilters.categoryId,
+            startDate: currentFilters.startDate?.format('YYYY-MM-DD'),
+            endDate: currentFilters.endDate?.format('YYYY-MM-DD'),
+            search: currentFilters.search,
+            sortBy: (['date', 'amount', 'description', 'type'].includes(sortField ?? '') ? sortField : 'date') as TransactionFilters['sortBy'],
+            sortDir: sortConfig.order === 'ascend' ? 'ASC' : 'DESC',
+        };
 
-        apiCall
-            .then(response => setTransactions(response.data))
+        const call = accountId
+            ? api.getTransactionsByAccountIdPaged(accountId, page - 1, pageSize, apiFilters)
+            : api.getTransactionsPaged(page - 1, pageSize, apiFilters);
+
+        call
+            .then(response => {
+                setTransactions(response.data.content);
+                setTotalTransactions(response.data.totalElements);
+            })
             .catch(console.error)
             .finally(() => setLoading(false));
     };
@@ -182,6 +199,11 @@ export const TransactionsPage = () => {
     useEffect(() => {
         fetchTransactions();
     }, [accountId, auth, transactionRefreshKey]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+        fetchTransactions(1, filters);
+    }, [filters, sortConfig]);
 
     useEffect(() => {
         if (!destinationAccountId || !sourceTransaction) return;
@@ -382,16 +404,12 @@ export const TransactionsPage = () => {
         },
     ];
 
-    const handleTableChange: TableProps<Transaction>['onChange'] = (_, tableFilters, sorter) => {
+    const handleTableChange: TableProps<Transaction>['onChange'] = (_, _tableFilters, sorter) => {
         const nextSorter = Array.isArray(sorter) ? sorter[0] : sorter;
         setSortConfig({
             field: nextSorter.field as string,
             order: nextSorter.order,
         });
-        setFilters(prev => ({
-            ...prev,
-            type: tableFilters.type as ('IN' | 'OUT')[] | undefined,
-        }));
     };
 
     const processedTransactions = useMemo(() => {
@@ -403,41 +421,8 @@ export const TransactionsPage = () => {
             return t;
         });
 
-        // Filtering
-        if (filters.search) {
-            const lowerCaseSearch = filters.search.toLowerCase();
-            data = data.filter(t =>
-                t.description.toLowerCase().includes(lowerCaseSearch) ||
-                t.accountName.toLowerCase().includes(lowerCaseSearch) ||
-                (t.categoryName && t.categoryName.toLowerCase().includes(lowerCaseSearch))
-            );
-        }
-        if (filters.type && filters.type.length > 0) {
-            data = data.filter(t => filters.type!.includes(t.type));
-        }
-        if (filters.data) {
-            const [start, end] = filters.data;
-            data = data.filter(t => {
-                const date = dayjs(t.date);
-                const isAfterStart = start ? date.isAfter(start.startOf('day')) : true;
-                const isBeforeEnd = end ? date.isBefore(end.endOf('day')) : true;
-                return isAfterStart && isBeforeEnd;
-            });
-        }
-
-        // Sorting
-        if (sortConfig.field && sortConfig.order) {
-            const sorter = columns.find(c => c.key === sortConfig.field)?.sorter;
-            if (typeof sorter === 'function') {
-                data.sort((a, b) => {
-                    const result = sorter(a, b, sortConfig.order);
-                    return sortConfig.order === 'ascend' ? result : -result;
-                });
-            }
-        }
-
         return data;
-    }, [transactions, sortConfig, filters, accounts]);
+    }, [transactions, accounts]);
 
     const pageTitle = accountId
         ? t('transactions.titleAccount', { account: accounts.find(acc => acc.id === accountId)?.name })
@@ -550,7 +535,6 @@ export const TransactionsPage = () => {
                 />
                 <Flex gap="small" wrap="wrap">
                     <Select
-                        mode="multiple"
                         placeholder={t('transactions.filterType')}
                         value={filters.type}
                         onChange={(value) => setFilters(prev => ({ ...prev, type: value }))}
@@ -560,15 +544,26 @@ export const TransactionsPage = () => {
                         <Option value="IN">{t('transactions.typeIn')}</Option>
                         <Option value="OUT">{t('transactions.typeOut')}</Option>
                     </Select>
+                    <Select
+                        placeholder={t('transactions.filterCategory')}
+                        value={filters.categoryId}
+                        onChange={(value) => setFilters(prev => ({ ...prev, categoryId: value }))}
+                        style={{ flex: isMobile ? '1 1 45%' : 1, minWidth: 120 }}
+                        allowClear
+                    >
+                        {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
+                    </Select>
                     <DatePicker
                         placeholder={t('transactions.fromDate')}
+                        value={filters.startDate}
                         style={{ flex: isMobile ? '1 1 45%' : 1, minWidth: 120 }}
-                        onChange={(date) => setFilters(prev => ({ ...prev, data: [date, prev.data?.[1] ?? null] }))}
+                        onChange={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
                     />
                     <DatePicker
                         placeholder={t('transactions.toDate')}
+                        value={filters.endDate}
                         style={{ flex: isMobile ? '1 1 45%' : 1, minWidth: 120 }}
-                        onChange={(date) => setFilters(prev => ({ ...prev, data: [prev.data?.[0] ?? null, date] }))}
+                        onChange={(date) => setFilters(prev => ({ ...prev, endDate: date }))}
                     />
                     <Select
                         placeholder={t('transactions.sortBy')}

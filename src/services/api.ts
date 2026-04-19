@@ -65,7 +65,33 @@ export const deleteAccount = (id: string): Promise<AxiosResponse<void>> => apiCl
 // Transactions
 export const getTransactionsByUserId = (): Promise<AxiosResponse<Transaction[]>> => apiClient.get(`/transactions`);
 export const getTransactionsByAccountId = (accountId: string): Promise<AxiosResponse<Transaction[]>> => apiClient.get(`/transactions/account/${accountId}`);
+export interface TransactionFilters {
+    type?: 'IN' | 'OUT';
+    categoryId?: string;
+    startDate?: string;
+    endDate?: string;
+    search?: string;
+    sortBy?: 'date' | 'amount' | 'description' | 'type';
+    sortDir?: 'ASC' | 'DESC';
+}
+
+const buildTransactionParams = (page: number, size: number, filters?: TransactionFilters): string => {
+    const p = new URLSearchParams({ page: String(page), size: String(size) });
+    if (filters?.type) p.append('type', filters.type);
+    if (filters?.categoryId) p.append('categoryId', filters.categoryId);
+    if (filters?.startDate) p.append('startDate', filters.startDate);
+    if (filters?.endDate) p.append('endDate', filters.endDate);
+    if (filters?.search?.trim()) p.append('search', filters.search.trim());
+    if (filters?.sortBy) p.append('sortBy', filters.sortBy);
+    if (filters?.sortDir) p.append('sortDir', filters.sortDir);
+    return p.toString();
+};
+
+export const getTransactionsByAccountIdPaged = (accountId: string, page: number, size: number, filters?: TransactionFilters): Promise<AxiosResponse<Page<Transaction>>> =>
+    apiClient.get(`/transactions/account/${accountId}/paged?${buildTransactionParams(page, size, filters)}`);
 export const getTransactionsBetweenDates = (startDate: string, endDate: string): Promise<AxiosResponse<Transaction[]>> => apiClient.get(`/transactions/daterange?start=${startDate}&end=${endDate}`);
+export const getTransactionsPaged = (page: number, size: number, filters?: TransactionFilters): Promise<AxiosResponse<Page<Transaction>>> =>
+    apiClient.get(`/transactions/paged?${buildTransactionParams(page, size, filters)}`);
 export const createTransaction = (data: TransactionRequest): Promise<AxiosResponse<Transaction>> => apiClient.post('/transactions', data);
 export const updateTransaction = (id: string, data: TransactionRequest): Promise<AxiosResponse<Transaction>> => apiClient.put(`/transactions/${id}`, data);
 export const createTransfer = (data: TransferRequest): Promise<AxiosResponse<Transaction[]>> => apiClient.post('/transactions/transfer', data);

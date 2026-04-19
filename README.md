@@ -5,16 +5,27 @@ NexaBudget is a modern and intuitive personal finance management application des
 ## ✨ Features
 
 - **User Authentication**: Secure registration and login system.
-- **Account Management**: Create, view, update, and delete multiple financial accounts (e.g., checking, savings, cash).
-- **Transaction Tracking**: Log income and expenses for each account.
+- **Account Management**: Create, view, update, and delete multiple financial accounts (checking, savings, investments, cash). Deleted accounts are soft-deleted and recoverable for 30 days.
+- **Multi-currency Support**: Each account can have its own currency; the correct symbol is displayed throughout the app.
+- **Transaction Tracking**: Log income and expenses for each account, with server-side pagination for fast loading.
+- **Transfer Management**: Link transactions as transfers between accounts, with automatic currency conversion for multi-currency transfers.
 - **Categorization**: Assign categories to transactions for better analysis.
 - **Powerful Filtering & Sorting**: Easily find transactions by description, account, category, type, or date range.
-- **Responsive Design**: A seamless experience on both desktop and mobile devices.
-- **Progressive Web App (PWA)**: Install the app on your device for an app-like experience.
-- **Mobile-Friendly**: Optimized UI for smartphones and tablets with touch-friendly controls.
-- **Offline Support**: Basic offline functionality through service workers.
-- **Dashboard Overview**: Get a quick overview of your financial health with interactive charts.
-- **GoCardless Integration**: Link your bank accounts for automatic transaction synchronization.
+- **Dashboard**: Interactive overview with configurable date-range presets (last week / current month / last 6 months / last year) and custom range picker.
+  - Monthly income & expense totals
+  - Month-end projection
+  - Month-over-month comparison with selectable month
+  - Income and expense breakdown by category (pie chart + table)
+  - Monthly trend bar chart (6 / 12 / 24 months)
+- **Budget Templates & Alerts**: Create recurring budget limits per category (monthly, quarterly, yearly) with threshold alerts.
+- **Trash / Soft Delete**: Deleted transactions and accounts are moved to a recoverable trash, with a dedicated page to restore them.
+- **Audit Log**: Paginated, server-side audit trail of all user actions with expandable JSON detail.
+- **Bank Synchronization**: GoCardless integration to link bank accounts and import transactions automatically.
+- **Crypto Portfolio**: Binance integration for read-only crypto holdings tracking.
+- **Responsive Design**: Seamless experience on desktop and mobile, with mobile-optimised controls throughout.
+- **Progressive Web App (PWA)**: Installable on any device for an app-like experience with offline support.
+- **Light / Dark theme**: Toggle between themes from the Settings page.
+- **Bilingual UI**: Full Italian and English translations.
 
 ## 📱 Progressive Web App (PWA)
 
@@ -49,31 +60,29 @@ NexaBudget can be installed as a Progressive Web App (PWA) on your device:
 - 🚀 Quick access from Home Screen
 - 📴 Basic offline functionality
 - 🎨 Full-screen interface without browser UI
-- 🔔 Push notifications (future implementation)
 - ⚡ Optimized performance with caching
 
 ## 🛠️ Technologies Used
 
 - **Framework**: React 19
 - **Build Tool**: Vite 7
-- **Language**: TypeScript
-- **UI Library**: Ant Design 5
+- **Language**: TypeScript 5.8
+- **UI Library**: Ant Design 6
 - **Routing**: React Router 7
-- **HTTP Client**: Axios for making API requests
-- **State Management**: React Context API for global state like authentication
-- **Date & Time**: Day.js for date manipulation and formatting
-- **Charts**: @ant-design/charts for data visualization
-- **PWA**: vite-plugin-pwa with Workbox for service worker generation
+- **HTTP Client**: Axios
+- **State Management**: React Context API (Auth, Preferences)
+- **Date & Time**: Day.js
+- **Charts**: @ant-design/charts
+- **PWA**: vite-plugin-pwa with Workbox
+- **i18n**: i18next (Italian & English)
 
 ## 🚀 Getting Started
 
-Follow these instructions to get a copy of the project up and running on your local machine for development and testing purposes.
-
 ### Prerequisites
 
-- Node.js (v18 or later recommended)
-- npm or another package manager like yarn or pnpm
-- A running instance of the NexaBudget Backend (You will need to set up the backend server separately)
+- Node.js (v18 or later)
+- npm
+- A running instance of the NexaBudget Backend
 
 ### Installation & Setup
 
@@ -90,34 +99,24 @@ Follow these instructions to get a copy of the project up and running on your lo
     npm install
     ```
 
-3. Generate PWA icons (optional, they are auto-generated during build):
+3. Set up environment variables — create `.env.local` in the project root:
     ```shell
-    npm run generate-icons
-    ```
-
-4. Set up environment variables: The frontend needs to know the URL of the backend API. Create a file named `.env.local` in the root of the project and add the following variable. By default, the backend is expected to run on http://localhost:8080.
-    ```shell
-    # .env.local
     VITE_BE_BASE_URL=http://localhost:8080
-   ```
-    The Vite development server will proxy requests from `/api` to this URL.
+    ```
+    Vite will proxy all `/api` requests to this URL.
 
-5. Run the development server:
+4. Run the development server:
     ```shell
     npm run dev
-   ```
+    ```
 
-6. Open the application: Open your browser and navigate to the local URL provided by Vite (usually http://localhost:5173).
+5. Open your browser at the URL shown by Vite (usually http://localhost:5173).
 
 #### Running with Docker Compose
 
-As an alternative to running locally, you can start the application using Docker. This method does not require Node.js or npm dependencies to be installed on your host machine.
-
-1. **Prerequisites**:
-   - Docker and Docker Compose installed
-   - A running instance of the NexaBudget backend, accessible from the Docker network. Make sure to configure the backend URL in the `nginx.conf.template` file if it's not http://localhost:8080.
-2. Start the application: Run the following command from the project's root directory to build the Docker image and start the container.
+1. **Prerequisites**: Docker and Docker Compose installed, and the NexaBudget backend reachable from the Docker network.
+2. Start the application:
    ```shell
    docker-compose up -d --build
    ```
-3. Open the application: Open your browser and go to http://localhost (or the port you configured in the docker-compose.yaml file).
+3. Open your browser at http://localhost (or the port configured in `docker-compose.yaml`).
