@@ -3,11 +3,19 @@ import axios, { type AxiosResponse } from 'axios';
 import type {
     Account,
     AccountRequest,
+    AuditEntityType,
+    AuditLogEntry,
     AuthResponse,
     BinanceKeysRequest,
+    BudgetAlert,
+    BudgetAlertRequest,
+    BudgetTemplate,
+    BudgetTemplateRequest,
     Category,
+    CategoryBreakdownResponse,
     CategoryRequest,
     CryptoHolding,
+    DeletedAccount,
     GoCardlessBank,
     GoCardlessBankDetails,
     GoCardlessBankLinkRequest,
@@ -15,6 +23,10 @@ import type {
     LinkTransferRequest,
     LoginRequest,
     ManualHoldingsRequest,
+    MonthComparisonResponse,
+    MonthlyProjectionResponse,
+    MonthlyTrendItem,
+    Page,
     PortfolioValueResponse,
     SyncBankTransactionsRequest,
     Transaction,
@@ -97,6 +109,35 @@ export const updateTransaction = (id: string, data: TransactionRequest): Promise
 export const createTransfer = (data: TransferRequest): Promise<AxiosResponse<Transaction[]>> => apiClient.post('/transactions/transfer', data);
 export const deleteTransaction = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/transactions/${id}`);
 export const linkTransactionsAsTransfer = (data: LinkTransferRequest): Promise<AxiosResponse<void>> => apiClient.post('/transactions/convert-to-transfer', data);
+
+// Trash
+export const getDeletedTransactions = (): Promise<AxiosResponse<Transaction[]>> => apiClient.get('/trash/transactions');
+export const getDeletedAccounts = (): Promise<AxiosResponse<DeletedAccount[]>> => apiClient.get('/trash/accounts');
+export const restoreTransaction = (id: string): Promise<AxiosResponse<void>> => apiClient.post(`/trash/transactions/${id}/restore`);
+export const restoreAccount = (id: string): Promise<AxiosResponse<void>> => apiClient.post(`/trash/accounts/${id}/restore`);
+
+// Reports
+export const getMonthlyTrend = (months = 12): Promise<AxiosResponse<MonthlyTrendItem[]>> => apiClient.get(`/reports/monthly-trend?months=${months}`);
+export const getCategoryBreakdown = (type: 'IN' | 'OUT', startDate: string, endDate: string): Promise<AxiosResponse<CategoryBreakdownResponse>> => apiClient.get(`/reports/category-breakdown?type=${type}&startDate=${startDate}&endDate=${endDate}`);
+export const getMonthComparison = (year: number, month: number): Promise<AxiosResponse<MonthComparisonResponse>> => apiClient.get(`/reports/month-comparison?year=${year}&month=${month}`);
+export const getMonthlyProjection = (): Promise<AxiosResponse<MonthlyProjectionResponse>> => apiClient.get('/reports/monthly-projection');
+
+// Budget Templates
+export const getBudgetTemplates = (): Promise<AxiosResponse<BudgetTemplate[]>> => apiClient.get('/budget-templates');
+export const getBudgetTemplate = (id: string): Promise<AxiosResponse<BudgetTemplate>> => apiClient.get(`/budget-templates/${id}`);
+export const createBudgetTemplate = (data: BudgetTemplateRequest): Promise<AxiosResponse<BudgetTemplate>> => apiClient.post('/budget-templates', data);
+export const updateBudgetTemplate = (id: string, data: BudgetTemplateRequest): Promise<AxiosResponse<BudgetTemplate>> => apiClient.put(`/budget-templates/${id}`, data);
+export const deleteBudgetTemplate = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/budget-templates/${id}`);
+
+// Budget Alerts
+export const getBudgetAlerts = (budgetId?: string): Promise<AxiosResponse<BudgetAlert[]>> => apiClient.get(`/budget-alerts${budgetId ? `?budgetId=${budgetId}` : ''}`);
+export const createBudgetAlert = (data: BudgetAlertRequest): Promise<AxiosResponse<BudgetAlert>> => apiClient.post('/budget-alerts', data);
+export const updateBudgetAlert = (id: string, data: BudgetAlertRequest): Promise<AxiosResponse<BudgetAlert>> => apiClient.put(`/budget-alerts/${id}`, data);
+export const deleteBudgetAlert = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/budget-alerts/${id}`);
+
+// Audit Log
+export const getAuditLog = (page: number, size: number): Promise<AxiosResponse<Page<AuditLogEntry>>> => apiClient.get(`/audit-log?page=${page}&size=${size}`);
+export const getAuditLogForEntity = (entityType: AuditEntityType, entityId: string): Promise<AxiosResponse<AuditLogEntry[]>> => apiClient.get(`/audit-log/${entityType}/${entityId}`);
 
 
 // Categories

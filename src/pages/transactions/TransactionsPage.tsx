@@ -30,6 +30,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { TransactionCard } from '../../components/TransactionCard';
+import { getCurrencySymbol } from '../../utils/currency';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
 
@@ -38,7 +39,7 @@ const { Option } = Select;
 
 interface OutletContextType {
     accounts: Account[];
-    fetchAccounts: (background?: boolean) => Promise<any>;
+    fetchAccounts: (background?: boolean) => Promise<Account[]>;
     transactionRefreshKey: number;
     categories: Category[];
     handleOpenTransferModal: () => void;
@@ -69,6 +70,9 @@ export const TransactionsPage = () => {
     } = useOutletContext<OutletContextType>();
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [totalTransactions, setTotalTransactions] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 20;
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState<Transaction | null>(null);
@@ -197,7 +201,8 @@ export const TransactionsPage = () => {
     };
 
     useEffect(() => {
-        fetchTransactions();
+        setCurrentPage(1);
+        fetchTransactions(1);
     }, [accountId, auth, transactionRefreshKey]);
 
     useEffect(() => {
@@ -238,14 +243,24 @@ export const TransactionsPage = () => {
 
 
     const handleDelete = async (id: string) => {
-        try {
-            await api.deleteTransaction(id);
-            fetchTransactions();
-            fetchLayoutAccounts();
-        } catch (error) {
-            console.error("Failed to delete transaction", error);
-            message.error(t('transactions.deleteError'));
-        }
+        Modal.confirm({
+            title: t('transactions.deleteConfirm'),
+            content: t('trash.recoverableFor30Days'),
+            okText: t('common.delete'),
+            okButtonProps: { danger: true },
+            cancelText: t('common.cancel'),
+            onOk: async () => {
+                try {
+                    await api.deleteTransaction(id);
+                    message.success(t('trash.movedToTrash'));
+                    fetchTransactions();
+                    fetchLayoutAccounts();
+                } catch (error) {
+                    console.error("Failed to delete transaction", error);
+                    message.error(t('transactions.deleteError'));
+                }
+            }
+        });
     };
 
     const handleOpenCreateModal = () => {
@@ -371,11 +386,23 @@ export const TransactionsPage = () => {
                 return amountA - amountB;
             },
             sortOrder: sortConfig.field === 'amount' ? sortConfig.order : null,
-            render: (amount: number, record: Transaction) => (
-                <span style={{ color: record.type === 'IN' ? 'green' : 'red' }}>
-                    {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} €
-                </span>
-            )
+            render: (amount: number, record: Transaction) => {
+                const sym = getCurrencySymbol(accounts.find(a => a.id === record.accountId)?.currency ?? 'EUR');
+                return (<span>
+                    <span style={{ color: record.type === 'IN' ? 'green' : 'red' }}>
+                        {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} {sym}
+                    </span>
+                    {record.originalCurrency && record.originalAmount != null && record.exchangeRate != null && (
+                        <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.45)' }}>
+                            {t('transactions.exchangeRateHint', {
+                                originalAmount: record.originalAmount.toFixed(2),
+                                originalCurrency: record.originalCurrency,
+                                exchangeRate: record.exchangeRate
+                            })}
+                        </div>
+                    )}
+                </span>);
+            }
         },
         {
             title: t('transactions.type'),
@@ -448,19 +475,51 @@ export const TransactionsPage = () => {
                         renderItem={item => (
                             <TransactionCard
                                 transaction={item}
+                                currency={accounts.find(a => a.id === item.accountId)?.currency}
                                 onEdit={handleOpenEditModal}
                                 onDelete={handleDelete}
                                 onConvertToTransfer={handleOpenLinkTransferModal}
                             />
                         )}
                         pagination={{
-                            total: processedTransactions.length,
-                            defaultPageSize: 10,
-                            showSizeChanger: true,
-                            showQuickJumper: true,
+                            current: currentPage,
+                            pageSize,
+                            total: totalTransactions,
+                            position: 'bottom',
+                            align: 'center',
+                            showSizeChanger: false,
+                            showTotal: (total) => `${total} transazioni`,
+                            onChange: (page) => {
+                                setCurrentPage(page);
+                                fetchTransactions(page);
+                            },
                         }}
                     />
                 </>
+            );
+        }
+        if (accountId) {
+            return (
+                <Table
+                    columns={columns}
+                    dataSource={processedTransactions}
+                    rowKey="id"
+                    loading={loading}
+                    onChange={handleTableChange}
+                    size={'small'}
+                    pagination={{
+                        current: currentPage,
+                        pageSize,
+                        total: totalTransactions,
+                        position: ['bottomCenter'],
+                        showSizeChanger: false,
+                        showTotal: (total) => `${total} transazioni`,
+                        onChange: (page) => {
+                            setCurrentPage(page);
+                            fetchTransactions(page);
+                        },
+                    }}
+                />
             );
         }
         return (
@@ -472,11 +531,16 @@ export const TransactionsPage = () => {
                 onChange={handleTableChange}
                 size={'small'}
                 pagination={{
-                    total: processedTransactions.length,
+                    current: currentPage,
+                    pageSize,
+                    total: totalTransactions,
                     position: ['bottomCenter'],
-                    defaultPageSize: 10,
-                    showSizeChanger: true,
-                    showQuickJumper: true,
+                    showSizeChanger: false,
+                    showTotal: (total) => t('transactions.totalLabel', { total }),
+                    onChange: (page) => {
+                        setCurrentPage(page);
+                        fetchTransactions(page);
+                    }
                 }}
             />
         );

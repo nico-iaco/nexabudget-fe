@@ -399,7 +399,7 @@ export const Layout = () => {
                 okButtonProps={{ danger: true }}
             >
                 <p>{t('accounts.deleteConfirm', { name: deletingAccount?.name ?? '' })}</p>
-                <p>{t('accounts.deleteConfirmWarning')}</p>
+                <p style={{ color: 'rgba(0,0,0,0.45)' }}>{t('accounts.deleteConfirmWarning')}</p>
             </Modal>
 
             <TransferModal
