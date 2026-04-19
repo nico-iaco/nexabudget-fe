@@ -1,15 +1,19 @@
 import { Button, Flex, Layout, Menu, Spin, Statistic, Typography } from 'antd';
 import {
+    BarChartOutlined,
     BankOutlined,
+    ContainerOutlined,
     DeleteOutlined,
     DisconnectOutlined,
     EditOutlined,
     FundOutlined,
+    HistoryOutlined,
     LineChartOutlined,
     LinkOutlined,
     MenuFoldOutlined,
     PieChartOutlined,
     PlusOutlined,
+    RestOutlined,
     SafetyCertificateOutlined,
     SettingOutlined,
     SyncOutlined,
@@ -231,11 +235,47 @@ export const AppSider = ({
                         }
                     },
                     {
+                        key: '/reports',
+                        icon: <BarChartOutlined />,
+                        label: t('nav.reports'),
+                        onClick: () => {
+                            navigate('/reports');
+                            if (isMobile) setCollapsed(true);
+                        }
+                    },
+                    {
+                        key: '/budgets',
+                        icon: <ContainerOutlined />,
+                        label: t('nav.budgets'),
+                        onClick: () => {
+                            navigate('/budgets');
+                            if (isMobile) setCollapsed(true);
+                        }
+                    },
+                    {
                         key: '/crypto',
                         icon: <FundOutlined />,
                         label: t('nav.crypto'),
                         onClick: () => {
                             navigate('/crypto');
+                            if (isMobile) setCollapsed(true);
+                        }
+                    },
+                    {
+                        key: '/trash',
+                        icon: <RestOutlined />,
+                        label: t('nav.trash'),
+                        onClick: () => {
+                            navigate('/trash');
+                            if (isMobile) setCollapsed(true);
+                        }
+                    },
+                    {
+                        key: '/audit-log',
+                        icon: <HistoryOutlined />,
+                        label: t('nav.auditLog'),
+                        onClick: () => {
+                            navigate('/audit-log');
                             if (isMobile) setCollapsed(true);
                         }
                     },

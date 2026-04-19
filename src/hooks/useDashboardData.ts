@@ -1,12 +1,23 @@
 import { useEffect, useMemo, useState } from 'react';
 import dayjs, { type Dayjs } from 'dayjs';
 import * as api from '../services/api';
-import type { Transaction, PortfolioValueResponse } from '../types/api';
+import type {
+    CategoryBreakdownItem,
+    MonthComparisonResponse,
+    MonthlyProjectionResponse,
+    MonthlyTrendItem,
+    PortfolioValueResponse
+} from '../types/api';
 
 export type DateRange = [Dayjs | null, Dayjs | null] | null;
 
 export interface BarData {
     month: string;
+    type: string;
+    value: number;
+}
+
+export interface PieData {
     type: string;
     value: number;
 }
@@ -18,205 +29,88 @@ export interface LineData {
 }
 
 export const useDashboardData = (transactionRefreshKey: number) => {
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [previousTransactions, setPreviousTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [dateRange, setDateRange] = useState<DateRange>([dayjs().startOf('year'), dayjs().endOf('year')]);
+
+    const [monthComparison, setMonthComparison] = useState<MonthComparisonResponse | null>(null);
+    const [monthlyTrendItems, setMonthlyTrendItems] = useState<MonthlyTrendItem[]>([]);
+    const [incomeBreakdown, setIncomeBreakdown] = useState<CategoryBreakdownItem[]>([]);
+    const [expenseBreakdown, setExpenseBreakdown] = useState<CategoryBreakdownItem[]>([]);
+    const [projection, setProjection] = useState<MonthlyProjectionResponse | null>(null);
     const [portfolioValue, setPortfolioValue] = useState<PortfolioValueResponse | null>(null);
 
     useEffect(() => {
         setLoading(true);
 
-        const fetchTransactions = async () => {
-            try {
-                if (dateRange && dateRange[0] && dateRange[1]) {
-                    const [startDate, endDate] = dateRange;
-                    const formattedStart = startDate.format('YYYY-MM-DD');
-                    const formattedEnd = endDate.format('YYYY-MM-DD');
+        const now = dayjs();
+        const startDate = dateRange?.[0]?.format('YYYY-MM-DD') ?? now.startOf('year').format('YYYY-MM-DD');
+        const endDate = dateRange?.[1]?.format('YYYY-MM-DD') ?? now.endOf('year').format('YYYY-MM-DD');
 
-                    // Calculate previous period
-                    // prevEnd = start - 1 day
-                    const prevEnd = startDate.subtract(1, 'day');
-                    const duration = endDate.diff(startDate, 'day');
-                    // prevStart = prevEnd - duration
-                    const prevStart = prevEnd.subtract(duration, 'day');
-
-                    const formattedPrevStart = prevStart.format('YYYY-MM-DD');
-                    const formattedPrevEnd = prevEnd.format('YYYY-MM-DD');
-
-                    const [currentResp, prevResp, cryptoResp] = await Promise.all([
-                        api.getTransactionsBetweenDates(formattedStart, formattedEnd),
-                        api.getTransactionsBetweenDates(formattedPrevStart, formattedPrevEnd),
-                        api.getPortfolioValue('EUR').catch(err => {
-                            console.warn('Crypto fetch failed', err);
-                            return { data: null };
-                        })
-                    ]);
-
-                    setTransactions(currentResp.data);
-                    setPreviousTransactions(prevResp.data);
-                    if (cryptoResp?.data) {
-                        setPortfolioValue(cryptoResp.data);
-                    }
-                } else {
-                    // Fallback to fetching all if no date range (or handle differently)
-                    // For now, let's default to fetching all transactions if no range is selected, 
-                    // though the UI initializes with a range.
-                    const [transactionsResp, cryptoResp] = await Promise.all([
-                        api.getTransactionsByUserId(),
-                        api.getPortfolioValue('EUR').catch(err => {
-                            console.warn('Crypto fetch failed', err);
-                            return { data: null };
-                        })
-                    ]);
-                    setTransactions(transactionsResp.data);
-                    setPreviousTransactions([]); // No previous period comparison possible without range
-                    if (cryptoResp?.data) {
-                        setPortfolioValue(cryptoResp.data);
-                    }
-                }
-            } catch (error) {
-                console.error(error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchTransactions();
+        Promise.all([
+            api.getMonthComparison(now.year(), now.month() + 1),
+            api.getMonthlyTrend(12),
+            api.getCategoryBreakdown('IN', startDate, endDate),
+            api.getCategoryBreakdown('OUT', startDate, endDate),
+            api.getMonthlyProjection(),
+            api.getPortfolioValue('EUR').catch(() => ({ data: null })),
+        ]).then(([compResp, trendResp, incResp, expResp, projResp, cryptoResp]) => {
+            setMonthComparison(compResp.data);
+            setMonthlyTrendItems(trendResp.data);
+            setIncomeBreakdown(incResp.data.items);
+            setExpenseBreakdown(expResp.data.items);
+            setProjection(projResp.data);
+            if (cryptoResp.data) setPortfolioValue(cryptoResp.data);
+        }).catch(console.error).finally(() => setLoading(false));
     }, [transactionRefreshKey, dateRange]);
 
-    // Since transactions are already filtered by the API, filteredTransactions is just transactions
-    const filteredTransactions = transactions;
+    const totalIncome = monthComparison?.currentIncome ?? 0;
+    const totalExpenses = monthComparison?.currentExpense ?? 0;
+    const netBalance = totalIncome - totalExpenses;
 
-    const { totalIncome, totalExpenses, netBalance } = useMemo(() => {
-        return filteredTransactions.reduce((acc, t) => {
-            if (t.type === 'IN' && t.transferId === null) {
-                acc.totalIncome += t.amount;
-            } else if (t.type === 'OUT' && t.transferId === null) {
-                acc.totalExpenses += t.amount;
-            }
-            acc.netBalance = acc.totalIncome - acc.totalExpenses;
-            return acc;
-        }, { totalIncome: 0, totalExpenses: 0, netBalance: 0 });
-    }, [filteredTransactions]);
+    const expensesByCategory = useMemo((): PieData[] =>
+        expenseBreakdown.map(i => ({ type: i.categoryName, value: i.total })),
+        [expenseBreakdown]
+    );
 
-    const expensesByCategory = useMemo(() => {
-        const categoryMap: { [key: string]: number } = {};
-        filteredTransactions
-            .filter(t => t.type === 'OUT' && t.categoryName)
-            .forEach(t => {
-                const category = t.categoryName!;
-                if (!categoryMap[category]) {
-                    categoryMap[category] = 0;
-                }
-                categoryMap[category] += t.amount;
-            });
-
-        return Object.entries(categoryMap)
-            .map(([type, value]) => ({ type, value }))
-            .sort((a, b) => b.value - a.value);
-    }, [filteredTransactions]);
-
-    const incomeByCategory = useMemo(() => {
-        const categoryMap: { [key: string]: number } = {};
-        filteredTransactions
-            .filter(t => t.type === 'IN' && t.categoryName)
-            .forEach(t => {
-                const category = t.categoryName!;
-                if (!categoryMap[category]) {
-                    categoryMap[category] = 0;
-                }
-                categoryMap[category] += t.amount;
-            });
-
-        return Object.entries(categoryMap)
-            .map(([type, value]) => ({ type, value }))
-            .sort((a, b) => b.value - a.value);
-    }, [filteredTransactions]);
+    const incomeByCategory = useMemo((): PieData[] =>
+        incomeBreakdown.map(i => ({ type: i.categoryName, value: i.total })),
+        [incomeBreakdown]
+    );
 
     const monthlyTrend = useMemo((): BarData[] => {
-        const trend: { [month: string]: { income: number; expense: number } } = {};
-
-        filteredTransactions.forEach(t => {
-            const month = dayjs(t.date).format('YYYY-MM');
-            if (!trend[month]) {
-                trend[month] = { income: 0, expense: 0 };
-            }
-            if (t.type === 'IN' && t.transferId === null) {
-                trend[month].income += t.amount;
-            } else if (t.type === 'OUT' && t.transferId === null) {
-                trend[month].expense += t.amount;
-            }
-        });
-
         const result: BarData[] = [];
-        Object.keys(trend).forEach(month => {
-            result.push({ month: dayjs(month).format('MMM YY'), type: 'Entrate', value: trend[month].income });
-            result.push({ month: dayjs(month).format('MMM YY'), type: 'Uscite', value: trend[month].expense });
+        monthlyTrendItems.forEach(item => {
+            const label = dayjs(`${item.year}-${String(item.month).padStart(2, '0')}-01`).format('MMM YY');
+            result.push({ month: label, type: 'Entrate', value: item.totalIncome });
+            result.push({ month: label, type: 'Uscite', value: item.totalExpense });
         });
+        return result;
+    }, [monthlyTrendItems]);
 
-        return result.sort((a, b) => dayjs(a.month, 'MMM YY').valueOf() - dayjs(b.month, 'MMM YY').valueOf());
-    }, [filteredTransactions]);
-
-    const monthlyNetBalance = useMemo((): LineData[] => {
-        const balanceByMonth: { [key: string]: number } = {};
-
-        filteredTransactions.forEach(t => {
-            const month = dayjs(t.date).format('YYYY-MM');
-            if (!balanceByMonth[month]) {
-                balanceByMonth[month] = 0;
-            }
-            balanceByMonth[month] += t.type === 'IN' ? t.amount : -t.amount;
-        });
-
-        const sortedMonths = Object.entries(balanceByMonth)
-            .map(([month, value]) => ({ month, value }))
-            .sort((a, b) => a.month.localeCompare(b.month));
-
-        let cumulativeBalance = 0;
-        return sortedMonths.map(item => {
-            cumulativeBalance += item.value;
-            return {
-                label: dayjs(item.month).endOf('month').format('YYYY-MM-DD'),
-                value: cumulativeBalance,
-                monthlyNet: item.value,
-            };
-        });
-    }, [filteredTransactions]);
+    const hasData = totalIncome > 0 || totalExpenses > 0 || monthlyTrendItems.length > 0;
 
     const expenseComparison = useMemo(() => {
-        if (!dateRange || !dateRange[0] || !dateRange[1]) return null;
-
-        const currentExpenses = filteredTransactions
-            .filter(t => t.type === 'OUT')
-            .reduce((sum, t) => sum + t.amount, 0);
-
-        const previousExpenses = previousTransactions
-            .filter(t => t.type === 'OUT')
-            .reduce((sum, t) => sum + t.amount, 0);
-
-        if (previousExpenses === 0) {
-            return { percentageChange: currentExpenses > 0 ? 100 : 0, period: 'periodo precedente' };
-        }
-
-        const percentageChange = ((currentExpenses - previousExpenses) / previousExpenses) * 100;
-        return { percentageChange, period: 'periodo precedente' };
-    }, [filteredTransactions, previousTransactions, dateRange]);
+        if (!monthComparison) return null;
+        const prev = monthComparison.previousExpense;
+        if (prev === 0) return { percentageChange: monthComparison.currentExpense > 0 ? 100 : 0 };
+        const percentageChange = ((monthComparison.currentExpense - prev) / prev) * 100;
+        return { percentageChange };
+    }, [monthComparison]);
 
     return {
-        transactions,
         loading,
         dateRange,
         setDateRange,
-        filteredTransactions,
         totalIncome,
         totalExpenses,
         netBalance,
         expensesByCategory,
         incomeByCategory,
         monthlyTrend,
-        monthlyNetBalance,
         expenseComparison,
-        portfolioValue
+        portfolioValue,
+        projection,
+        monthComparison,
+        hasData,
     };
 };

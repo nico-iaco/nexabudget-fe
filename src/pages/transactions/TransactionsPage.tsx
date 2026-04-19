@@ -37,7 +37,7 @@ const { Option } = Select;
 
 interface OutletContextType {
     accounts: Account[];
-    fetchAccounts: (background?: boolean) => Promise<any>;
+    fetchAccounts: (background?: boolean) => Promise<Account[]>;
     transactionRefreshKey: number;
     categories: Category[];
     handleOpenTransferModal: () => void;
@@ -66,6 +66,9 @@ export const TransactionsPage = () => {
     } = useOutletContext<OutletContextType>();
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [totalTransactions, setTotalTransactions] = useState(0);
+    const [currentPage, setCurrentPage] = useState(1);
+    const pageSize = 20;
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState<Transaction | null>(null);
@@ -165,22 +168,32 @@ export const TransactionsPage = () => {
     };
 
 
-    const fetchTransactions = () => {
+    const fetchTransactions = (page = currentPage) => {
         if (!auth) return;
         setLoading(true);
 
-        const apiCall = accountId
-            ? api.getTransactionsByAccountId(accountId)
-            : api.getTransactionsByUserId();
-
-        apiCall
-            .then(response => setTransactions(response.data))
-            .catch(console.error)
-            .finally(() => setLoading(false));
+        if (accountId) {
+            api.getTransactionsByAccountId(accountId)
+                .then(response => {
+                    setTransactions(response.data);
+                    setTotalTransactions(response.data.length);
+                })
+                .catch(console.error)
+                .finally(() => setLoading(false));
+        } else {
+            api.getTransactionsPaged(page - 1, pageSize)
+                .then(response => {
+                    setTransactions(response.data.content);
+                    setTotalTransactions(response.data.totalElements);
+                })
+                .catch(console.error)
+                .finally(() => setLoading(false));
+        }
     };
 
     useEffect(() => {
-        fetchTransactions();
+        setCurrentPage(1);
+        fetchTransactions(1);
     }, [accountId, auth, transactionRefreshKey]);
 
     useEffect(() => {
@@ -216,14 +229,24 @@ export const TransactionsPage = () => {
 
 
     const handleDelete = async (id: string) => {
-        try {
-            await api.deleteTransaction(id);
-            fetchTransactions();
-            fetchLayoutAccounts();
-        } catch (error) {
-            console.error("Failed to delete transaction", error);
-            message.error(t('transactions.deleteError'));
-        }
+        Modal.confirm({
+            title: t('transactions.deleteConfirm'),
+            content: t('trash.recoverableFor30Days'),
+            okText: t('common.delete'),
+            okButtonProps: { danger: true },
+            cancelText: t('common.cancel'),
+            onOk: async () => {
+                try {
+                    await api.deleteTransaction(id);
+                    message.success(t('trash.movedToTrash'));
+                    fetchTransactions();
+                    fetchLayoutAccounts();
+                } catch (error) {
+                    console.error("Failed to delete transaction", error);
+                    message.error(t('transactions.deleteError'));
+                }
+            }
+        });
     };
 
     const handleOpenCreateModal = () => {
@@ -350,8 +373,19 @@ export const TransactionsPage = () => {
             },
             sortOrder: sortConfig.field === 'amount' ? sortConfig.order : null,
             render: (amount: number, record: Transaction) => (
-                <span style={{ color: record.type === 'IN' ? 'green' : 'red' }}>
-                    {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} €
+                <span>
+                    <span style={{ color: record.type === 'IN' ? 'green' : 'red' }}>
+                        {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} €
+                    </span>
+                    {record.originalCurrency && record.originalAmount != null && record.exchangeRate != null && (
+                        <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.45)' }}>
+                            {t('transactions.exchangeRateHint', {
+                                originalAmount: record.originalAmount.toFixed(2),
+                                originalCurrency: record.originalCurrency,
+                                exchangeRate: record.exchangeRate
+                            })}
+                        </div>
+                    )}
                 </span>
             )
         },
@@ -478,6 +512,25 @@ export const TransactionsPage = () => {
                 </>
             );
         }
+        if (accountId) {
+            return (
+                <Table
+                    columns={columns}
+                    dataSource={processedTransactions}
+                    rowKey="id"
+                    loading={loading}
+                    onChange={handleTableChange}
+                    size={'small'}
+                    pagination={{
+                        total: processedTransactions.length,
+                        position: ['bottomCenter'],
+                        defaultPageSize: 10,
+                        showSizeChanger: true,
+                        showQuickJumper: true,
+                    }}
+                />
+            );
+        }
         return (
             <Table
                 columns={columns}
@@ -487,11 +540,16 @@ export const TransactionsPage = () => {
                 onChange={handleTableChange}
                 size={'small'}
                 pagination={{
-                    total: processedTransactions.length,
+                    current: currentPage,
+                    pageSize,
+                    total: totalTransactions,
                     position: ['bottomCenter'],
-                    defaultPageSize: 10,
-                    showSizeChanger: true,
-                    showQuickJumper: true,
+                    showSizeChanger: false,
+                    showTotal: (total) => `${total} transazioni`,
+                    onChange: (page) => {
+                        setCurrentPage(page);
+                        fetchTransactions(page);
+                    }
                 }}
             />
         );

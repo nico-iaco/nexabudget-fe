@@ -1,10 +1,10 @@
 // src/pages/dashboard/DashboardPage.tsx
 import {useOutletContext} from 'react-router-dom';
-import {Card, Col, DatePicker, Empty, Row, Skeleton, Statistic, Typography} from 'antd';
+import {Card, Col, DatePicker, Empty, Progress, Row, Skeleton, Statistic, Typography} from 'antd';
 import {ArrowDownOutlined, ArrowUpOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import {useDashboardData} from '../../hooks/useDashboardData';
-import {GenericPieChart, NetBalanceLineChart, TrendBarChart} from '../../components/dashboard/DashboardCharts';
+import {GenericPieChart, TrendBarChart} from '../../components/dashboard/DashboardCharts';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -20,20 +20,20 @@ export const DashboardPage = () => {
         loading,
         dateRange,
         setDateRange,
-        filteredTransactions,
         totalIncome,
         totalExpenses,
         netBalance,
         expensesByCategory,
         incomeByCategory,
         monthlyTrend,
-        monthlyNetBalance,
         expenseComparison,
-        portfolioValue
+        portfolioValue,
+        projection,
+        hasData,
     } = useDashboardData(transactionRefreshKey);
 
     const showCrypto = portfolioValue && portfolioValue.totalValue > 0;
-    const colSpan = showCrypto ? { xs: 24, sm: 12, md: 6 } : { xs: 24, sm: 8 };
+    const statCols = showCrypto ? { xs: 24, sm: 12, md: 6 } : { xs: 24, sm: 8 };
 
     if (loading) {
         return (
@@ -68,12 +68,12 @@ export const DashboardPage = () => {
                 </Col>
             </Row>
 
-            {filteredTransactions.length === 0 ? (
+            {!hasData ? (
                 <Empty description={t('dashboard.empty')} style={{ marginTop: 48 }} />
             ) : (
                 <>
                     <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-                        <Col {...colSpan}>
+                        <Col {...statCols}>
                             <Card>
                                 <Statistic
                                     title={t('dashboard.netBalance')}
@@ -85,7 +85,7 @@ export const DashboardPage = () => {
                                 />
                             </Card>
                         </Col>
-                        <Col {...colSpan}>
+                        <Col {...statCols}>
                             <Card>
                                 <Statistic
                                     title={t('dashboard.totalIncome')}
@@ -97,7 +97,7 @@ export const DashboardPage = () => {
                                 />
                             </Card>
                         </Col>
-                        <Col {...colSpan}>
+                        <Col {...statCols}>
                             <Card>
                                 <Statistic
                                     title={t('dashboard.totalExpenses')}
@@ -112,13 +112,13 @@ export const DashboardPage = () => {
                                         <Text type={expenseComparison.percentageChange >= 0 ? 'danger' : 'success'}>
                                             {expenseComparison.percentageChange.toFixed(2)}%
                                         </Text>
-                                        <Text type="secondary"> {t('dashboard.vsPeriod', { period: expenseComparison.period })}</Text>
+                                        <Text type="secondary"> {t('dashboard.vsPeriod', { period: t('dashboard.previousMonth') })}</Text>
                                     </div>
                                 )}
                             </Card>
                         </Col>
                         {showCrypto && (
-                            <Col {...colSpan}>
+                            <Col {...statCols}>
                                 <Card>
                                     <Statistic
                                         title={t('dashboard.cryptoPortfolio')}
@@ -131,6 +131,56 @@ export const DashboardPage = () => {
                             </Col>
                         )}
                     </Row>
+
+                    {projection && (
+                        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                            <Col xs={24}>
+                                <Card title={t('dashboard.projection')}>
+                                    <Row gutter={[16, 8]} align="middle">
+                                        <Col xs={24} sm={6}>
+                                            <Statistic
+                                                title={t('reports.projectedIncome')}
+                                                value={projection.projectedIncome}
+                                                precision={2}
+                                                valueStyle={{ color: '#3f8600', fontSize: '18px' }}
+                                                suffix="€"
+                                            />
+                                        </Col>
+                                        <Col xs={24} sm={6}>
+                                            <Statistic
+                                                title={t('reports.projectedExpense')}
+                                                value={projection.projectedExpense}
+                                                precision={2}
+                                                valueStyle={{ color: '#cf1322', fontSize: '18px' }}
+                                                suffix="€"
+                                            />
+                                        </Col>
+                                        <Col xs={24} sm={6}>
+                                            <Statistic
+                                                title={t('reports.projectedSavings')}
+                                                value={projection.projectedSavings}
+                                                precision={2}
+                                                valueStyle={{ color: projection.projectedSavings >= 0 ? '#3f8600' : '#cf1322', fontSize: '18px' }}
+                                                suffix="€"
+                                            />
+                                        </Col>
+                                        <Col xs={24} sm={6}>
+                                            <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                                                {t('dashboard.projectionDay', {
+                                                    elapsed: projection.daysElapsed,
+                                                    total: projection.daysInMonth
+                                                })}
+                                            </Text>
+                                            <Progress
+                                                percent={Math.round((projection.daysElapsed / projection.daysInMonth) * 100)}
+                                                size="small"
+                                            />
+                                        </Col>
+                                    </Row>
+                                </Card>
+                            </Col>
+                        </Row>
+                    )}
 
                     <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
                         <Col xs={24} md={12}>
@@ -152,17 +202,8 @@ export const DashboardPage = () => {
                             </Card>
                         </Col>
                     </Row>
-
-                    <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
-                        <Col xs={24}>
-                            <Card title={t('dashboard.netBalanceTrend')}>
-                                <NetBalanceLineChart data={monthlyNetBalance} />
-                            </Card>
-                        </Col>
-                    </Row>
                 </>
             )}
         </>
     );
 };
-

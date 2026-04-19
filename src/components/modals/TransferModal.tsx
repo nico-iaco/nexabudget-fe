@@ -1,4 +1,4 @@
-import {Button, DatePicker, Form, Input, InputNumber, Modal, Select} from 'antd';
+import {Alert, Button, DatePicker, Form, Input, InputNumber, Modal, Select} from 'antd';
 import dayjs, {type Dayjs} from 'dayjs';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
@@ -25,6 +25,12 @@ interface TransferModalProps {
 export const TransferModal = ({ open, onCancel, onFinish, accounts }: TransferModalProps) => {
     const { t } = useTranslation();
     const [form] = Form.useForm<TransferFormValues>();
+    const sourceId = Form.useWatch('sourceAccountId', form);
+    const destId = Form.useWatch('destinationAccountId', form);
+
+    const sourceAccount = accounts.find(a => a.id === sourceId);
+    const destAccount = accounts.find(a => a.id === destId);
+    const isMultiCurrency = !!(sourceAccount && destAccount && sourceAccount.currency !== destAccount.currency);
 
     useEffect(() => {
         if (open) {
@@ -75,12 +81,20 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts }: TransferMo
                         {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
                     </Select>
                 </Form.Item>
+                {isMultiCurrency && (
+                    <Alert
+                        message={t('transfers.multiCurrencyHint')}
+                        type="info"
+                        showIcon
+                        style={{ marginBottom: 16 }}
+                    />
+                )}
                 <Form.Item
                     name="amount"
                     label={t('transfers.amount')}
                     rules={[{ required: true, message: t('transfers.amountRequired') }]}
                 >
-                    <InputNumber style={{ width: '100%' }} min={0.01} addonAfter="€" />
+                    <InputNumber style={{ width: '100%' }} min={0.01} addonAfter={sourceAccount?.currency ?? '€'} />
                 </Form.Item>
                 <Form.Item
                     name="transferDate"

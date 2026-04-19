@@ -42,6 +42,15 @@ export const TransactionCard = ({ transaction, onEdit, onDelete, onConvertToTran
                     <Text strong style={{ color: amountColor, fontSize: '16px', whiteSpace: 'nowrap' }}>
                         {isIncome ? '+' : '-'} {transaction.amount.toFixed(2)} €
                     </Text>
+                    {transaction.originalCurrency && transaction.originalAmount != null && transaction.exchangeRate != null && (
+                        <Text type="secondary" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
+                            {t('transactions.exchangeRateHint', {
+                                originalAmount: transaction.originalAmount.toFixed(2),
+                                originalCurrency: transaction.originalCurrency,
+                                exchangeRate: transaction.exchangeRate
+                            })}
+                        </Text>
+                    )}
                     <Tag color={isIncome ? 'success' : 'error'} style={{ marginTop: 4 }}>
                         {typeLabel}
                     </Tag>
