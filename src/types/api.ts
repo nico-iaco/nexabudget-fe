@@ -163,9 +163,9 @@ export interface Page<T> {
 export interface MonthlyTrendItem {
     year: number;
     month: number;
-    totalIncome: number;
-    totalExpense: number;
-    netSavings: number;
+    income: number;
+    expense: number;
+    net: number;
 }
 
 export interface CategoryBreakdownItem {
@@ -173,31 +173,37 @@ export interface CategoryBreakdownItem {
     categoryName: string;
     total: number;
     percentage: number;
-    transactionCount: number;
+    transactionCount?: number;
 }
 
 export interface CategoryBreakdownResponse {
     startDate: string;
     endDate: string;
     type: 'IN' | 'OUT';
-    items: CategoryBreakdownItem[];
+    grandTotal: number;
+    categories: CategoryBreakdownItem[];
+}
+
+export interface MonthlyPeriodStats {
+    income: number;
+    expense: number;
 }
 
 export interface MonthComparisonResponse {
-    year: number;
-    month: number;
-    currentIncome: number;
-    currentExpense: number;
-    previousIncome: number;
-    previousExpense: number;
+    currentMonth: MonthlyPeriodStats;
+    previousMonth: MonthlyPeriodStats;
     incomeChange: number;
     expenseChange: number;
 }
 
 export interface MonthlyProjectionResponse {
-    projectedIncome: number;
-    projectedExpense: number;
-    projectedSavings: number;
+    year: number;
+    month: number;
+    currentMonthIncome: number;
+    currentMonthExpense: number;
+    projectedMonthlyIncome: number;
+    projectedMonthlyExpense: number;
+    projectedMonthlySavings: number;
     daysElapsed: number;
     daysInMonth: number;
 }

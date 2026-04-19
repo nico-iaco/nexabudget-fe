@@ -105,7 +105,7 @@ export const updateBudgetTemplate = (id: string, data: BudgetTemplateRequest): P
 export const deleteBudgetTemplate = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/budget-templates/${id}`);
 
 // Budget Alerts
-export const getBudgetAlerts = (): Promise<AxiosResponse<BudgetAlert[]>> => apiClient.get('/budget-alerts');
+export const getBudgetAlerts = (budgetId?: string): Promise<AxiosResponse<BudgetAlert[]>> => apiClient.get(`/budget-alerts${budgetId ? `?budgetId=${budgetId}` : ''}`);
 export const createBudgetAlert = (data: BudgetAlertRequest): Promise<AxiosResponse<BudgetAlert>> => apiClient.post('/budget-alerts', data);
 export const updateBudgetAlert = (id: string, data: BudgetAlertRequest): Promise<AxiosResponse<BudgetAlert>> => apiClient.put(`/budget-alerts/${id}`, data);
 export const deleteBudgetAlert = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/budget-alerts/${id}`);

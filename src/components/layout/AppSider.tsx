@@ -1,6 +1,5 @@
 import { Button, Flex, Layout, Menu, Spin, Statistic, Typography } from 'antd';
 import {
-    BarChartOutlined,
     BankOutlined,
     ContainerOutlined,
     DeleteOutlined,
@@ -24,6 +23,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Account } from '../../types/api';
+import { getCurrencySymbol } from '../../utils/currency';
 
 const { Sider } = Layout;
 const { Title, Text } = Typography;
@@ -134,7 +134,7 @@ export const AppSider = ({
                                 fontSize: '0.85em',
                                 color: 'rgba(255, 255, 255, 0.65)'
                             }}>
-                                {acc.actualBalance.toFixed(2)}€
+                                {acc.actualBalance.toFixed(2)} {getCurrencySymbol(acc.currency)}
                             </Text>
                         </Flex>
                         <SpaceButtons
@@ -235,15 +235,6 @@ export const AppSider = ({
                         }
                     },
                     {
-                        key: '/reports',
-                        icon: <BarChartOutlined />,
-                        label: t('nav.reports'),
-                        onClick: () => {
-                            navigate('/reports');
-                            if (isMobile) setCollapsed(true);
-                        }
-                    },
-                    {
                         key: '/budgets',
                         icon: <ContainerOutlined />,
                         label: t('nav.budgets'),
@@ -312,7 +303,7 @@ export const AppSider = ({
                         value={totalBalance}
                         precision={2}
                         valueStyle={{ color: '#fff' }}
-                        suffix="€"
+                        suffix={getCurrencySymbol(accounts[0]?.currency ?? 'EUR')}
                     />
                 </div>
             </Flex>

@@ -4,21 +4,24 @@ import {DeleteOutlined, EditOutlined, SwapOutlined} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {useTranslation} from 'react-i18next';
 import type {Transaction} from '../types/api';
+import { getCurrencySymbol } from '../utils/currency';
 
 const { Text } = Typography;
 
 interface TransactionCardProps {
     transaction: Transaction;
+    currency?: string;
     onEdit: (transaction: Transaction) => void;
     onDelete: (id: string) => void;
     onConvertToTransfer: (transaction: Transaction) => void;
 }
 
-export const TransactionCard = ({ transaction, onEdit, onDelete, onConvertToTransfer }: TransactionCardProps) => {
+export const TransactionCard = ({ transaction, currency = 'EUR', onEdit, onDelete, onConvertToTransfer }: TransactionCardProps) => {
     const { t } = useTranslation();
     const isIncome = transaction.type === 'IN';
     const amountColor = isIncome ? 'green' : 'red';
     const typeLabel = isIncome ? t('transactions.typeIn') : t('transactions.typeOut');
+    const currencySymbol = getCurrencySymbol(currency);
 
     return (
         <Card
@@ -40,7 +43,7 @@ export const TransactionCard = ({ transaction, onEdit, onDelete, onConvertToTran
                 </Flex>
                 <Flex vertical align="end" style={{ flexShrink: 0 }}>
                     <Text strong style={{ color: amountColor, fontSize: '16px', whiteSpace: 'nowrap' }}>
-                        {isIncome ? '+' : '-'} {transaction.amount.toFixed(2)} €
+                        {isIncome ? '+' : '-'} {transaction.amount.toFixed(2)} {currencySymbol}
                     </Text>
                     {transaction.originalCurrency && transaction.originalAmount != null && transaction.exchangeRate != null && (
                         <Text type="secondary" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>

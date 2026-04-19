@@ -172,7 +172,16 @@ const resources = {
                 monthlyTrend: 'Andamento Mensile (Entrate/Uscite)',
                 netBalanceTrend: 'Andamento Saldo Netto Mensile',
                 projection: 'Proiezione Fine Mese',
-                projectionDay: 'Giorno {{elapsed}} di {{total}}'
+                projectionDay: 'Giorno {{elapsed}} di {{total}}',
+                presets: {
+                    lastWeek: 'Ultima settimana',
+                    lastMonth: 'Mese corrente',
+                    last6Months: 'Ultimi 6 mesi',
+                    lastYear: 'Ultimo anno',
+                    custom: 'Personalizzato',
+                    startDate: 'Inizio',
+                    endDate: 'Fine',
+                }
             },
             charts: {
                 noData: 'Nessun dato disponibile'
@@ -327,6 +336,7 @@ const resources = {
                 previousMonth: 'Mese Precedente',
                 incomeChange: 'Variazione Entrate',
                 expenseChange: 'Variazione Uscite',
+                vsPreviousMonth: 'vs mese prec.',
                 trend: 'Andamento Mensile',
                 trendMonths: 'Mesi da visualizzare',
                 categoryBreakdown: 'Spesa per Categoria',
@@ -571,7 +581,16 @@ const resources = {
                 monthlyTrend: 'Monthly Trend (Income/Expenses)',
                 netBalanceTrend: 'Monthly Net Balance Trend',
                 projection: 'Month-End Projection',
-                projectionDay: 'Day {{elapsed}} of {{total}}'
+                projectionDay: 'Day {{elapsed}} of {{total}}',
+                presets: {
+                    lastWeek: 'Last week',
+                    lastMonth: 'Current month',
+                    last6Months: 'Last 6 months',
+                    lastYear: 'Last year',
+                    custom: 'Custom',
+                    startDate: 'Start',
+                    endDate: 'End',
+                }
             },
             charts: {
                 noData: 'No data available'
@@ -726,6 +745,7 @@ const resources = {
                 previousMonth: 'Previous Month',
                 incomeChange: 'Income Change',
                 expenseChange: 'Expense Change',
+                vsPreviousMonth: 'vs prev. month',
                 trend: 'Monthly Trend',
                 trendMonths: 'Months to display',
                 categoryBreakdown: 'Spending by Category',

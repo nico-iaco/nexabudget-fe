@@ -28,9 +28,9 @@ export interface LineData {
     monthlyNet: number;
 }
 
-export const useDashboardData = (transactionRefreshKey: number) => {
+export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12) => {
     const [loading, setLoading] = useState(true);
-    const [dateRange, setDateRange] = useState<DateRange>([dayjs().startOf('year'), dayjs().endOf('year')]);
+    const [dateRange, setDateRange] = useState<DateRange>([dayjs().startOf('month'), dayjs().endOf('month')]);
 
     const [monthComparison, setMonthComparison] = useState<MonthComparisonResponse | null>(null);
     const [monthlyTrendItems, setMonthlyTrendItems] = useState<MonthlyTrendItem[]>([]);
@@ -46,34 +46,60 @@ export const useDashboardData = (transactionRefreshKey: number) => {
         const startDate = dateRange?.[0]?.format('YYYY-MM-DD') ?? now.startOf('year').format('YYYY-MM-DD');
         const endDate = dateRange?.[1]?.format('YYYY-MM-DD') ?? now.endOf('year').format('YYYY-MM-DD');
 
-        Promise.all([
-            api.getMonthComparison(now.year(), now.month() + 1),
-            api.getMonthlyTrend(12),
-            api.getCategoryBreakdown('IN', startDate, endDate),
-            api.getCategoryBreakdown('OUT', startDate, endDate),
-            api.getMonthlyProjection(),
-            api.getPortfolioValue('EUR').catch(() => ({ data: null })),
-        ]).then(([compResp, trendResp, incResp, expResp, projResp, cryptoResp]) => {
-            setMonthComparison(compResp.data);
-            setMonthlyTrendItems(trendResp.data);
-            setIncomeBreakdown(incResp.data.items);
-            setExpenseBreakdown(expResp.data.items);
-            setProjection(projResp.data);
-            if (cryptoResp.data) setPortfolioValue(cryptoResp.data);
-        }).catch(console.error).finally(() => setLoading(false));
-    }, [transactionRefreshKey, dateRange]);
+        const safe = <T,>(p: Promise<{ data: T }>, fallback: T): Promise<T> =>
+            p.then(r => r.data ?? fallback).catch(() => fallback);
 
-    const totalIncome = monthComparison?.currentIncome ?? 0;
-    const totalExpenses = monthComparison?.currentExpense ?? 0;
+        Promise.all([
+            safe(api.getMonthComparison(now.year(), now.month() + 1), null),
+            safe(api.getMonthlyTrend(trendMonths), []),
+            safe(api.getCategoryBreakdown('IN', startDate, endDate), { startDate, endDate, type: 'IN' as const, grandTotal: 0, categories: [] }),
+            safe(api.getCategoryBreakdown('OUT', startDate, endDate), { startDate, endDate, type: 'OUT' as const, grandTotal: 0, categories: [] }),
+            safe(api.getMonthlyProjection(), null),
+            safe(api.getPortfolioValue('EUR'), null),
+        ]).then(([comp, trend, inc, exp, proj, crypto]) => {
+            setMonthComparison(comp);
+            setMonthlyTrendItems(trend ?? []);
+            setIncomeBreakdown(inc?.categories ?? []);
+            setExpenseBreakdown(exp?.categories ?? []);
+            setProjection(proj);
+            if (crypto) setPortfolioValue(crypto);
+        }).finally(() => setLoading(false));
+    }, [transactionRefreshKey, dateRange, trendMonths]);
+
+    // Totali calcolati dal monthly trend filtrato per dateRange (include anche transazioni senza categoria)
+    const totalIncome = useMemo(() => {
+        const start = dateRange?.[0];
+        const end = dateRange?.[1];
+        return monthlyTrendItems
+            .filter(item => {
+                const itemDate = dayjs(`${item.year}-${String(item.month).padStart(2, '0')}-01`);
+                return (!start || !itemDate.isBefore(start, 'month')) &&
+                       (!end || !itemDate.isAfter(end, 'month'));
+            })
+            .reduce((sum, item) => sum + item.income, 0);
+    }, [monthlyTrendItems, dateRange]);
+
+    const totalExpenses = useMemo(() => {
+        const start = dateRange?.[0];
+        const end = dateRange?.[1];
+        return monthlyTrendItems
+            .filter(item => {
+                const itemDate = dayjs(`${item.year}-${String(item.month).padStart(2, '0')}-01`);
+                return (!start || !itemDate.isBefore(start, 'month')) &&
+                       (!end || !itemDate.isAfter(end, 'month'));
+            })
+            .reduce((sum, item) => sum + item.expense, 0);
+    }, [monthlyTrendItems, dateRange]);
+
     const netBalance = totalIncome - totalExpenses;
 
     const expensesByCategory = useMemo((): PieData[] =>
-        expenseBreakdown.map(i => ({ type: i.categoryName, value: i.total })),
+        (expenseBreakdown ?? []).map(i => ({ type: i.categoryName, value: i.total })),
         [expenseBreakdown]
     );
 
     const incomeByCategory = useMemo((): PieData[] =>
-        incomeBreakdown.map(i => ({ type: i.categoryName, value: i.total })),
+        (incomeBreakdown ?? []).map(i => ({ type: i.categoryName, value: i.total })),
         [incomeBreakdown]
     );
 
@@ -81,8 +107,8 @@ export const useDashboardData = (transactionRefreshKey: number) => {
         const result: BarData[] = [];
         monthlyTrendItems.forEach(item => {
             const label = dayjs(`${item.year}-${String(item.month).padStart(2, '0')}-01`).format('MMM YY');
-            result.push({ month: label, type: 'Entrate', value: item.totalIncome });
-            result.push({ month: label, type: 'Uscite', value: item.totalExpense });
+            result.push({ month: label, type: 'Entrate', value: item.income });
+            result.push({ month: label, type: 'Uscite', value: item.expense });
         });
         return result;
     }, [monthlyTrendItems]);
@@ -91,9 +117,10 @@ export const useDashboardData = (transactionRefreshKey: number) => {
 
     const expenseComparison = useMemo(() => {
         if (!monthComparison) return null;
-        const prev = monthComparison.previousExpense;
-        if (prev === 0) return { percentageChange: monthComparison.currentExpense > 0 ? 100 : 0 };
-        const percentageChange = ((monthComparison.currentExpense - prev) / prev) * 100;
+        const prev = monthComparison.previousMonth?.expense ?? 0;
+        const current = monthComparison.currentMonth?.expense ?? 0;
+        if (prev === 0) return { percentageChange: current > 0 ? 100 : 0 };
+        const percentageChange = ((current - prev) / prev) * 100;
         return { percentageChange };
     }, [monthComparison]);
 
@@ -106,6 +133,8 @@ export const useDashboardData = (transactionRefreshKey: number) => {
         netBalance,
         expensesByCategory,
         incomeByCategory,
+        incomeBreakdown,
+        expenseBreakdown,
         monthlyTrend,
         expenseComparison,
         portfolioValue,

@@ -29,6 +29,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { TransactionCard } from '../../components/TransactionCard';
+import { getCurrencySymbol } from '../../utils/currency';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
 
@@ -372,10 +373,11 @@ export const TransactionsPage = () => {
                 return amountA - amountB;
             },
             sortOrder: sortConfig.field === 'amount' ? sortConfig.order : null,
-            render: (amount: number, record: Transaction) => (
-                <span>
+            render: (amount: number, record: Transaction) => {
+                const sym = getCurrencySymbol(accounts.find(a => a.id === record.accountId)?.currency ?? 'EUR');
+                return (<span>
                     <span style={{ color: record.type === 'IN' ? 'green' : 'red' }}>
-                        {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} €
+                        {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} {sym}
                     </span>
                     {record.originalCurrency && record.originalAmount != null && record.exchangeRate != null && (
                         <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.45)' }}>
@@ -386,8 +388,8 @@ export const TransactionsPage = () => {
                             })}
                         </div>
                     )}
-                </span>
-            )
+                </span>);
+            }
         },
         {
             title: t('transactions.type'),
@@ -497,6 +499,7 @@ export const TransactionsPage = () => {
                         renderItem={item => (
                             <TransactionCard
                                 transaction={item}
+                                currency={accounts.find(a => a.id === item.accountId)?.currency}
                                 onEdit={handleOpenEditModal}
                                 onDelete={handleDelete}
                                 onConvertToTransfer={handleOpenLinkTransferModal}

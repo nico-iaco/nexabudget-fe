@@ -12,7 +12,6 @@ import {GoCardlessCallbackPage} from "./pages/gocardless/GoCardlessCallbackPage.
 import {CryptoPage} from "./pages/crypto/CryptoPage";
 import {SettingsPage} from "./pages/settings/SettingsPage";
 import {TrashPage} from "./pages/trash/TrashPage";
-import {ReportsPage} from "./pages/reports/ReportsPage";
 import {BudgetsPage} from "./pages/budgets/BudgetsPage";
 import {AuditLogPage} from "./pages/audit/AuditLogPage";
 import {usePreferences} from './contexts/PreferencesContext';
@@ -67,10 +66,6 @@ const router = createBrowserRouter([
             {
                 path: 'trash',
                 element: <TrashPage />,
-            },
-            {
-                path: 'reports',
-                element: <ReportsPage />,
             },
             {
                 path: 'budgets',
