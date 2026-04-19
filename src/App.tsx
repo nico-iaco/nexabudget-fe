@@ -11,6 +11,9 @@ import type {JSX} from "react";
 import {GoCardlessCallbackPage} from "./pages/gocardless/GoCardlessCallbackPage.tsx";
 import {CryptoPage} from "./pages/crypto/CryptoPage";
 import {SettingsPage} from "./pages/settings/SettingsPage";
+import {TrashPage} from "./pages/trash/TrashPage";
+import {BudgetsPage} from "./pages/budgets/BudgetsPage";
+import {AuditLogPage} from "./pages/audit/AuditLogPage";
 import {usePreferences} from './contexts/PreferencesContext';
 
 const PublicLayout = () => (
@@ -59,6 +62,18 @@ const router = createBrowserRouter([
             {
                 path: 'settings',
                 element: <SettingsPage />,
+            },
+            {
+                path: 'trash',
+                element: <TrashPage />,
+            },
+            {
+                path: 'budgets',
+                element: <BudgetsPage />,
+            },
+            {
+                path: 'audit-log',
+                element: <AuditLogPage />,
             },
         ],
     },

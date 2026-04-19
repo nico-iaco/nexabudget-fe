@@ -46,6 +46,10 @@ export interface Transaction {
     date: string;
     note?: string;
     transferId?: string;
+    exchangeRate?: number;
+    originalCurrency?: string;
+    originalAmount?: number;
+    deleted?: boolean;
 }
 
 export interface TransactionRequest {
@@ -136,6 +140,126 @@ export interface BinanceKeysRequest {
 export interface ManualHoldingsRequest {
     symbol: string;
     amount: number;
+}
+
+export interface DeletedAccount {
+    id: string;
+    name: string;
+    type: 'CONTO_CORRENTE' | 'RISPARMIO' | 'INVESTIMENTO' | 'CONTANTI';
+    currency: string;
+    deletedAt: string;
+}
+
+export interface Page<T> {
+    content: T[];
+    totalElements: number;
+    totalPages: number;
+    number: number;
+    size: number;
+    first: boolean;
+    last: boolean;
+}
+
+export interface MonthlyTrendItem {
+    year: number;
+    month: number;
+    income: number;
+    expense: number;
+    net: number;
+}
+
+export interface CategoryBreakdownItem {
+    categoryId: string;
+    categoryName: string;
+    total: number;
+    percentage: number;
+    transactionCount?: number;
+}
+
+export interface CategoryBreakdownResponse {
+    startDate: string;
+    endDate: string;
+    type: 'IN' | 'OUT';
+    grandTotal: number;
+    categories: CategoryBreakdownItem[];
+}
+
+export interface MonthlyPeriodStats {
+    income: number;
+    expense: number;
+}
+
+export interface MonthComparisonResponse {
+    currentMonth: MonthlyPeriodStats;
+    previousMonth: MonthlyPeriodStats;
+    incomeChange: number;
+    expenseChange: number;
+}
+
+export interface MonthlyProjectionResponse {
+    year: number;
+    month: number;
+    currentMonthIncome: number;
+    currentMonthExpense: number;
+    projectedMonthlyIncome: number;
+    projectedMonthlyExpense: number;
+    projectedMonthlySavings: number;
+    daysElapsed: number;
+    daysInMonth: number;
+}
+
+export type BudgetRecurrenceType = 'MONTHLY' | 'QUARTERLY' | 'YEARLY';
+
+export interface BudgetTemplate {
+    id: string;
+    categoryId: string;
+    categoryName: string;
+    budgetLimit: number;
+    recurrenceType: BudgetRecurrenceType;
+    active: boolean;
+    createdAt: string;
+}
+
+export interface BudgetTemplateRequest {
+    categoryId: string;
+    budgetLimit: number;
+    recurrenceType: BudgetRecurrenceType;
+    active: boolean;
+}
+
+export interface BudgetAlert {
+    id: string;
+    budgetId: string;
+    thresholdPercentage: number;
+    active: boolean;
+    lastNotifiedAt: string | null;
+    createdAt: string;
+}
+
+export interface BudgetAlertRequest {
+    budgetId: string;
+    thresholdPercentage: number;
+    active: boolean;
+}
+
+export type AuditAction =
+    | 'CREATE_TRANSACTION' | 'UPDATE_TRANSACTION' | 'DELETE_TRANSACTION'
+    | 'CREATE_TRANSFER'
+    | 'CREATE_ACCOUNT' | 'UPDATE_ACCOUNT' | 'DELETE_ACCOUNT'
+    | 'CREATE_BUDGET' | 'UPDATE_BUDGET' | 'DELETE_BUDGET'
+    | 'CREATE_CATEGORY' | 'UPDATE_CATEGORY' | 'DELETE_CATEGORY';
+
+export type AuditEntityType = 'Transaction' | 'Account' | 'Budget' | 'Category';
+
+export interface AuditLogEntry {
+    id: string;
+    userId: string;
+    action: AuditAction;
+    entityType: AuditEntityType;
+    entityId: string;
+    newValue: string;
+    timestamp: string;
+    ipAddress: string;
 }
 
 export interface CryptoHolding {
