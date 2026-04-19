@@ -174,10 +174,10 @@ export const TransactionsPage = () => {
         setLoading(true);
 
         if (accountId) {
-            api.getTransactionsByAccountId(accountId)
+            api.getTransactionsByAccountIdPaged(accountId, page - 1, pageSize)
                 .then(response => {
-                    setTransactions(response.data);
-                    setTotalTransactions(response.data.length);
+                    setTransactions(response.data.content);
+                    setTotalTransactions(response.data.totalElements);
                 })
                 .catch(console.error)
                 .finally(() => setLoading(false));
@@ -506,10 +506,17 @@ export const TransactionsPage = () => {
                             />
                         )}
                         pagination={{
-                            total: processedTransactions.length,
-                            defaultPageSize: 10,
-                            showSizeChanger: true,
-                            showQuickJumper: true,
+                            current: currentPage,
+                            pageSize,
+                            total: totalTransactions,
+                            position: 'bottom',
+                            align: 'center',
+                            showSizeChanger: false,
+                            showTotal: (total) => `${total} transazioni`,
+                            onChange: (page) => {
+                                setCurrentPage(page);
+                                fetchTransactions(page);
+                            },
                         }}
                     />
                 </>
@@ -525,11 +532,16 @@ export const TransactionsPage = () => {
                     onChange={handleTableChange}
                     size={'small'}
                     pagination={{
-                        total: processedTransactions.length,
+                        current: currentPage,
+                        pageSize,
+                        total: totalTransactions,
                         position: ['bottomCenter'],
-                        defaultPageSize: 10,
-                        showSizeChanger: true,
-                        showQuickJumper: true,
+                        showSizeChanger: false,
+                        showTotal: (total) => `${total} transazioni`,
+                        onChange: (page) => {
+                            setCurrentPage(page);
+                            fetchTransactions(page);
+                        },
                     }}
                 />
             );
