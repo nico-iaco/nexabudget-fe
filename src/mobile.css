@@ -248,6 +248,17 @@
 /* Extra small devices */
 @media (max-width: 480px) {
     .ant-card-body {
+        padding: 12px 8px !important;
+    }
+}
+
+/* Fix scrolling on lists and modals for touch devices */
+.ant-list,
+.ant-list-item,
+.ant-modal-body {
+    touch-action: pan-y;
+}
+
         padding: 12px !important;
     }
 

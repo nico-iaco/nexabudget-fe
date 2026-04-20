@@ -117,11 +117,13 @@ export const Layout = () => {
     const handleOpenCreateAccountModal = () => {
         setEditingAccount(null);
         setIsAccountModalOpen(true);
+        if (isMobile) setCollapsed(true);
     };
 
     const handleOpenEditAccountModal = (account: Account) => {
         setEditingAccount(account);
         setIsAccountModalOpen(true);
+        if (isMobile) setCollapsed(true);
     };
 
     const handleCancelAccountModal = () => {
@@ -149,6 +151,7 @@ export const Layout = () => {
     const handleOpenDeleteModal = (account: Account) => {
         setDeletingAccount(account);
         setIsDeleteModalOpen(true);
+        if (isMobile) setCollapsed(true);
     };
 
     const handleCancelDeleteModal = () => {
@@ -204,6 +207,7 @@ export const Layout = () => {
         setBanks([]);
         setSelectedBank(null);
         setIsGoCardlessModalOpen(true);
+        if (isMobile) setCollapsed(true);
     };
 
     const handleCancelGoCardlessModal = () => {
