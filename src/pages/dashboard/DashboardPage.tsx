@@ -10,6 +10,7 @@ import { useTranslation } from 'react-i18next';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { GenericPieChart, TrendBarChart } from '../../components/dashboard/DashboardCharts';
+import { AiAnalysisCard } from '../../components/dashboard/AiAnalysisCard';
 import * as api from '../../services/api';
 import type { CategoryBreakdownItem, MonthComparisonResponse } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
@@ -229,6 +230,13 @@ export const DashboardPage = () => {
                                 </Card>
                             </Col>
                         )}
+                    </Row>
+
+                    {/* Analisi Finanziaria AI */}
+                    <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                        <Col xs={24}>
+                            <AiAnalysisCard />
+                        </Col>
                     </Row>
 
                     {/* Proiezione + Confronto mese affiancati */}

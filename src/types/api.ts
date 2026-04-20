@@ -268,3 +268,18 @@ export interface CryptoHolding {
     amount: number;
     source: string;
 }
+
+export interface AiAnalysisRequest {
+    startDate: string;
+    endDate: string;
+}
+
+export interface AiAnalysisJobResponse {
+    jobId: string;
+    status: 'PENDING' | 'COMPLETED' | 'FAILED';
+}
+
+export interface AiAnalysisStatusResponse {
+    status: 'PENDING' | 'COMPLETED' | 'FAILED';
+    content?: string;
+}

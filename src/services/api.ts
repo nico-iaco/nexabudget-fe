@@ -121,6 +121,9 @@ export const getMonthlyTrend = (months = 12): Promise<AxiosResponse<MonthlyTrend
 export const getCategoryBreakdown = (type: 'IN' | 'OUT', startDate: string, endDate: string): Promise<AxiosResponse<CategoryBreakdownResponse>> => apiClient.get(`/reports/category-breakdown?type=${type}&startDate=${startDate}&endDate=${endDate}`);
 export const getMonthComparison = (year: number, month: number): Promise<AxiosResponse<MonthComparisonResponse>> => apiClient.get(`/reports/month-comparison?year=${year}&month=${month}`);
 export const getMonthlyProjection = (): Promise<AxiosResponse<MonthlyProjectionResponse>> => apiClient.get('/reports/monthly-projection');
+export const requestAiAnalysis = (data: import('../types/api').AiAnalysisRequest): Promise<AxiosResponse<import('../types/api').AiAnalysisJobResponse>> => apiClient.post('/reports/ai-analysis', data);
+export const getAiAnalysisStatus = (jobId: string): Promise<AxiosResponse<import('../types/api').AiAnalysisStatusResponse>> => apiClient.get(`/reports/ai-analysis/${jobId}`);
+export const downloadAiAnalysis = (jobId: string): Promise<AxiosResponse<Blob>> => apiClient.get(`/reports/ai-analysis/${jobId}/download`, { responseType: 'blob' });
 
 // Budget Templates
 export const getBudgetTemplates = (): Promise<AxiosResponse<BudgetTemplate[]>> => apiClient.get('/budget-templates');

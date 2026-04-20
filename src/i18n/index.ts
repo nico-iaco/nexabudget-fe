@@ -181,6 +181,24 @@ const resources = {
                     custom: 'Personalizzato',
                     startDate: 'Inizio',
                     endDate: 'Fine',
+                },
+                aiAnalysis: {
+                    title: 'Analisi Finanziaria AI Asincrona',
+                    description: 'Ottieni un resoconto discorsivo e personalizzato delle tue finanze nel periodo selezionato.',
+                    button: 'Genera Analisi AI',
+                    analyzingTitle: "L'Intelligenza Artificiale sta analizzando le tue transazioni...",
+                    analyzingSub: 'Potrebbe volerci qualche secondo.',
+                    invalidRange: 'Seleziona un intervallo di date valido',
+                    maxRange: 'Il periodo massimo consentito è di 12 mesi',
+                    invalidRequest: 'Richiesta non valida. Verifica le date inserite.',
+                    errorRequest: 'Errore durante la richiesta di analisi.',
+                    emptyResult: 'Nessun risultato generato.',
+                    failed: "La generazione dell'analisi è fallita. Riprova più tardi.",
+                    timeout: "Timeout durante l'attesa dell'analisi.",
+                    startDate: 'Data Inizio',
+                    endDate: 'Data Fine',
+                    downloadReport: 'Scarica Report',
+                    downloadError: 'Errore durante il download del report.'
                 }
             },
             charts: {
@@ -591,6 +609,24 @@ const resources = {
                     custom: 'Custom',
                     startDate: 'Start',
                     endDate: 'End',
+                },
+                aiAnalysis: {
+                    title: 'Asynchronous AI Financial Analysis',
+                    description: 'Get a personalized and detailed report of your finances in the selected period.',
+                    button: 'Generate AI Analysis',
+                    analyzingTitle: 'Artificial Intelligence is analyzing your transactions...',
+                    analyzingSub: 'This might take a few seconds.',
+                    invalidRange: 'Please select a valid date range',
+                    maxRange: 'The maximum allowed period is 12 months',
+                    invalidRequest: 'Invalid request. Please check the entered dates.',
+                    errorRequest: 'Error while requesting the analysis.',
+                    emptyResult: 'No result generated.',
+                    failed: 'Analysis generation failed. Please try again later.',
+                    timeout: 'Timeout while waiting for the analysis.',
+                    startDate: 'Start Date',
+                    endDate: 'End Date',
+                    downloadReport: 'Download Report',
+                    downloadError: 'Error downloading the report.'
                 }
             },
             charts: {
