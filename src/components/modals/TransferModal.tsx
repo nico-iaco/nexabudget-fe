@@ -45,6 +45,7 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts }: TransferMo
             open={open}
             onCancel={onCancel}
             footer={null}
+            destroyOnClose
         >
             <Form
                 form={form}

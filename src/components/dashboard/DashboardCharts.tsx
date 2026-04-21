@@ -1,9 +1,11 @@
 import { Column, Line, Pie } from '@ant-design/charts';
-import { Empty } from 'antd';
+import { Empty, Flex, Progress, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { BarData, LineData } from '../../hooks/useDashboardData';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePreferences } from '../../contexts/PreferencesContext';
+
+const { Text } = Typography;
 
 const TooltipGlobalStyles = ({ isDark }: { isDark: boolean }) => (
     <style>{`
@@ -36,7 +38,28 @@ export const GenericPieChart = ({ data }: PieChartProps) => {
     const isDark = preferences.theme === 'dark';
     if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
 
-
+    if (isMobile) {
+        const total = data.reduce((sum, d) => sum + d.value, 0);
+        const sorted = [...data].sort((a, b) => b.value - a.value);
+        return (
+            <Flex vertical gap={10}>
+                {sorted.map((item) => {
+                    const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
+                    return (
+                        <div key={item.type}>
+                            <Flex justify="space-between" style={{ marginBottom: 2 }}>
+                                <Text style={{ fontSize: 13 }}>{item.type}</Text>
+                                <Text style={{ fontSize: 13 }} type="secondary">
+                                    {item.value.toFixed(2)} ({pct}%)
+                                </Text>
+                            </Flex>
+                            <Progress percent={pct} showInfo={false} size="small" strokeColor={isDark ? '#177ddc' : '#1890ff'} />
+                        </div>
+                    );
+                })}
+            </Flex>
+        );
+    }
 
     const config = {
         data,
@@ -45,15 +68,8 @@ export const GenericPieChart = ({ data }: PieChartProps) => {
         radius: 0.8,
         label: false,
         theme: isDark ? 'dark' : undefined,
-
-        legend: {
-            position: isMobile ? 'bottom' : 'right',
-        },
-        interactions: [
-            {
-                type: 'element-active',
-            },
-        ],
+        legend: { position: 'right' as const },
+        interactions: [{ type: 'element-active' }],
     };
 
     return (
@@ -75,41 +91,35 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
     const isDark = preferences.theme === 'dark';
     if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
 
+    const months = [...new Set(data.map(d => d.month))];
+    const minWidth = Math.max(months.length * 56, 300);
+
     const config = {
         data,
         xField: 'month',
         yField: 'value',
         colorField: 'type',
         isGroup: true,
-        seriesField: 'type', // ensuring explicit series field
+        seriesField: 'type',
         theme: isDark ? 'dark' : undefined,
-
-        columnStyle: {
-            radius: [2, 2, 0, 0],
-        },
-        legend: {
-            position: isMobile ? 'bottom' : 'top-left',
-        },
-        xAxis: {
-            label: {
-                style: {
-                    fill: isDark ? '#ffffff' : '#000000',
-                },
-            },
-        },
-        yAxis: {
-            label: {
-                style: {
-                    fill: isDark ? '#ffffff' : '#000000',
-                },
-            },
-        },
+        columnStyle: { radius: [2, 2, 0, 0] },
+        legend: { position: (isMobile ? 'bottom' : 'top-left') as 'bottom' | 'top-left' },
+        xAxis: { label: { style: { fill: isDark ? '#ffffff' : '#000000' } } },
+        yAxis: { label: { style: { fill: isDark ? '#ffffff' : '#000000' } } },
     };
 
     return (
         <>
             <TooltipGlobalStyles isDark={isDark} />
-            <Column {...config} />
+            {isMobile ? (
+                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
+                    <div style={{ minWidth }}>
+                        <Column {...config} />
+                    </div>
+                </div>
+            ) : (
+                <Column {...config} />
+            )}
         </>
     );
 };

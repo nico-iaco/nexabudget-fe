@@ -15,6 +15,7 @@ import * as api from '../../services/api';
 import type { CategoryBreakdownItem, MonthComparisonResponse } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT } from '../../theme/tokens';
 
 const { Title, Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -86,7 +87,7 @@ export const DashboardPage = () => {
     ];
 
     const deltaStyle = (v: number, isExpense = false) => ({
-        color: (isExpense ? v > 0 : v > 0) ? '#cf1322' : '#3f8600',
+        color: (isExpense ? v > 0 : v > 0) ? COLOR_NEGATIVE : COLOR_POSITIVE,
         fontSize: 12
     });
 
@@ -179,7 +180,7 @@ export const DashboardPage = () => {
                                     title={t('dashboard.netBalance')}
                                     value={netBalance}
                                     precision={2}
-                                    valueStyle={{ color: netBalance >= 0 ? '#3f8600' : '#cf1322' }}
+                                    valueStyle={{ color: netBalance >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE }}
                                     prefix={netBalance >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
                                     suffix="€"
                                 />
@@ -191,7 +192,7 @@ export const DashboardPage = () => {
                                     title={t('dashboard.totalIncome')}
                                     value={totalIncome}
                                     precision={2}
-                                    valueStyle={{ color: '#3f8600' }}
+                                    valueStyle={{ color: COLOR_POSITIVE }}
                                     prefix={<ArrowUpOutlined />}
                                     suffix="€"
                                 />
@@ -203,7 +204,7 @@ export const DashboardPage = () => {
                                     title={t('dashboard.totalExpenses')}
                                     value={totalExpenses}
                                     precision={2}
-                                    valueStyle={{ color: '#cf1322' }}
+                                    valueStyle={{ color: COLOR_NEGATIVE }}
                                     prefix={<ArrowDownOutlined />}
                                     suffix="€"
                                 />
@@ -224,7 +225,7 @@ export const DashboardPage = () => {
                                         title={t('dashboard.cryptoPortfolio')}
                                         value={portfolioValue.totalValue}
                                         precision={2}
-                                        valueStyle={{ color: '#1890ff' }}
+                                        valueStyle={{ color: COLOR_ACCENT }}
                                         prefix={portfolioValue.currency === 'EUR' ? '€' : '$'}
                                     />
                                 </Card>
@@ -246,17 +247,17 @@ export const DashboardPage = () => {
                                 <Card title={t('dashboard.projection')} style={{ height: '100%' }}>
                                     <Row gutter={[16, 8]} align="middle">
                                         <Col xs={12} sm={8}>
-                                            <Statistic title={t('reports.projectedIncome')} value={projection.projectedMonthlyIncome} precision={2} valueStyle={{ color: '#3f8600', fontSize: '16px' }} suffix="€" />
+                                            <Statistic title={t('reports.projectedIncome')} value={projection.projectedMonthlyIncome} precision={2} valueStyle={{ color: COLOR_POSITIVE, fontSize: '16px' }} suffix="€" />
                                         </Col>
                                         <Col xs={12} sm={8}>
-                                            <Statistic title={t('reports.projectedExpense')} value={projection.projectedMonthlyExpense} precision={2} valueStyle={{ color: '#cf1322', fontSize: '16px' }} suffix="€" />
+                                            <Statistic title={t('reports.projectedExpense')} value={projection.projectedMonthlyExpense} precision={2} valueStyle={{ color: COLOR_NEGATIVE, fontSize: '16px' }} suffix="€" />
                                         </Col>
                                         <Col xs={12} sm={8}>
                                             <Statistic
                                                 title={t('reports.projectedSavings')}
                                                 value={projection.projectedMonthlySavings}
                                                 precision={2}
-                                                valueStyle={{ color: projection.projectedMonthlySavings >= 0 ? '#3f8600' : '#cf1322', fontSize: '16px' }}
+                                                valueStyle={{ color: projection.projectedMonthlySavings >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE, fontSize: '16px' }}
                                                 suffix="€"
                                             />
                                         </Col>
@@ -291,14 +292,14 @@ export const DashboardPage = () => {
                                 ) : customComparison ? (
                                     <Row gutter={[16, 8]}>
                                         <Col xs={12}>
-                                            <Statistic title={t('dashboard.totalIncome')} value={customComparison.currentMonth?.income} precision={2} valueStyle={{ color: '#3f8600', fontSize: '16px' }} suffix="€" prefix={<ArrowUpOutlined />} />
+                                            <Statistic title={t('dashboard.totalIncome')} value={customComparison.currentMonth?.income} precision={2} valueStyle={{ color: COLOR_POSITIVE, fontSize: '16px' }} suffix="€" prefix={<ArrowUpOutlined />} />
                                             <Text style={deltaStyle(customComparison.incomeChange)}>
                                                 {customComparison.incomeChange >= 0 ? '+' : ''}{customComparison.incomeChange.toFixed(2)} €{' '}
                                                 <Text type="secondary" style={{ fontSize: 11 }}>{t('reports.vsPreviousMonth')}</Text>
                                             </Text>
                                         </Col>
                                         <Col xs={12}>
-                                            <Statistic title={t('dashboard.totalExpenses')} value={customComparison.currentMonth?.expense} precision={2} valueStyle={{ color: '#cf1322', fontSize: '16px' }} suffix="€" prefix={<ArrowDownOutlined />} />
+                                            <Statistic title={t('dashboard.totalExpenses')} value={customComparison.currentMonth?.expense} precision={2} valueStyle={{ color: COLOR_NEGATIVE, fontSize: '16px' }} suffix="€" prefix={<ArrowDownOutlined />} />
                                             <Text style={deltaStyle(customComparison.expenseChange, true)}>
                                                 {customComparison.expenseChange >= 0 ? '+' : ''}{customComparison.expenseChange.toFixed(2)} €{' '}
                                                 <Text type="secondary" style={{ fontSize: 11 }}>{t('reports.vsPreviousMonth')}</Text>

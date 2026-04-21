@@ -35,6 +35,8 @@ export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout }: AppHe
                 icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
                 onClick={() => setCollapsed(!collapsed)}
                 style={{ fontSize: '16px', width: 64, height: 64 }}
+                aria-label={t('common.menu')}
+                aria-expanded={!collapsed}
             />
             <Title
                 level={3}
@@ -52,7 +54,7 @@ export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout }: AppHe
             >
                 {t('app.name')}
             </Title>
-            <Button type="primary" icon={<LogoutOutlined />} onClick={onLogout}>
+            <Button type="primary" icon={<LogoutOutlined />} onClick={onLogout} aria-label={t('common.logout')}>
                 {!isMobile && t('common.logout')}
             </Button>
         </Header>

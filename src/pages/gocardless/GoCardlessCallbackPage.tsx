@@ -6,6 +6,7 @@ import {BankOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import * as api from '../../services/api';
 import type {GoCardlessBankDetails} from '../../types/api';
+import {COLOR_ACCENT} from '../../theme/tokens';
 
 const {Title, Text} = Typography;
 
@@ -169,7 +170,7 @@ export const GoCardlessCallbackPage = () => {
                                     cursor: 'pointer',
                                     padding: '16px',
                                     border: selectedAccountId === account.account_id
-                                        ? '2px solid #1890ff'
+                                        ? `2px solid ${COLOR_ACCENT}`
                                         : '1px solid #d9d9d9',
                                     borderRadius: '8px',
                                     marginBottom: '12px',
@@ -202,7 +203,7 @@ export const GoCardlessCallbackPage = () => {
                                             </Text>
                                         )}
                                     </Flex>
-                                    <BankOutlined style={{fontSize: '24px', color: '#1890ff'}}/>
+                                    <BankOutlined style={{fontSize: '24px', color: COLOR_ACCENT}}/>
                                 </Flex>
                             </List.Item>
 

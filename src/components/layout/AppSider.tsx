@@ -1,10 +1,11 @@
-import { Button, Flex, Layout, Menu, Spin, Statistic, Typography } from 'antd';
+import { Button, Dropdown, Flex, Layout, Menu, Spin, Statistic, Typography } from 'antd';
 import {
     BankOutlined,
     ContainerOutlined,
     DeleteOutlined,
     DisconnectOutlined,
     EditOutlined,
+    EllipsisOutlined,
     FundOutlined,
     HistoryOutlined,
     LineChartOutlined,
@@ -115,11 +116,42 @@ export const AppSider = ({
             const isConnectedToGoCardless = acc.linkedToExternal;
             const isCheckingAccount = acc.type === 'CONTO_CORRENTE';
 
+            const dropdownItems = [
+                ...(isCheckingAccount ? [{
+                    key: 'gocardless',
+                    icon: isConnectedToGoCardless ? <DisconnectOutlined /> : <LinkOutlined />,
+                    label: isConnectedToGoCardless ? t('accounts.disconnectGoCardless') : t('accounts.connectGoCardless'),
+                    onClick: ({ domEvent }: { domEvent: React.MouseEvent }) => {
+                        domEvent.stopPropagation();
+                        if (!isConnectedToGoCardless) onOpenGoCardless(acc);
+                    },
+                }] : []),
+                {
+                    key: 'edit',
+                    icon: <EditOutlined />,
+                    label: t('common.edit'),
+                    onClick: ({ domEvent }: { domEvent: React.MouseEvent }) => {
+                        domEvent.stopPropagation();
+                        onOpenEditAccount(acc);
+                    },
+                },
+                {
+                    key: 'delete',
+                    icon: <DeleteOutlined />,
+                    label: t('common.delete'),
+                    danger: true,
+                    onClick: ({ domEvent }: { domEvent: React.MouseEvent }) => {
+                        domEvent.stopPropagation();
+                        onOpenDeleteAccount(acc);
+                    },
+                },
+            ];
+
             return {
                 key: path,
                 icon: getAccountIcon(acc.type),
                 label: (
-                    <Flex justify="space-between" align="center" wrap="wrap" gap="small">
+                    <Flex justify="space-between" align="center" gap="small">
                         <Flex vertical style={{ flex: 1, minWidth: 0 }}>
                             <Text style={{
                                 color: 'rgba(255, 255, 255, 0.85)',
@@ -137,33 +169,25 @@ export const AppSider = ({
                                 {acc.actualBalance.toFixed(2)} {getCurrencySymbol(acc.currency)}
                             </Text>
                         </Flex>
-                        <SpaceButtons
-                            isCheckingAccount={isCheckingAccount}
-                            isConnectedToGoCardless={isConnectedToGoCardless}
-                            onDisconnect={(e) => {
-                                e.stopPropagation();
-                                // message.info('Disconnect feature coming soon'); // Handled in parent or here?
-                                // Let's keep logic simple here
-                            }}
-                            onConnect={(e) => {
-                                e.stopPropagation();
-                                onOpenGoCardless(acc);
-                            }}
-                            onEdit={(e) => {
-                                e.stopPropagation();
-                                onOpenEditAccount(acc);
-                            }}
-                            onDelete={(e) => {
-                                e.stopPropagation();
-                                onOpenDeleteAccount(acc);
-                            }}
-                        />
+                        <Dropdown
+                            menu={{ items: dropdownItems }}
+                            trigger={['click']}
+                            placement="bottomRight"
+                        >
+                            <Button
+                                type="text"
+                                size="small"
+                                icon={<EllipsisOutlined style={{ color: 'rgba(255, 255, 255, 0.65)' }} />}
+                                onClick={(e) => e.stopPropagation()}
+                                aria-label={t('common.actions')}
+                            />
+                        </Dropdown>
                     </Flex>
                 ),
                 onClick: () => handleMenuClick(path),
             };
         });
-    }, [accounts, onOpenGoCardless, onOpenEditAccount, onOpenDeleteAccount, handleMenuClick]);
+    }, [accounts, onOpenGoCardless, onOpenEditAccount, onOpenDeleteAccount, handleMenuClick, t]);
 
     // Calcola se ci sono conti correnti collegati a GoCardless
     const hasSyncableAccounts = useMemo(() => {
@@ -294,7 +318,7 @@ export const AppSider = ({
                                 title={t('gocardless.syncAllTitle')}
                             />
                         )}
-                        <Button icon={<PlusOutlined />} size="small" onClick={onOpenCreateAccount} />
+                        <Button icon={<PlusOutlined />} size="small" onClick={onOpenCreateAccount} aria-label={t('accounts.newAccount')} />
                     </Flex>
                 </Flex>
                 <div style={{ padding: '0 16px 16px' }}>
@@ -313,52 +337,3 @@ export const AppSider = ({
     );
 };
 
-// Helper component for buttons to keep JSX clean
-const SpaceButtons = ({
-    isCheckingAccount,
-    isConnectedToGoCardless,
-    onDisconnect,
-    onConnect,
-    onEdit,
-    onDelete
-}: {
-    isCheckingAccount: boolean;
-    isConnectedToGoCardless?: boolean;
-    onDisconnect: (e: React.MouseEvent) => void;
-    onConnect: (e: React.MouseEvent) => void;
-    onEdit: (e: React.MouseEvent) => void;
-    onDelete: (e: React.MouseEvent) => void;
-}) => (
-    <Flex gap="small" style={{ marginLeft: 8 }}>
-        {isCheckingAccount && (
-            isConnectedToGoCardless ? (
-                <Button
-                    type="text"
-                    size="small"
-                    icon={<DisconnectOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />}
-                    onClick={onDisconnect}
-                />
-            ) : (
-                <Button
-                    type="text"
-                    size="small"
-                    icon={<LinkOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />}
-                    onClick={onConnect}
-                />
-            )
-        )}
-        <Button
-            type="text"
-            size="small"
-            icon={<EditOutlined style={{ color: 'rgba(255, 255, 255, 0.85)' }} />}
-            onClick={onEdit}
-        />
-        <Button
-            type="text"
-            size="small"
-            danger
-            icon={<DeleteOutlined />}
-            onClick={onDelete}
-        />
-    </Flex>
-);

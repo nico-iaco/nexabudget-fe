@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
-    Button, Empty, Flex, Popconfirm, Switch, Table, Tag, Typography, message
+    Button, Card, Empty, Flex, List, Popconfirm, Switch, Table, Tag, Typography, message
 } from 'antd';
 import { BellOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -11,6 +11,7 @@ import type { BudgetTemplate, BudgetTemplateRequest, Category } from '../../type
 import type { ColumnsType } from 'antd/es/table';
 import { BudgetTemplateModal } from './BudgetTemplateModal';
 import { BudgetAlertsDrawer } from './BudgetAlertsDrawer';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 
 const { Title } = Typography;
 
@@ -21,6 +22,7 @@ interface OutletContextType {
 export const BudgetsPage = () => {
     const { t } = useTranslation();
     const { categories } = useOutletContext<OutletContextType>();
+    const isMobile = useMediaQuery('(max-width: 768px)');
 
     const [budgets, setBudgets] = useState<BudgetTemplate[]>([]);
     const [loading, setLoading] = useState(true);
@@ -118,12 +120,13 @@ export const BudgetsPage = () => {
                         icon={<BellOutlined />}
                         size="small"
                         onClick={() => setAlertsBudget(record)}
-                        title={t('budgets.manageAlerts')}
+                        aria-label={t('budgets.manageAlerts')}
                     />
                     <Button
                         icon={<EditOutlined />}
                         size="small"
                         onClick={() => { setEditing(record); setIsModalOpen(true); }}
+                        aria-label={t('common.edit')}
                     />
                     <Popconfirm
                         title={t('budgets.deleteConfirm')}
@@ -132,7 +135,7 @@ export const BudgetsPage = () => {
                         cancelText={t('common.cancel')}
                         okButtonProps={{ danger: true }}
                     >
-                        <Button danger icon={<DeleteOutlined />} size="small" />
+                        <Button danger icon={<DeleteOutlined />} size="small" aria-label={t('common.delete')} />
                     </Popconfirm>
                 </Flex>
             ),
@@ -154,6 +157,56 @@ export const BudgetsPage = () => {
 
             {!loading && budgets.length === 0 ? (
                 <Empty description={t('budgets.emptyList')} />
+            ) : isMobile ? (
+                <List
+                    dataSource={budgets}
+                    loading={loading}
+                    renderItem={(record) => (
+                        <Card
+                            size="small"
+                            style={{ marginBottom: 12 }}
+                            actions={[
+                                <Button
+                                    key="alerts"
+                                    type="text"
+                                    icon={<BellOutlined />}
+                                    onClick={() => setAlertsBudget(record)}
+                                    aria-label={t('budgets.manageAlerts')}
+                                />,
+                                <Button
+                                    key="edit"
+                                    type="text"
+                                    icon={<EditOutlined />}
+                                    onClick={() => { setEditing(record); setIsModalOpen(true); }}
+                                    aria-label={t('common.edit')}
+                                />,
+                                <Popconfirm
+                                    key="delete"
+                                    title={t('budgets.deleteConfirm')}
+                                    onConfirm={() => handleDelete(record.id)}
+                                    okText={t('common.delete')}
+                                    cancelText={t('common.cancel')}
+                                    okButtonProps={{ danger: true }}
+                                >
+                                    <Button danger type="text" icon={<DeleteOutlined />} aria-label={t('common.delete')} />
+                                </Popconfirm>,
+                            ]}
+                        >
+                            <Flex justify="space-between" align="flex-start">
+                                <Flex vertical gap={4}>
+                                    <Typography.Text strong>{record.categoryName}</Typography.Text>
+                                    <Typography.Text type="secondary">
+                                        {record.budgetLimit.toFixed(2)} € · <Tag style={{ margin: 0 }}>{recurrenceLabel(record.recurrenceType)}</Tag>
+                                    </Typography.Text>
+                                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
+                                        {dayjs(record.createdAt).format('DD/MM/YYYY')}
+                                    </Typography.Text>
+                                </Flex>
+                                <Switch checked={record.active} size="small" disabled />
+                            </Flex>
+                        </Card>
+                    )}
+                />
             ) : (
                 <Table
                     columns={columns}

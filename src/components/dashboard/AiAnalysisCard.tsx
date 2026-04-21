@@ -6,6 +6,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { COLOR_ACCENT } from '../../theme/tokens';
 
 const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
@@ -147,7 +148,7 @@ export const AiAnalysisCard: React.FC = () => {
     return (
         <Card title={
             <Space>
-                <RobotOutlined style={{ color: '#1890ff' }} />
+                <RobotOutlined style={{ color: COLOR_ACCENT }} />
                 <span>{t('dashboard.aiAnalysis.title')}</span>
             </Space>
         }>

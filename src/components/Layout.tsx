@@ -10,6 +10,8 @@ import dayjs from 'dayjs';
 import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { AppSider } from './layout/AppSider';
 import { AppHeader } from './layout/AppHeader';
+import { BottomNavBar } from './layout/BottomNavBar';
+import { useMediaQuery } from '../hooks/useMediaQuery';
 import { AccountModal } from './modals/AccountModal';
 import { type TransferFormValues, TransferModal } from './modals/TransferModal';
 import { GoCardlessModal } from './modals/GoCardlessModal';
@@ -41,6 +43,7 @@ export const Layout = () => {
     const [selectedBank, setSelectedBank] = useState<string | null>(null);
     const [syncingAccounts, setSyncingAccounts] = useState(false);
 
+    const isSmallMobile = useMediaQuery('(max-width: 768px)');
     const { auth, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -353,6 +356,7 @@ export const Layout = () => {
                         style={{
                             margin: isMobile ? '16px 8px' : '24px 16px',
                             padding: isMobile ? 12 : 24,
+                            paddingBottom: isSmallMobile ? 'calc(72px + env(safe-area-inset-bottom, 0px))' : (isMobile ? 12 : 24),
                             minHeight: 280,
                             background: colorBgContainer,
                             borderRadius: borderRadiusLG,
@@ -429,6 +433,8 @@ export const Layout = () => {
 
             {/* PWA Install Prompt */}
             <PWAInstallPrompt />
+
+            <BottomNavBar />
         </>
     );
 };

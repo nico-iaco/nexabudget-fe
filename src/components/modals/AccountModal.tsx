@@ -2,6 +2,7 @@ import {Button, Form, Input, InputNumber, Modal, Select} from 'antd';
 import type {Account, AccountRequest} from '../../types/api';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
+import {getCurrencySymbol} from '../../utils/currency';
 
 const { Option } = Select;
 
@@ -15,6 +16,7 @@ interface AccountModalProps {
 export const AccountModal = ({ open, onCancel, onFinish, editingAccount }: AccountModalProps) => {
     const { t } = useTranslation();
     const [form] = Form.useForm<AccountRequest>();
+    const currencyValue = Form.useWatch('currency', form);
 
     useEffect(() => {
         if (open) {
@@ -38,6 +40,7 @@ export const AccountModal = ({ open, onCancel, onFinish, editingAccount }: Accou
             open={open}
             onCancel={onCancel}
             footer={null}
+            destroyOnClose
         >
             <Form
                 form={form}
@@ -74,7 +77,7 @@ export const AccountModal = ({ open, onCancel, onFinish, editingAccount }: Accou
                     <InputNumber
                         style={{ width: '100%' }}
                         min={0}
-                        addonAfter="€"
+                        addonAfter={getCurrencySymbol(currencyValue ?? 'EUR')}
                         disabled={!!editingAccount}
                     />
                 </Form.Item>

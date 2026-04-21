@@ -50,6 +50,7 @@ export const GoCardlessModal = ({
                 </Button>,
             ]}
             width={700}
+        style={{ maxWidth: '95vw' }}
         >
             <Steps
                 current={currentStep}

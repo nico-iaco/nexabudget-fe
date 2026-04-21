@@ -89,7 +89,9 @@ const resources = {
                 deleteTitle: 'Sposta nel Cestino',
                 deleteConfirm: 'Sei sicuro di voler spostare il conto "{{name}}" nel cestino?',
                 deleteConfirmWarning: 'Il conto e tutte le sue transazioni saranno recuperabili dalla sezione Cestino entro 30 giorni.',
-                totalBalance: 'Saldo Totale'
+                totalBalance: 'Saldo Totale',
+                connectGoCardless: 'Collega GoCardless',
+                disconnectGoCardless: 'Disconnetti GoCardless'
             },
             transfers: {
                 newTransfer: 'Nuovo Trasferimento',
@@ -258,7 +260,12 @@ const resources = {
                 deleteError: "Errore durante l'eliminazione della transazione",
                 saveError: 'Errore durante il salvataggio della transazione',
                 exchangeRateHint: 'da {{originalAmount}} {{originalCurrency}} @ {{exchangeRate}}',
-                deleteConfirm: 'Sei sicuro di voler spostare questa transazione nel cestino?'
+                deleteConfirm: 'Sei sicuro di voler spostare questa transazione nel cestino?',
+                syncing: 'Sincronizzazione...',
+                totalLabel: '{{total}} transazioni',
+                filters: 'Filtri',
+                clearFilters: 'Azzera',
+                applyFilters: 'Applica'
             },
             crypto: {
                 title: 'Portafoglio Crypto',
@@ -517,7 +524,9 @@ const resources = {
                 deleteTitle: 'Move to Trash',
                 deleteConfirm: 'Are you sure you want to move the account "{{name}}" to the trash?',
                 deleteConfirmWarning: 'The account and all its transactions will be recoverable from the Trash section within 30 days.',
-                totalBalance: 'Total Balance'
+                totalBalance: 'Total Balance',
+                connectGoCardless: 'Connect GoCardless',
+                disconnectGoCardless: 'Disconnect GoCardless'
             },
             transfers: {
                 newTransfer: 'New Transfer',
@@ -686,7 +695,12 @@ const resources = {
                 deleteError: 'Error deleting transaction',
                 saveError: 'Error saving transaction',
                 exchangeRateHint: 'from {{originalAmount}} {{originalCurrency}} @ {{exchangeRate}}',
-                deleteConfirm: 'Are you sure you want to move this transaction to the trash?'
+                deleteConfirm: 'Are you sure you want to move this transaction to the trash?',
+                syncing: 'Syncing...',
+                totalLabel: '{{total}} transactions',
+                filters: 'Filters',
+                clearFilters: 'Clear',
+                applyFilters: 'Apply'
             },
             crypto: {
                 title: 'Crypto Portfolio',

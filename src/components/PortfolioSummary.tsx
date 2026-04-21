@@ -3,6 +3,7 @@ import {Button, Card, Col, Popconfirm, Row, Statistic, Table, Tag} from 'antd';
 import {DeleteOutlined, EditOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import type {CryptoAsset, PortfolioValueResponse} from '../types/api.ts';
+import {COLOR_POSITIVE} from '../theme/tokens';
 
 interface PortfolioSummaryProps {
     data: PortfolioValueResponse | null;
@@ -105,6 +106,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                                     size="small"
                                     style={{ marginRight: 8 }}
                                     onClick={() => onEditAsset?.(asset)}
+                                    aria-label={t('common.edit')}
                                 />
                                 <Popconfirm
                                     title={t('portfolio.deleteHolding')}
@@ -113,7 +115,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                                     okText={t('common.yes')}
                                     cancelText={t('common.no')}
                                 >
-                                    <Button icon={<DeleteOutlined />} size="small" danger />
+                                    <Button icon={<DeleteOutlined />} size="small" danger aria-label={t('common.delete')} />
                                 </Popconfirm>
                             </span>
                         );
@@ -135,7 +137,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                             title={t('portfolio.totalValue')}
                             value={data?.totalValue}
                             precision={2}
-                            valueStyle={{ color: '#3f8600' }}
+                            valueStyle={{ color: COLOR_POSITIVE }}
                             prefix={data?.currency === 'EUR' ? '€' : '$'}
                             loading={loading}
                         />

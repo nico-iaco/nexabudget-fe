@@ -1,10 +1,11 @@
 // src/components/TransactionCard.tsx
 import {Button, Card, Flex, Tag, Typography} from 'antd';
-import {DeleteOutlined, EditOutlined, SwapOutlined} from '@ant-design/icons';
+import {ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, SwapOutlined} from '@ant-design/icons';
 import dayjs from 'dayjs';
 import {useTranslation} from 'react-i18next';
 import type {Transaction} from '../types/api';
 import { getCurrencySymbol } from '../utils/currency';
+import { COLOR_POSITIVE, COLOR_NEGATIVE } from '../theme/tokens';
 
 const { Text } = Typography;
 
@@ -19,7 +20,7 @@ interface TransactionCardProps {
 export const TransactionCard = ({ transaction, currency = 'EUR', onEdit, onDelete, onConvertToTransfer }: TransactionCardProps) => {
     const { t } = useTranslation();
     const isIncome = transaction.type === 'IN';
-    const amountColor = isIncome ? 'green' : 'red';
+    const amountColor = isIncome ? COLOR_POSITIVE : COLOR_NEGATIVE;
     const typeLabel = isIncome ? t('transactions.typeIn') : t('transactions.typeOut');
     const currencySymbol = getCurrencySymbol(currency);
 
@@ -43,7 +44,8 @@ export const TransactionCard = ({ transaction, currency = 'EUR', onEdit, onDelet
                 </Flex>
                 <Flex vertical align="end" style={{ flexShrink: 0 }}>
                     <Text strong style={{ color: amountColor, fontSize: '16px', whiteSpace: 'nowrap' }}>
-                        {isIncome ? '+' : '-'} {transaction.amount.toFixed(2)} {currencySymbol}
+                        {isIncome ? <ArrowUpOutlined aria-hidden="true" /> : <ArrowDownOutlined aria-hidden="true" />}
+                        {' '}{transaction.amount.toFixed(2)} {currencySymbol}
                     </Text>
                     {transaction.originalCurrency && transaction.originalAmount != null && transaction.exchangeRate != null && (
                         <Text type="secondary" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
@@ -64,12 +66,14 @@ export const TransactionCard = ({ transaction, currency = 'EUR', onEdit, onDelet
                     icon={<EditOutlined />}
                     onClick={() => onEdit(transaction)}
                     size="small"
+                    aria-label={t('common.edit')}
                 />
                 {!transaction.transferId && (
                     <Button
                         icon={<SwapOutlined />}
                         onClick={() => onConvertToTransfer(transaction)}
                         size="small"
+                        aria-label={t('transactions.linkTransfer')}
                     />
                 )}
                 <Button
@@ -77,6 +81,7 @@ export const TransactionCard = ({ transaction, currency = 'EUR', onEdit, onDelet
                     icon={<DeleteOutlined />}
                     onClick={() => onDelete(transaction.id)}
                     size="small"
+                    aria-label={t('common.delete')}
                 />
             </Flex>
         </Card>

@@ -3,8 +3,10 @@ import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext, useParams } from 'react-router-dom';
 import {
     Alert,
+    Badge,
     Button,
     DatePicker,
+    Drawer,
     Flex,
     Form,
     Input,
@@ -21,7 +23,7 @@ import {
     Tag,
     Typography
 } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, RetweetOutlined, SwapOutlined } from '@ant-design/icons';
+import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, FilterOutlined, PlusOutlined, RetweetOutlined, SwapOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import type { TransactionFilters } from '../../services/api';
@@ -31,6 +33,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { TransactionCard } from '../../components/TransactionCard';
 import { getCurrencySymbol } from '../../utils/currency';
+import { COLOR_POSITIVE, COLOR_NEGATIVE } from '../../theme/tokens';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
 
@@ -99,6 +102,12 @@ export const TransactionsPage = () => {
     const [currentBalance, setCurrentBalance] = useState<number | null>(null);
 
     const [syncingTransactions, setSyncingTransactions] = useState(false);
+    const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
+    const [draftFilters, setDraftFilters] = useState<TableFilters>({});
+    const [draftSortConfig, setDraftSortConfig] = useState<SorterResult<Transaction>>({
+        field: 'date',
+        order: 'descend',
+    });
 
     const [apiNotification, contextHolder] = notification.useNotification();
 
@@ -112,6 +121,21 @@ export const TransactionsPage = () => {
         const currency = currentAccount.currency || 'EUR';
         return new Intl.NumberFormat('it-IT', { style: 'currency', currency }).format(currentAccount.actualBalance);
     }, [currentAccount]);
+
+    const activeFilterCount = useMemo(() => {
+        let count = 0;
+        if (filters.type) count++;
+        if (filters.categoryId) count++;
+        if (filters.startDate) count++;
+        if (filters.endDate) count++;
+        return count;
+    }, [filters]);
+
+    const formSelectedAccountId = Form.useWatch('accountId', form);
+    const formSelectedCurrency = useMemo(() => {
+        const acc = accounts.find(a => a.id === (formSelectedAccountId ?? accountId));
+        return getCurrencySymbol(acc?.currency ?? 'EUR');
+    }, [formSelectedAccountId, accountId, accounts]);
 
     const typeLabel = (type: 'IN' | 'OUT') => type === 'IN' ? t('transactions.typeIn') : t('transactions.typeOut');
 
@@ -389,8 +413,11 @@ export const TransactionsPage = () => {
             render: (amount: number, record: Transaction) => {
                 const sym = getCurrencySymbol(accounts.find(a => a.id === record.accountId)?.currency ?? 'EUR');
                 return (<span>
-                    <span style={{ color: record.type === 'IN' ? 'green' : 'red' }}>
-                        {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} {sym}
+                    <span style={{ color: record.type === 'IN' ? COLOR_POSITIVE : COLOR_NEGATIVE }}>
+                        {record.type === 'IN'
+                            ? <ArrowUpOutlined aria-hidden="true" />
+                            : <ArrowDownOutlined aria-hidden="true" />}
+                        {' '}{amount.toFixed(2)} {sym}
                     </span>
                     {record.originalCurrency && record.originalAmount != null && record.exchangeRate != null && (
                         <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.45)' }}>
@@ -421,11 +448,11 @@ export const TransactionsPage = () => {
             key: 'actions',
             render: (_: unknown, record: Transaction) => (
                 <Flex gap="small">
-                    <Button icon={<EditOutlined />} onClick={() => handleOpenEditModal(record)} />
+                    <Button icon={<EditOutlined />} onClick={() => handleOpenEditModal(record)} aria-label={t('common.edit')} />
                     {!record.transferId && (
-                        <Button icon={<SwapOutlined />} onClick={() => handleOpenLinkTransferModal(record)} />
+                        <Button icon={<SwapOutlined />} onClick={() => handleOpenLinkTransferModal(record)} aria-label={t('transactions.linkTransfer')} />
                     )}
-                    <Button danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} />
+                    <Button danger icon={<DeleteOutlined />} onClick={() => handleDelete(record.id)} aria-label={t('common.delete')} />
                 </Flex>
             )
         },
@@ -488,7 +515,7 @@ export const TransactionsPage = () => {
                             position: 'bottom',
                             align: 'center',
                             showSizeChanger: false,
-                            showTotal: (total) => `${total} transazioni`,
+                            showTotal: (total) => t('transactions.totalLabel', { total }),
                             onChange: (page) => {
                                 setCurrentPage(page);
                                 fetchTransactions(page);
@@ -513,7 +540,7 @@ export const TransactionsPage = () => {
                         total: totalTransactions,
                         position: ['bottomCenter'],
                         showSizeChanger: false,
-                        showTotal: (total) => `${total} transazioni`,
+                        showTotal: (total) => t('transactions.totalLabel', { total }),
                         onChange: (page) => {
                             setCurrentPage(page);
                             fetchTransactions(page);
@@ -562,7 +589,7 @@ export const TransactionsPage = () => {
                             disabled={accounts.find(acc => acc.id === accountId)?.synchronizing}
                             size={isMobile ? 'middle' : 'large'}
                         >
-                            {accounts.find(acc => acc.id === accountId)?.synchronizing ? 'Sincronizzazione...' : t('transactions.syncGoCardless')}
+                            {accounts.find(acc => acc.id === accountId)?.synchronizing ? t('transactions.syncing') : t('transactions.syncGoCardless')}
                         </Button>
                     )}
                     <Button
@@ -585,24 +612,130 @@ export const TransactionsPage = () => {
 
 
             <Flex vertical gap="middle" style={{ marginBottom: 16 }}>
-                <Input.Search
-                    placeholder={t('transactions.searchPlaceholder')}
-                    onSearch={(value) => setFilters(prev => ({ ...prev, search: value }))}
-                    onChange={(e) => {
-                        if (e.target.value === '') {
-                            setFilters(prev => ({ ...prev, search: undefined }));
-                        }
-                    }}
-                    allowClear
-                    enterButton
-                    size="middle"
-                />
-                <Flex gap="small" wrap="wrap">
+                <Flex gap="small">
+                    <Input.Search
+                        placeholder={t('transactions.searchPlaceholder')}
+                        onSearch={(value) => setFilters(prev => ({ ...prev, search: value }))}
+                        onChange={(e) => {
+                            if (e.target.value === '') {
+                                setFilters(prev => ({ ...prev, search: undefined }));
+                            }
+                        }}
+                        allowClear
+                        enterButton
+                        size="middle"
+                        style={{ flex: 1 }}
+                    />
+                    {isMobile && (
+                        <Badge count={activeFilterCount} size="small">
+                            <Button
+                                icon={<FilterOutlined />}
+                                size="middle"
+                                onClick={() => {
+                                    setDraftFilters(filters);
+                                    setDraftSortConfig(sortConfig);
+                                    setIsFilterDrawerOpen(true);
+                                }}
+                            />
+                        </Badge>
+                    )}
+                </Flex>
+                {!isMobile && (
+                    <Flex gap="small" wrap="wrap">
+                        <Select
+                            placeholder={t('transactions.filterType')}
+                            value={filters.type}
+                            onChange={(value) => setFilters(prev => ({ ...prev, type: value }))}
+                            style={{ flex: 1, minWidth: 120 }}
+                            allowClear
+                        >
+                            <Option value="IN">{t('transactions.typeIn')}</Option>
+                            <Option value="OUT">{t('transactions.typeOut')}</Option>
+                        </Select>
+                        <Select
+                            placeholder={t('transactions.filterCategory')}
+                            value={filters.categoryId}
+                            onChange={(value) => setFilters(prev => ({ ...prev, categoryId: value }))}
+                            style={{ flex: 1, minWidth: 120 }}
+                            allowClear
+                        >
+                            {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
+                        </Select>
+                        <DatePicker
+                            placeholder={t('transactions.fromDate')}
+                            value={filters.startDate}
+                            style={{ flex: 1, minWidth: 120 }}
+                            onChange={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
+                        />
+                        <DatePicker
+                            placeholder={t('transactions.toDate')}
+                            value={filters.endDate}
+                            style={{ flex: 1, minWidth: 120 }}
+                            onChange={(date) => setFilters(prev => ({ ...prev, endDate: date }))}
+                        />
+                        <Select
+                            placeholder={t('transactions.sortBy')}
+                            value={sortConfig.field as string}
+                            onChange={(value) => setSortConfig(prev => ({ ...prev, field: value }))}
+                            style={{ flex: 1, minWidth: 120 }}
+                        >
+                            <Option value="date">{t('transactions.data')}</Option>
+                            <Option value="description">{t('transactions.description')}</Option>
+                            <Option value="amount">{t('transactions.amount')}</Option>
+                            <Option value="accountName">{t('transactions.account')}</Option>
+                            <Option value="categoryName">{t('transactions.category')}</Option>
+                        </Select>
+                        <Select
+                            placeholder={t('transactions.sortOrder')}
+                            value={sortConfig.order}
+                            onChange={(value) => setSortConfig(prev => ({ ...prev, order: value }))}
+                            style={{ flex: 1, minWidth: 120 }}
+                        >
+                            <Option value="ascend">{t('transactions.sortAsc')}</Option>
+                            <Option value="descend">{t('transactions.sortDesc')}</Option>
+                        </Select>
+                    </Flex>
+                )}
+            </Flex>
+
+            <Drawer
+                title={t('transactions.filters')}
+                placement="bottom"
+                height="auto"
+                open={isFilterDrawerOpen}
+                onClose={() => setIsFilterDrawerOpen(false)}
+                styles={{ body: { paddingBottom: 'env(safe-area-inset-bottom, 16px)' } }}
+                footer={
+                    <Flex gap="small" justify="space-between">
+                        <Button
+                            block
+                            onClick={() => {
+                                setDraftFilters({});
+                                setDraftSortConfig({ field: 'date', order: 'descend' });
+                            }}
+                        >
+                            {t('transactions.clearFilters')}
+                        </Button>
+                        <Button
+                            type="primary"
+                            block
+                            onClick={() => {
+                                setFilters(draftFilters);
+                                setSortConfig(draftSortConfig);
+                                setIsFilterDrawerOpen(false);
+                            }}
+                        >
+                            {t('transactions.applyFilters')}
+                        </Button>
+                    </Flex>
+                }
+            >
+                <Flex vertical gap="middle">
                     <Select
                         placeholder={t('transactions.filterType')}
-                        value={filters.type}
-                        onChange={(value) => setFilters(prev => ({ ...prev, type: value }))}
-                        style={{ flex: isMobile ? '1 1 45%' : 1, minWidth: 120 }}
+                        value={draftFilters.type}
+                        onChange={(value) => setDraftFilters(prev => ({ ...prev, type: value }))}
+                        style={{ width: '100%' }}
                         allowClear
                     >
                         <Option value="IN">{t('transactions.typeIn')}</Option>
@@ -610,30 +743,30 @@ export const TransactionsPage = () => {
                     </Select>
                     <Select
                         placeholder={t('transactions.filterCategory')}
-                        value={filters.categoryId}
-                        onChange={(value) => setFilters(prev => ({ ...prev, categoryId: value }))}
-                        style={{ flex: isMobile ? '1 1 45%' : 1, minWidth: 120 }}
+                        value={draftFilters.categoryId}
+                        onChange={(value) => setDraftFilters(prev => ({ ...prev, categoryId: value }))}
+                        style={{ width: '100%' }}
                         allowClear
                     >
                         {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
                     </Select>
                     <DatePicker
                         placeholder={t('transactions.fromDate')}
-                        value={filters.startDate}
-                        style={{ flex: isMobile ? '1 1 45%' : 1, minWidth: 120 }}
-                        onChange={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
+                        value={draftFilters.startDate}
+                        style={{ width: '100%' }}
+                        onChange={(date) => setDraftFilters(prev => ({ ...prev, startDate: date }))}
                     />
                     <DatePicker
                         placeholder={t('transactions.toDate')}
-                        value={filters.endDate}
-                        style={{ flex: isMobile ? '1 1 45%' : 1, minWidth: 120 }}
-                        onChange={(date) => setFilters(prev => ({ ...prev, endDate: date }))}
+                        value={draftFilters.endDate}
+                        style={{ width: '100%' }}
+                        onChange={(date) => setDraftFilters(prev => ({ ...prev, endDate: date }))}
                     />
                     <Select
                         placeholder={t('transactions.sortBy')}
-                        value={sortConfig.field as string}
-                        onChange={(value) => setSortConfig(prev => ({ ...prev, field: value }))}
-                        style={{ flex: isMobile ? '1 1 45%' : 1, minWidth: 120 }}
+                        value={draftSortConfig.field as string}
+                        onChange={(value) => setDraftSortConfig(prev => ({ ...prev, field: value }))}
+                        style={{ width: '100%' }}
                     >
                         <Option value="date">{t('transactions.data')}</Option>
                         <Option value="description">{t('transactions.description')}</Option>
@@ -643,20 +776,20 @@ export const TransactionsPage = () => {
                     </Select>
                     <Select
                         placeholder={t('transactions.sortOrder')}
-                        value={sortConfig.order}
-                        onChange={(value) => setSortConfig(prev => ({ ...prev, order: value }))}
-                        style={{ flex: isMobile ? '1 1 45%' : 1, minWidth: 120 }}
+                        value={draftSortConfig.order}
+                        onChange={(value) => setDraftSortConfig(prev => ({ ...prev, order: value }))}
+                        style={{ width: '100%' }}
                     >
                         <Option value="ascend">{t('transactions.sortAsc')}</Option>
                         <Option value="descend">{t('transactions.sortDesc')}</Option>
                     </Select>
                 </Flex>
-            </Flex>
+            </Drawer>
 
             {renderContent()}
 
             <Modal title={editingRecord ? t('transactions.editTransaction') : t('transactions.newTransaction')} open={isModalOpen}
-                onCancel={handleCancel} footer={null}>
+                onCancel={handleCancel} footer={null} destroyOnClose>
                 <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: 24 }}>
                     <Form.Item name="accountId" label={t('transactions.account')} rules={[{ required: true }]}>
                         <Select placeholder={t('transactions.selectAccount')} disabled={!!accountId || !!editingRecord}>
@@ -664,7 +797,7 @@ export const TransactionsPage = () => {
                         </Select>
                     </Form.Item>
                     <Form.Item name="amount" label={t('transactions.amount')} rules={[{ required: true }]}>
-                        <InputNumber style={{ width: '100%' }} min={0} addonAfter="€" />
+                        <InputNumber style={{ width: '100%' }} min={0} addonAfter={formSelectedCurrency} />
                     </Form.Item>
                     <Form.Item name="type" label={t('transactions.type')} rules={[{ required: true }]}>
                         <Select placeholder={t('transactions.selectType')}
@@ -706,6 +839,7 @@ export const TransactionsPage = () => {
                     </Button>,
                 ]}
                 width={600}
+                style={{ maxWidth: '95vw' }}
             >
                 {sourceTransaction && (
                     <Space direction="vertical" style={{ width: '100%' }}>
@@ -714,7 +848,7 @@ export const TransactionsPage = () => {
                             {dayjs(sourceTransaction.date).format('DD/MM/YYYY')} - {sourceTransaction.description} ({sourceTransaction.accountName})
                             -
                             <Text
-                                type={sourceTransaction.type === 'IN' ? 'success' : 'danger'}> {sourceTransaction.amount.toFixed(2)}€</Text>
+                                type={sourceTransaction.type === 'IN' ? 'success' : 'danger'}> {sourceTransaction.amount.toFixed(2)} {getCurrencySymbol(accounts.find(a => a.id === sourceTransaction.accountId)?.currency ?? 'EUR')}</Text>
                         </p>
 
                         <Form layout="vertical">
@@ -748,7 +882,7 @@ export const TransactionsPage = () => {
                                                     <Radio value={item.id}>
                                                         {dayjs(item.date).format('DD/MM/YYYY')} - {item.description} -
                                                         <Text
-                                                            type={item.type === 'IN' ? 'success' : 'danger'}> {item.amount.toFixed(2)}€</Text>
+                                                            type={item.type === 'IN' ? 'success' : 'danger'}> {item.amount.toFixed(2)} {getCurrencySymbol(accounts.find(a => a.id === destinationAccountId)?.currency ?? 'EUR')}</Text>
                                                     </Radio>
                                                 </List.Item>
                                             )}
@@ -802,7 +936,7 @@ export const TransactionsPage = () => {
                             value={currentBalance}
                             onChange={(value) => setCurrentBalance(value)}
                             placeholder={t('transactions.balanceCurrentPlaceholder')}
-                            addonAfter="€"
+                            addonAfter={getCurrencySymbol(currentAccount?.currency ?? 'EUR')}
                             precision={2}
                             autoFocus
                         />
