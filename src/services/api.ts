@@ -68,8 +68,12 @@ apiClient.interceptors.response.use(
 export const login = (data: LoginRequest): Promise<AxiosResponse<AuthResponse>> => apiClient.post('/auth/login', data);
 export const register = (data: UserRequest): Promise<AxiosResponse<AuthResponse>> => apiClient.post('/auth/register', data);
 
+// User Profile
+export const updateUserProfile = (data: import('../types/api').UpdateUserRequest): Promise<AxiosResponse<AuthResponse>> => apiClient.put('/users/', data);
+
 // Accounts
 export const getAccounts = (): Promise<AxiosResponse<Account[]>> => apiClient.get('/accounts/');
+export const getTotalPreferredBalance = (): Promise<AxiosResponse<number>> => apiClient.get('/accounts/total-balance/preferred');
 export const createAccount = (data: AccountRequest): Promise<AxiosResponse<Account>> => apiClient.post('/accounts', data);
 export const updateAccount = (id: string, data: AccountRequest): Promise<AxiosResponse<Account>> => apiClient.put(`/accounts/${id}`, data);
 export const deleteAccount = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/accounts/${id}`);

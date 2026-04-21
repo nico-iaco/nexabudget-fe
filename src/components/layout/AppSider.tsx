@@ -25,6 +25,7 @@ import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Account } from '../../types/api';
 import { getCurrencySymbol } from '../../utils/currency';
+import { useAuth } from '../../contexts/AuthContext';
 
 const { Sider } = Layout;
 const { Title, Text } = Typography;
@@ -85,6 +86,7 @@ export const AppSider = ({
 }: AppSiderProps) => {
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const { auth } = useAuth();
 
     const handleMenuClick = useCallback((path: string) => {
         const targetPath = selectedKeys.includes(path) ? '/transactions' : path;
@@ -318,7 +320,7 @@ export const AppSider = ({
                         value={totalBalance}
                         precision={2}
                         valueStyle={{ color: '#fff' }}
-                        suffix={getCurrencySymbol(accounts[0]?.currency ?? 'EUR')}
+                        suffix={getCurrencySymbol(auth?.defaultCurrency || 'EUR')}
                     />
                 </div>
             </Flex>

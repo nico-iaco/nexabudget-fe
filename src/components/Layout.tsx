@@ -23,6 +23,7 @@ export const Layout = () => {
     const [collapsed, setCollapsed] = useState(true);
     const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
     const [accounts, setAccounts] = useState<Account[]>([]);
+    const [totalBalance, setTotalBalance] = useState<number>(0);
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(false);
     const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
@@ -63,10 +64,11 @@ export const Layout = () => {
     const fetchAccounts = (background = false) => {
         if (auth) {
             if (!background) setLoading(true);
-            return api.getAccounts()
-                .then(response => {
-                    setAccounts(response.data);
-                    return response.data;
+            return Promise.all([api.getAccounts(), api.getTotalPreferredBalance()])
+                .then(([acctResponse, balanceResponse]) => {
+                    setAccounts(acctResponse.data);
+                    setTotalBalance(balanceResponse.data);
+                    return acctResponse.data;
                 })
                 .catch(error => {
                     console.error(error);
@@ -77,6 +79,7 @@ export const Layout = () => {
                 });
         } else {
             setAccounts([]);
+            setTotalBalance(0);
             return Promise.resolve([]);
         }
     };
@@ -305,10 +308,6 @@ export const Layout = () => {
             setSyncingAccounts(false);
         }
     };
-
-    const totalBalance = useMemo(() => {
-        return accounts.reduce((sum, account) => sum + account.actualBalance, 0);
-    }, [accounts]);
 
 
     if (!auth) {

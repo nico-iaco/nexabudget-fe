@@ -47,7 +47,7 @@ export const BudgetAlertsDrawer = ({ open, onClose, budget }: Props) => {
     const handleAddAlert = async (values: AlertFormValues) => {
         if (!budget) return;
         try {
-            await api.createBudgetAlert({ budgetId: budget.id, ...values });
+            await api.createBudgetAlert({ templateId: budget.id, ...values });
             message.success(t('budgets.alerts.createdSuccess'));
             form.resetFields();
             form.setFieldsValue({ active: true });

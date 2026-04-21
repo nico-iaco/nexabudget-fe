@@ -3,6 +3,12 @@ export interface AuthResponse {
     token: string;
     userId: string;
     username: string;
+    email?: string;
+    defaultCurrency?: string;
+}
+
+export interface UpdateUserRequest {
+    defaultCurrency?: string;
 }
 
 export interface LoginRequest {
@@ -237,7 +243,7 @@ export interface BudgetAlert {
 }
 
 export interface BudgetAlertRequest {
-    budgetId: string;
+    templateId: string;
     thresholdPercentage: number;
     active: boolean;
 }
