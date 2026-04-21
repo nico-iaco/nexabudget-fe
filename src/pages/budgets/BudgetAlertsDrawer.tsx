@@ -59,7 +59,7 @@ export const BudgetAlertsDrawer = ({ open, onClose, budget }: Props) => {
 
     const handleToggleActive = async (alert: BudgetAlert, active: boolean) => {
         try {
-            await api.updateBudgetAlert(alert.id, { budgetId: alert.budgetId, thresholdPercentage: alert.thresholdPercentage, active });
+            await api.updateBudgetAlert(alert.id, { templateId: alert.budgetId, thresholdPercentage: alert.thresholdPercentage, active });
             message.success(t('budgets.alerts.updatedSuccess'));
             fetchAlerts();
         } catch {
