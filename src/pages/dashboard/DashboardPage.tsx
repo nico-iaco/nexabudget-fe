@@ -372,9 +372,27 @@ export const DashboardPage = () => {
                         <Col xs={24}>
                             <Card
                                 title={t('dashboard.monthlyTrend')}
-                                extra={
-                                    <Flex gap="small" align="center">
-                                        <Text type="secondary">{t('reports.trendMonths')}:</Text>
+                                {...(!isMobile && {
+                                    extra: (
+                                        <Flex gap="small" align="center">
+                                            <Text type="secondary">{t('reports.trendMonths')}:</Text>
+                                            <Select
+                                                value={trendMonths}
+                                                onChange={setTrendMonths}
+                                                size="small"
+                                                style={{ width: 110 }}
+                                                options={[
+                                                    { value: 6, label: t('reports.months6') },
+                                                    { value: 12, label: t('reports.months12') },
+                                                    { value: 24, label: t('reports.months24') },
+                                                ]}
+                                            />
+                                        </Flex>
+                                    )
+                                })}
+                            >
+                                {isMobile && (
+                                    <Flex justify="flex-end" style={{ marginBottom: 8 }}>
                                         <Select
                                             value={trendMonths}
                                             onChange={setTrendMonths}
@@ -387,8 +405,7 @@ export const DashboardPage = () => {
                                             ]}
                                         />
                                     </Flex>
-                                }
-                            >
+                                )}
                                 <TrendBarChart data={monthlyTrend} />
                             </Card>
                         </Col>

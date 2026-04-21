@@ -223,6 +223,12 @@
         -webkit-overflow-scrolling: touch;
     }
 
+    /* Allow horizontal scroll on G2/canvas charts — G2 sets touch-action:none by default */
+    .trend-chart-scroll canvas,
+    .trend-chart-scroll svg {
+        touch-action: pan-x !important;
+    }
+
     /* Make range picker responsive */
     .ant-picker-range {
         width: 100% !important;

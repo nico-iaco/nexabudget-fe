@@ -94,7 +94,7 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
     const months = [...new Set(data.map(d => d.month))];
     const minWidth = Math.max(months.length * 56, 300);
 
-    const config = {
+    const baseConfig = {
         data,
         xField: 'month',
         yField: 'value',
@@ -112,13 +112,11 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
         <>
             <TooltipGlobalStyles isDark={isDark} />
             {isMobile ? (
-                <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                    <div style={{ minWidth }}>
-                        <Column {...config} />
-                    </div>
+                <div className="trend-chart-scroll" style={{ overflowX: 'scroll', WebkitOverflowScrolling: 'touch' }}>
+                    <Column {...baseConfig} autoFit={false} width={minWidth} height={280} />
                 </div>
             ) : (
-                <Column {...config} />
+                <Column {...baseConfig} />
             )}
         </>
     );
