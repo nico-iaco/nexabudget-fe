@@ -121,29 +121,20 @@ export const AppSider = ({
                     key: 'gocardless',
                     icon: isConnectedToGoCardless ? <DisconnectOutlined /> : <LinkOutlined />,
                     label: isConnectedToGoCardless ? t('accounts.disconnectGoCardless') : t('accounts.connectGoCardless'),
-                    onClick: ({ domEvent }: { domEvent: React.MouseEvent }) => {
-                        domEvent.stopPropagation();
-                        if (!isConnectedToGoCardless) onOpenGoCardless(acc);
-                    },
+                    onClick: () => { if (!isConnectedToGoCardless) onOpenGoCardless(acc); },
                 }] : []),
                 {
                     key: 'edit',
                     icon: <EditOutlined />,
                     label: t('common.edit'),
-                    onClick: ({ domEvent }: { domEvent: React.MouseEvent }) => {
-                        domEvent.stopPropagation();
-                        onOpenEditAccount(acc);
-                    },
+                    onClick: () => onOpenEditAccount(acc),
                 },
                 {
                     key: 'delete',
                     icon: <DeleteOutlined />,
                     label: t('common.delete'),
                     danger: true,
-                    onClick: ({ domEvent }: { domEvent: React.MouseEvent }) => {
-                        domEvent.stopPropagation();
-                        onOpenDeleteAccount(acc);
-                    },
+                    onClick: () => onOpenDeleteAccount(acc),
                 },
             ];
 
