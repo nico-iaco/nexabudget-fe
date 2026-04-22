@@ -23,7 +23,7 @@ import {
     Tag,
     Typography
 } from 'antd';
-import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, FilterOutlined, PlusOutlined, RetweetOutlined, SwapOutlined } from '@ant-design/icons';
+import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, FilterOutlined, PlusOutlined, RetweetOutlined, SearchOutlined, SwapOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import type { TransactionFilters } from '../../services/api';
@@ -612,25 +612,28 @@ export const TransactionsPage = () => {
 
 
             <Flex vertical gap="middle" style={{ marginBottom: 16 }}>
-                <Flex gap="small">
-                    <Input.Search
+                <Flex gap="small" align="stretch">
+                    <Input
                         placeholder={t('transactions.searchPlaceholder')}
-                        onSearch={(value) => setFilters(prev => ({ ...prev, search: value }))}
-                        onChange={(e) => {
-                            if (e.target.value === '') {
-                                setFilters(prev => ({ ...prev, search: undefined }));
-                            }
-                        }}
                         allowClear
-                        enterButton
                         size="middle"
                         style={{ flex: 1 }}
+                        value={filters.search}
+                        onChange={(e) => {
+                            const val = e.target.value;
+                            setFilters(prev => ({ ...prev, search: val || undefined }));
+                        }}
+                        onPressEnter={() => {
+                            // La ricerca avviene tramite l'effetlo su 'filters'
+                        }}
+                        prefix={<SearchOutlined style={{ color: 'var(--ant-color-text-description)' }} />}
                     />
                     {isMobile && (
-                        <Badge count={activeFilterCount} size="small">
+                        <Badge count={activeFilterCount} size="small" style={{ display: 'flex' }}>
                             <Button
                                 icon={<FilterOutlined />}
                                 size="middle"
+                                style={{ height: '100%' }}
                                 onClick={() => {
                                     setDraftFilters(filters);
                                     setDraftSortConfig(sortConfig);
