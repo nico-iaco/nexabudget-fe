@@ -32,11 +32,9 @@ export const AiAnalysisCard: React.FC = () => {
     const [completedJobId, setCompletedJobId] = useState<string | null>(null);
     const [result, setResult] = useState<string | null>(null);
 
-    // Disable dates that are more than 12 months apart or in the future
     const disabledDate = (current: Dayjs) => {
         if (!current) return false;
-        const tooLate = current.isAfter(dayjs(), 'day');
-        return tooLate;
+        return current.isAfter(dayjs().endOf('month'), 'day');
     };
 
     const handleGenerate = async () => {

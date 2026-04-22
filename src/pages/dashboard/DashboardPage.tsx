@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
-    Card, Col, DatePicker, Empty, Flex, Progress, Row,
+    Button, Card, Col, DatePicker, Empty, Flex, Progress, Row,
     Select, Skeleton, Statistic, Table, Tabs, Typography, message
 } from 'antd';
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
@@ -25,10 +25,10 @@ interface OutletContextType {
 }
 
 const PRESETS = (t: (k: string) => string) => [
-    { label: t('dashboard.presets.lastWeek'), value: [dayjs().subtract(1, 'week').startOf('day'), dayjs().endOf('day')] as [Dayjs, Dayjs] },
-    { label: t('dashboard.presets.lastMonth'), value: [dayjs().startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
-    { label: t('dashboard.presets.last6Months'), value: [dayjs().subtract(6, 'month').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
-    { label: t('dashboard.presets.lastYear'), value: [dayjs().subtract(1, 'year').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
+    { label: t('dashboard.presets.lastWeek'), value: () => [dayjs().subtract(1, 'week').startOf('day'), dayjs().endOf('day')] as [Dayjs, Dayjs] },
+    { label: t('dashboard.presets.lastMonth'), value: () => [dayjs().startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
+    { label: t('dashboard.presets.last6Months'), value: () => [dayjs().subtract(6, 'month').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
+    { label: t('dashboard.presets.lastYear'), value: () => [dayjs().subtract(1, 'year').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
 ];
 
 export const DashboardPage = () => {
@@ -120,16 +120,16 @@ export const DashboardPage = () => {
                     {isMobile ? (
                         <Flex vertical gap={8}>
                             <Select
-                                value={showCustomPicker ? 'custom' : (PRESETS(t).findIndex(p =>
-                                    dateRange?.[0]?.isSame(p.value[0], 'day') &&
-                                    dateRange?.[1]?.isSame(p.value[1], 'day')
-                                ))}
+                                value={showCustomPicker ? 'custom' : (PRESETS(t).findIndex(p => {
+                                    const v = p.value();
+                                    return dateRange?.[0]?.isSame(v[0], 'day') && dateRange?.[1]?.isSame(v[1], 'day');
+                                }))}
                                 onChange={(idx: number | 'custom') => {
                                     if (idx === 'custom') {
                                         setShowCustomPicker(true);
                                     } else {
                                         setShowCustomPicker(false);
-                                        setDateRange(PRESETS(t)[idx].value);
+                                        setDateRange(PRESETS(t)[idx].value());
                                     }
                                 }}
                                 style={{ width: '100%' }}
@@ -156,12 +156,25 @@ export const DashboardPage = () => {
                             )}
                         </Flex>
                     ) : (
-                        <Flex justify="flex-end">
+                        <Flex gap={6} align="center" justify="flex-end" wrap>
+                            {PRESETS(t).map((p, i) => {
+                                const v = p.value();
+                                const isActive = dateRange?.[0]?.isSame(v[0], 'day') && dateRange?.[1]?.isSame(v[1], 'day');
+                                return (
+                                    <Button
+                                        key={i}
+                                        size="small"
+                                        type={isActive ? 'primary' : 'default'}
+                                        onClick={() => setDateRange(p.value())}
+                                    >
+                                        {p.label}
+                                    </Button>
+                                );
+                            })}
                             <RangePicker
                                 value={dateRange}
-                                onChange={setDateRange}
-                                style={{ width: '100%', maxWidth: 350 }}
-                                presets={PRESETS(t)}
+                                onChange={(dates) => setDateRange(dates)}
+                                style={{ maxWidth: 280 }}
                             />
                         </Flex>
                     )}
