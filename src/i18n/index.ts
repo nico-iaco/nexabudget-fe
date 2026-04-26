@@ -184,6 +184,13 @@ const resources = {
                     startDate: 'Inizio',
                     endDate: 'Fine',
                 },
+                budgetSummary: {
+                    title: 'Panoramica Budget del Mese',
+                    empty: 'Nessun budget attivo per questo mese',
+                    spent: 'Speso',
+                    remaining: 'Rimanente',
+                    limit: 'Limite',
+                },
                 aiAnalysis: {
                     title: 'Analisi Finanziaria AI Asincrona',
                     description: 'Ottieni un resoconto discorsivo e personalizzato delle tue finanze nel periodo selezionato.',
@@ -624,6 +631,13 @@ const resources = {
                     custom: 'Custom',
                     startDate: 'Start',
                     endDate: 'End',
+                },
+                budgetSummary: {
+                    title: 'Monthly Budget Overview',
+                    empty: 'No active budgets for this month',
+                    spent: 'Spent',
+                    remaining: 'Remaining',
+                    limit: 'Limit',
                 },
                 aiAnalysis: {
                     title: 'Asynchronous AI Financial Analysis',

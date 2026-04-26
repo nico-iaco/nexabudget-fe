@@ -6,6 +6,7 @@ import type {
     MonthComparisonResponse,
     MonthlyProjectionResponse,
     MonthlyTrendItem,
+    MonthlySummaryResponse,
     PortfolioValueResponse
 } from '../types/api';
 
@@ -38,6 +39,7 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
     const [expenseBreakdown, setExpenseBreakdown] = useState<CategoryBreakdownItem[]>([]);
     const [projection, setProjection] = useState<MonthlyProjectionResponse | null>(null);
     const [portfolioValue, setPortfolioValue] = useState<PortfolioValueResponse | null>(null);
+    const [budgetSummary, setBudgetSummary] = useState<MonthlySummaryResponse[]>([]);
 
     useEffect(() => {
         setLoading(true);
@@ -56,13 +58,15 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
             safe(api.getCategoryBreakdown('OUT', startDate, endDate), { startDate, endDate, type: 'OUT' as const, grandTotal: 0, categories: [] }),
             safe(api.getMonthlyProjection(), null),
             safe(api.getPortfolioValue('EUR'), null),
-        ]).then(([comp, trend, inc, exp, proj, crypto]) => {
+            safe(api.getBudgetMonthlySummary(now.format('YYYY-MM-DD')), []),
+        ]).then(([comp, trend, inc, exp, proj, crypto, budgets]) => {
             setMonthComparison(comp);
             setMonthlyTrendItems(trend ?? []);
             setIncomeBreakdown(inc?.categories ?? []);
             setExpenseBreakdown(exp?.categories ?? []);
             setProjection(proj);
             if (crypto) setPortfolioValue(crypto);
+            setBudgetSummary(budgets ?? []);
         }).finally(() => setLoading(false));
     }, [transactionRefreshKey, dateRange, trendMonths]);
 
@@ -140,6 +144,7 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
         portfolioValue,
         projection,
         monthComparison,
+        budgetSummary,
         hasData,
     };
 };

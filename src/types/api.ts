@@ -248,6 +248,21 @@ export interface BudgetAlertRequest {
     active: boolean;
 }
 
+export interface MonthlySummaryResponse {
+    budgetId: string;
+    categoryId: string;
+    categoryName: string;
+    categoryType: 'IN' | 'OUT';
+    limit: number;
+    spent: number;
+    remaining: number;
+    percentageUsed: number;
+    budgetStartDate: string;
+    budgetEndDate: string;
+    periodStart: string;
+    periodEnd: string;
+}
+
 export type AuditAction =
     | 'CREATE_TRANSACTION' | 'UPDATE_TRANSACTION' | 'DELETE_TRANSACTION'
     | 'CREATE_TRANSFER'

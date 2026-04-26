@@ -26,6 +26,7 @@ import type {
     MonthComparisonResponse,
     MonthlyProjectionResponse,
     MonthlyTrendItem,
+    MonthlySummaryResponse,
     Page,
     PortfolioValueResponse,
     SyncBankTransactionsRequest,
@@ -135,6 +136,10 @@ export const getBudgetTemplate = (id: string): Promise<AxiosResponse<BudgetTempl
 export const createBudgetTemplate = (data: BudgetTemplateRequest): Promise<AxiosResponse<BudgetTemplate>> => apiClient.post('/budget-templates', data);
 export const updateBudgetTemplate = (id: string, data: BudgetTemplateRequest): Promise<AxiosResponse<BudgetTemplate>> => apiClient.put(`/budget-templates/${id}`, data);
 export const deleteBudgetTemplate = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/budget-templates/${id}`);
+
+// Budget Monthly Summary
+export const getBudgetMonthlySummary = (date?: string): Promise<AxiosResponse<MonthlySummaryResponse[]>> =>
+    apiClient.get(`/budgets/monthly-summary${date ? `?date=${date}` : ''}`);
 
 // Budget Alerts
 export const getBudgetAlerts = (budgetId?: string): Promise<AxiosResponse<BudgetAlert[]>> => apiClient.get(`/budget-alerts${budgetId ? `?budgetId=${budgetId}` : ''}`);

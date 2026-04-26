@@ -12,7 +12,7 @@ import { useDashboardData } from '../../hooks/useDashboardData';
 import { GenericPieChart, TrendBarChart } from '../../components/dashboard/DashboardCharts';
 import { AiAnalysisCard } from '../../components/dashboard/AiAnalysisCard';
 import * as api from '../../services/api';
-import type { CategoryBreakdownItem, MonthComparisonResponse } from '../../types/api';
+import type { CategoryBreakdownItem, MonthComparisonResponse, MonthlySummaryResponse } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT } from '../../theme/tokens';
@@ -54,6 +54,7 @@ export const DashboardPage = () => {
         expenseComparison,
         portfolioValue,
         projection,
+        budgetSummary,
         hasData,
     } = useDashboardData(transactionRefreshKey, trendMonths);
 
@@ -85,6 +86,36 @@ export const DashboardPage = () => {
         },
         { title: t('reports.percentage'), dataIndex: 'percentage', key: 'percentage', render: (v: number) => `${v.toFixed(1)}%` },
     ];
+
+    const budgetProgressColor = (pct: number): string => {
+        if (pct >= 100) return COLOR_NEGATIVE;
+        if (pct >= 75) return '#faad14';
+        return COLOR_POSITIVE;
+    };
+
+    const renderBudgetSummaryItem = (item: MonthlySummaryResponse) => (
+        <Col key={item.budgetId} xs={24} sm={12} lg={8}>
+            <div style={{ marginBottom: 4 }}>
+                <Flex justify="space-between" align="center">
+                    <Text strong style={{ fontSize: 13 }}>{item.categoryName}</Text>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                        {item.spent.toFixed(2)} / {item.limit.toFixed(2)} €
+                    </Text>
+                </Flex>
+                <Progress
+                    percent={Math.min(item.percentageUsed, 100)}
+                    size="small"
+                    strokeColor={budgetProgressColor(item.percentageUsed)}
+                    format={pct => <Text style={{ fontSize: 11 }}>{pct}%</Text>}
+                />
+                <Flex justify="space-between">
+                    <Text type="secondary" style={{ fontSize: 11 }}>
+                        {t('dashboard.budgetSummary.remaining')}: {item.remaining.toFixed(2)} €
+                    </Text>
+                </Flex>
+            </div>
+        </Col>
+    );
 
     const deltaStyle = (v: number, isExpense = false) => ({
         color: (isExpense ? v > 0 : v > 0) ? COLOR_NEGATIVE : COLOR_POSITIVE,
@@ -252,6 +283,19 @@ export const DashboardPage = () => {
                             <AiAnalysisCard />
                         </Col>
                     </Row>
+
+                    {/* Panoramica Budget del Mese */}
+                    {budgetSummary.length > 0 && (
+                        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                            <Col xs={24}>
+                                <Card title={t('dashboard.budgetSummary.title')}>
+                                    <Row gutter={[16, 16]}>
+                                        {budgetSummary.map(renderBudgetSummaryItem)}
+                                    </Row>
+                                </Card>
+                            </Col>
+                        </Row>
+                    )}
 
                     {/* Proiezione + Confronto mese affiancati */}
                     <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
