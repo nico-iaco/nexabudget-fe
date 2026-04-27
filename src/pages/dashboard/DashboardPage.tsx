@@ -384,16 +384,18 @@ export const DashboardPage = () => {
                                                     <Col xs={24} md={10}>
                                                         <GenericPieChart data={expensesByCategory} />
                                                     </Col>
-                                                    <Col xs={24} md={14}>
-                                                        <Table
-                                                            columns={breakdownColumns}
-                                                            dataSource={expenseBreakdown}
-                                                            rowKey="categoryId"
-                                                            size="small"
-                                                            pagination={false}
-                                                            locale={{ emptyText: <Empty description={t('charts.noData')} /> }}
-                                                        />
-                                                    </Col>
+                                                    {!isMobile && (
+                                                        <Col xs={24} md={14}>
+                                                            <Table
+                                                                columns={breakdownColumns}
+                                                                dataSource={expenseBreakdown}
+                                                                rowKey="categoryId"
+                                                                size="small"
+                                                                pagination={false}
+                                                                locale={{ emptyText: <Empty description={t('charts.noData')} /> }}
+                                                            />
+                                                        </Col>
+                                                    )}
                                                 </Row>
                                             ),
                                         },
@@ -405,16 +407,18 @@ export const DashboardPage = () => {
                                                     <Col xs={24} md={10}>
                                                         <GenericPieChart data={incomeByCategory} />
                                                     </Col>
-                                                    <Col xs={24} md={14}>
-                                                        <Table
-                                                            columns={breakdownColumns}
-                                                            dataSource={incomeBreakdown}
-                                                            rowKey="categoryId"
-                                                            size="small"
-                                                            pagination={false}
-                                                            locale={{ emptyText: <Empty description={t('charts.noData')} /> }}
-                                                        />
-                                                    </Col>
+                                                    {!isMobile && (
+                                                        <Col xs={24} md={14}>
+                                                            <Table
+                                                                columns={breakdownColumns}
+                                                                dataSource={incomeBreakdown}
+                                                                rowKey="categoryId"
+                                                                size="small"
+                                                                pagination={false}
+                                                                locale={{ emptyText: <Empty description={t('charts.noData')} /> }}
+                                                            />
+                                                        </Col>
+                                                    )}
                                                 </Row>
                                             ),
                                         },
