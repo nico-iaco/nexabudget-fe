@@ -301,3 +301,44 @@ export interface AiAnalysisStatusResponse {
     status: 'PENDING' | 'COMPLETED' | 'FAILED';
     content?: string;
 }
+
+export type ImportTransactionType = 'IN' | 'OUT';
+
+export type ImportFileFormat = 'CSV' | 'OFX';
+
+export interface CsvColumnMapping {
+    dateColumn: number;
+    amountColumn: number;
+    descriptionColumn: number;
+    typeColumn?: number | null;
+    dateFormat?: string;
+    delimiter?: string;
+    hasHeader?: boolean;
+}
+
+export interface ImportPreviewTransaction {
+    date: string;
+    amount: number;
+    type: ImportTransactionType;
+    description: string;
+    duplicate: boolean;
+    importHash: string;
+}
+
+export interface ImportPreviewResponse {
+    total: number;
+    duplicates: number;
+    toImport: number;
+    transactions: ImportPreviewTransaction[];
+}
+
+export interface ImportConfirmRequest {
+    selectedHashes?: string[];
+    defaultCategoryId?: string;
+}
+
+export interface ImportResultResponse {
+    imported: number;
+    skipped: number;
+    errors: number;
+}

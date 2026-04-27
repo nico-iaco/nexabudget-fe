@@ -20,6 +20,10 @@ import type {
     GoCardlessBankDetails,
     GoCardlessBankLinkRequest,
     GoCardlessCompleteBankLinkRequest,
+    ImportConfirmRequest,
+    ImportPreviewResponse,
+    ImportResultResponse,
+    CsvColumnMapping,
     LinkTransferRequest,
     LoginRequest,
     ManualHoldingsRequest,
@@ -114,6 +118,54 @@ export const updateTransaction = (id: string, data: TransactionRequest): Promise
 export const createTransfer = (data: TransferRequest): Promise<AxiosResponse<Transaction[]>> => apiClient.post('/transactions/transfer', data);
 export const deleteTransaction = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/transactions/${id}`);
 export const linkTransactionsAsTransfer = (data: LinkTransferRequest): Promise<AxiosResponse<void>> => apiClient.post('/transactions/convert-to-transfer', data);
+
+const buildImportFormData = (file: File, mapping?: CsvColumnMapping, confirm?: ImportConfirmRequest): FormData => {
+    const formData = new FormData();
+    formData.append('file', file);
+    if (mapping) {
+        formData.append('mapping', JSON.stringify(mapping));
+    }
+    if (confirm) {
+        formData.append('confirm', JSON.stringify(confirm));
+    }
+    return formData;
+};
+
+export const previewCsvImport = (
+    accountId: string,
+    file: File,
+    mapping: CsvColumnMapping,
+): Promise<AxiosResponse<ImportPreviewResponse>> =>
+    apiClient.post(`/accounts/${accountId}/import/csv/preview`, buildImportFormData(file, mapping), {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+export const confirmCsvImport = (
+    accountId: string,
+    file: File,
+    mapping: CsvColumnMapping,
+    confirm?: ImportConfirmRequest,
+): Promise<AxiosResponse<ImportResultResponse>> =>
+    apiClient.post(`/accounts/${accountId}/import/csv`, buildImportFormData(file, mapping, confirm), {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+export const previewOfxImport = (
+    accountId: string,
+    file: File,
+): Promise<AxiosResponse<ImportPreviewResponse>> =>
+    apiClient.post(`/accounts/${accountId}/import/ofx/preview`, buildImportFormData(file), {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+
+export const confirmOfxImport = (
+    accountId: string,
+    file: File,
+    confirm?: ImportConfirmRequest,
+): Promise<AxiosResponse<ImportResultResponse>> =>
+    apiClient.post(`/accounts/${accountId}/import/ofx`, buildImportFormData(file, undefined, confirm), {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
 
 // Trash
 export const getDeletedTransactions = (): Promise<AxiosResponse<Transaction[]>> => apiClient.get('/trash/transactions');

@@ -23,15 +23,22 @@ import {
     Tag,
     Typography
 } from 'antd';
-import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, FilterOutlined, PlusOutlined, RetweetOutlined, SearchOutlined, SwapOutlined } from '@ant-design/icons';
+import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, FilterOutlined, PlusOutlined, RetweetOutlined, SearchOutlined, SwapOutlined, UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import type { TransactionFilters } from '../../services/api';
-import type { Account, Category, LinkTransferRequest, Transaction, TransactionRequest } from '../../types/api';
+import type {
+    Account,
+    Category,
+    LinkTransferRequest,
+    Transaction,
+    TransactionRequest
+} from '../../types/api';
 import { useAuth } from '../../contexts/AuthContext';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { TransactionCard } from '../../components/TransactionCard';
+import { TransactionImportModal } from '../../components/modals/TransactionImportModal';
 import { getCurrencySymbol } from '../../utils/currency';
 import { COLOR_POSITIVE, COLOR_NEGATIVE } from '../../theme/tokens';
 import type { ColumnsType, TableProps } from 'antd/es/table';
@@ -107,6 +114,8 @@ export const TransactionsPage = () => {
         field: 'date',
         order: 'descend',
     });
+
+    const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
     const [apiNotification, contextHolder] = notification.useNotification();
 
@@ -597,6 +606,14 @@ export const TransactionsPage = () => {
                         {t('transactions.newTransfer')}
                     </Button>
                     <Button
+                        icon={<UploadOutlined />}
+                        onClick={() => setIsImportModalOpen(true)}
+                        size={isMobile ? 'middle' : 'large'}
+                        disabled={!accountId}
+                    >
+                        {t('transactions.import.open')}
+                    </Button>
+                    <Button
                         type="primary"
                         icon={<PlusOutlined />}
                         onClick={handleOpenCreateModal}
@@ -897,6 +914,21 @@ export const TransactionsPage = () => {
                     </Space>
                 )}
             </Modal>
+
+            {accountId && (
+                <TransactionImportModal
+                    open={isImportModalOpen}
+                    accountId={accountId}
+                    categories={categories}
+                    currency={currentAccount?.currency}
+                    onClose={() => setIsImportModalOpen(false)}
+                    onImported={() => {
+                        setCurrentPage(1);
+                        fetchTransactions(1);
+                        fetchLayoutAccounts(true);
+                    }}
+                />
+            )}
 
             <Modal
                 title={t('transactions.balanceModalTitle')}
