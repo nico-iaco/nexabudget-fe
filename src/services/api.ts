@@ -53,6 +53,23 @@ apiClient.interceptors.request.use((config) => {
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Let the browser set multipart boundaries automatically for FormData requests.
+    if (config.data instanceof FormData && config.headers) {
+        const headers = config.headers as unknown as {
+            set?: (name: string, value: string | undefined) => void;
+            ['Content-Type']?: string;
+            ['content-type']?: string;
+        };
+
+        if (typeof headers.set === 'function') {
+            headers.set('Content-Type', undefined);
+        } else {
+            delete headers['Content-Type'];
+            delete headers['content-type'];
+        }
+    }
+
     return config;
 });
 
@@ -121,12 +138,12 @@ export const linkTransactionsAsTransfer = (data: LinkTransferRequest): Promise<A
 
 const buildImportFormData = (file: File, mapping?: CsvColumnMapping, confirm?: ImportConfirmRequest): FormData => {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append('file', file, file.name);
     if (mapping) {
-        formData.append('mapping', JSON.stringify(mapping));
+        formData.append('mapping', new Blob([JSON.stringify(mapping)], { type: 'application/json' }));
     }
     if (confirm) {
-        formData.append('confirm', JSON.stringify(confirm));
+        formData.append('confirm', new Blob([JSON.stringify(confirm)], { type: 'application/json' }));
     }
     return formData;
 };
@@ -136,9 +153,7 @@ export const previewCsvImport = (
     file: File,
     mapping: CsvColumnMapping,
 ): Promise<AxiosResponse<ImportPreviewResponse>> =>
-    apiClient.post(`/accounts/${accountId}/import/csv/preview`, buildImportFormData(file, mapping), {
-        headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    apiClient.post(`/accounts/${accountId}/import/csv/preview`, buildImportFormData(file, mapping));
 
 export const confirmCsvImport = (
     accountId: string,
@@ -146,26 +161,20 @@ export const confirmCsvImport = (
     mapping: CsvColumnMapping,
     confirm?: ImportConfirmRequest,
 ): Promise<AxiosResponse<ImportResultResponse>> =>
-    apiClient.post(`/accounts/${accountId}/import/csv`, buildImportFormData(file, mapping, confirm), {
-        headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    apiClient.post(`/accounts/${accountId}/import/csv`, buildImportFormData(file, mapping, confirm));
 
 export const previewOfxImport = (
     accountId: string,
     file: File,
 ): Promise<AxiosResponse<ImportPreviewResponse>> =>
-    apiClient.post(`/accounts/${accountId}/import/ofx/preview`, buildImportFormData(file), {
-        headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    apiClient.post(`/accounts/${accountId}/import/ofx/preview`, buildImportFormData(file));
 
 export const confirmOfxImport = (
     accountId: string,
     file: File,
     confirm?: ImportConfirmRequest,
 ): Promise<AxiosResponse<ImportResultResponse>> =>
-    apiClient.post(`/accounts/${accountId}/import/ofx`, buildImportFormData(file, undefined, confirm), {
-        headers: { 'Content-Type': 'multipart/form-data' },
-    });
+    apiClient.post(`/accounts/${accountId}/import/ofx`, buildImportFormData(file, undefined, confirm));
 
 // Trash
 export const getDeletedTransactions = (): Promise<AxiosResponse<Transaction[]>> => apiClient.get('/trash/transactions');
