@@ -206,7 +206,9 @@ export const AppSider = ({
                 left: 0,
                 top: 0,
                 bottom: 0,
-                zIndex: 1001,
+                // On desktop the sider is part of the layout, so it must stay below modals.
+                // On mobile it acts as an overlay drawer and needs a higher stacking context.
+                zIndex: isMobile ? 1001 : 900,
                 overflowY: 'auto',
                 ...(isMobile ? { width: '100%' } : {})
             }}
