@@ -5,7 +5,6 @@ import {
 } from 'antd';
 import { BellOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs';
 import * as api from '../../services/api';
 import type { BudgetTemplate, BudgetTemplateRequest, Category } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
@@ -106,12 +105,6 @@ export const BudgetsPage = () => {
             render: (v: boolean) => <Switch checked={v} size="small" disabled />,
         },
         {
-            title: t('budgets.createdAt'),
-            dataIndex: 'createdAt',
-            key: 'createdAt',
-            render: (v: string) => dayjs(v).format('DD/MM/YYYY'),
-        },
-        {
             title: t('common.actions'),
             key: 'actions',
             render: (_: unknown, record: BudgetTemplate) => (
@@ -197,9 +190,6 @@ export const BudgetsPage = () => {
                                     <Typography.Text strong>{record.categoryName}</Typography.Text>
                                     <Typography.Text type="secondary">
                                         {record.budgetLimit.toFixed(2)} € · <Tag style={{ margin: 0 }}>{recurrenceLabel(record.recurrenceType)}</Tag>
-                                    </Typography.Text>
-                                    <Typography.Text type="secondary" style={{ fontSize: 12 }}>
-                                        {dayjs(record.createdAt).format('DD/MM/YYYY')}
                                     </Typography.Text>
                                 </Flex>
                                 <Switch checked={record.active} size="small" disabled />
