@@ -79,10 +79,10 @@ export const DashboardPage = () => {
     const breakdownColumns: ColumnsType<CategoryBreakdownItem> = [
         { title: t('reports.categoryName'), dataIndex: 'categoryName', key: 'categoryName' },
         {
-            title: t('reports.total'), dataIndex: 'total', key: 'total',
+            title: t('reports.net'), dataIndex: 'net', key: 'net',
             render: (v: number) => `${v.toFixed(2)} €`,
             defaultSortOrder: 'ascend',
-            sorter: (a, b) => b.total - a.total,
+            sorter: (a, b) => b.net - a.net,
         },
         { title: t('reports.percentage'), dataIndex: 'percentage', key: 'percentage', render: (v: number) => `${v.toFixed(1)}%` },
     ];

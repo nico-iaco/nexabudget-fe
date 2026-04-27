@@ -388,6 +388,7 @@ const resources = {
                 typeOut: 'Uscite',
                 categoryName: 'Categoria',
                 total: 'Totale',
+                net: 'Netto',
                 percentage: 'Percentuale',
                 transactionCount: 'N° Transazioni',
                 loadError: 'Errore nel caricamento dei report'
@@ -836,6 +837,7 @@ const resources = {
                 typeOut: 'Expenses',
                 categoryName: 'Category',
                 total: 'Total',
+                net: 'Net',
                 percentage: 'Percentage',
                 transactionCount: '# Transactions',
                 loadError: 'Error loading reports'

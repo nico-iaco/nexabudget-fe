@@ -54,16 +54,15 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
         Promise.all([
             safe(api.getMonthComparison(now.year(), now.month() + 1), null),
             safe(api.getMonthlyTrend(trendMonths), []),
-            safe(api.getCategoryBreakdown('IN', startDate, endDate), { startDate, endDate, type: 'IN' as const, grandTotal: 0, categories: [] }),
-            safe(api.getCategoryBreakdown('OUT', startDate, endDate), { startDate, endDate, type: 'OUT' as const, grandTotal: 0, categories: [] }),
+            safe(api.getCategoryBreakdown(startDate, endDate), { startDate, endDate, grandTotal: 0, categories: [] }),
             safe(api.getMonthlyProjection(), null),
             safe(api.getPortfolioValue('EUR'), null),
             safe(api.getBudgetMonthlySummary(now.format('YYYY-MM-DD')), []),
-        ]).then(([comp, trend, inc, exp, proj, crypto, budgets]) => {
+        ]).then(([comp, trend, breakdown, proj, crypto, budgets]) => {
             setMonthComparison(comp);
             setMonthlyTrendItems(trend ?? []);
-            setIncomeBreakdown(inc?.categories ?? []);
-            setExpenseBreakdown(exp?.categories ?? []);
+            setIncomeBreakdown((breakdown?.categories ?? []).filter(c => c.inferredType === 'IN'));
+            setExpenseBreakdown((breakdown?.categories ?? []).filter(c => c.inferredType === 'OUT'));
             setProjection(proj);
             if (crypto) setPortfolioValue(crypto);
             setBudgetSummary(budgets ?? []);
@@ -98,12 +97,12 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
     const netBalance = totalIncome - totalExpenses;
 
     const expensesByCategory = useMemo((): PieData[] =>
-        (expenseBreakdown ?? []).map(i => ({ type: i.categoryName, value: i.total })),
+        (expenseBreakdown ?? []).map(i => ({ type: i.categoryName, value: Math.abs(i.net) })),
         [expenseBreakdown]
     );
 
     const incomeByCategory = useMemo((): PieData[] =>
-        (incomeBreakdown ?? []).map(i => ({ type: i.categoryName, value: i.total })),
+        (incomeBreakdown ?? []).map(i => ({ type: i.categoryName, value: i.net })),
         [incomeBreakdown]
     );
 

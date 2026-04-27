@@ -85,12 +85,10 @@ export interface LinkTransferRequest {
 export interface Category {
     id: string;
     name: string;
-    transactionType: 'IN' | 'OUT';
 }
 
 export interface CategoryRequest {
     name: string;
-    transactionType: 'IN' | 'OUT';
 }
 
 export interface GoCardlessBank {
@@ -177,7 +175,8 @@ export interface MonthlyTrendItem {
 export interface CategoryBreakdownItem {
     categoryId: string;
     categoryName: string;
-    total: number;
+    net: number;
+    inferredType: 'IN' | 'OUT';
     percentage: number;
     transactionCount?: number;
 }
@@ -185,7 +184,6 @@ export interface CategoryBreakdownItem {
 export interface CategoryBreakdownResponse {
     startDate: string;
     endDate: string;
-    type: 'IN' | 'OUT';
     grandTotal: number;
     categories: CategoryBreakdownItem[];
 }
@@ -252,7 +250,6 @@ export interface MonthlySummaryResponse {
     budgetId: string;
     categoryId: string;
     categoryName: string;
-    categoryType: 'IN' | 'OUT';
     limit: number;
     spent: number;
     remaining: number;

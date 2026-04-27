@@ -81,7 +81,6 @@ export const TransactionsPage = () => {
     const [editingRecord, setEditingRecord] = useState<Transaction | null>(null);
 
     const [form] = Form.useForm<FormValues>();
-    const transactionType = Form.useWatch('type', form);
     const isMobile = useMediaQuery('(max-width: 768px)');
 
     // State for sorting and filtering
@@ -573,8 +572,6 @@ export const TransactionsPage = () => {
         );
     };
 
-    const filteredCategories = categories.filter(cat => cat.transactionType === transactionType);
-
     return (
         <>
             {contextHolder}
@@ -803,15 +800,14 @@ export const TransactionsPage = () => {
                         <InputNumber style={{ width: '100%' }} min={0} addonAfter={formSelectedCurrency} />
                     </Form.Item>
                     <Form.Item name="type" label={t('transactions.type')} rules={[{ required: true }]}>
-                        <Select placeholder={t('transactions.selectType')}
-                            onChange={() => form.setFieldsValue({ categoryId: undefined })}>
+                        <Select placeholder={t('transactions.selectType')}>
                             <Option value="IN">{t('transactions.typeIn')}</Option>
                             <Option value="OUT">{t('transactions.typeOut')}</Option>
                         </Select>
                     </Form.Item>
                     <Form.Item name="categoryId" label={t('transactions.category')}>
-                        <Select placeholder={t('transactions.selectCategory')} allowClear disabled={!transactionType}>
-                            {filteredCategories.map(cat => <Option key={cat.id} value={cat.id}>{cat.name}</Option>)}
+                        <Select placeholder={t('transactions.selectCategory')} allowClear>
+                            {categories.map(cat => <Option key={cat.id} value={cat.id}>{cat.name}</Option>)}
                         </Select>
                     </Form.Item>
                     <Form.Item name="description" label={t('transactions.description')} rules={[{ required: true }]}>

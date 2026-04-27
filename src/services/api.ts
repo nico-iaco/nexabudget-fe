@@ -123,7 +123,7 @@ export const restoreAccount = (id: string): Promise<AxiosResponse<void>> => apiC
 
 // Reports
 export const getMonthlyTrend = (months = 12): Promise<AxiosResponse<MonthlyTrendItem[]>> => apiClient.get(`/reports/monthly-trend?months=${months}`);
-export const getCategoryBreakdown = (type: 'IN' | 'OUT', startDate: string, endDate: string): Promise<AxiosResponse<CategoryBreakdownResponse>> => apiClient.get(`/reports/category-breakdown?type=${type}&startDate=${startDate}&endDate=${endDate}`);
+export const getCategoryBreakdown = (startDate: string, endDate: string): Promise<AxiosResponse<CategoryBreakdownResponse>> => apiClient.get(`/reports/category-breakdown?startDate=${startDate}&endDate=${endDate}`);
 export const getMonthComparison = (year: number, month: number): Promise<AxiosResponse<MonthComparisonResponse>> => apiClient.get(`/reports/month-comparison?year=${year}&month=${month}`);
 export const getMonthlyProjection = (): Promise<AxiosResponse<MonthlyProjectionResponse>> => apiClient.get('/reports/monthly-projection');
 export const requestAiAnalysis = (data: import('../types/api').AiAnalysisRequest): Promise<AxiosResponse<import('../types/api').AiAnalysisJobResponse>> => apiClient.post('/reports/ai-analysis', data);
