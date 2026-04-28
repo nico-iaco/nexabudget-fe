@@ -43,7 +43,7 @@ async function createIconBuffer(size, isMaskable = false) {
 
       <text x="50%" y="50%" text-anchor="middle" dy=".35em" 
             fill="white" 
-            font-size="${fontSize}" 
+            font-size="${fontSize}px" 
             font-family="Arial, sans-serif" 
             font-weight="bold"
             filter="url(#shadow)">N</text>
