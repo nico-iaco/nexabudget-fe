@@ -1,5 +1,5 @@
 // src/pages/dashboard/DashboardPage.tsx
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
     Button, Card, Col, DatePicker, Empty, Flex, Progress, Row,
@@ -9,7 +9,9 @@ import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useDashboardData } from '../../hooks/useDashboardData';
-import { GenericPieChart, TrendBarChart } from '../../components/dashboard/DashboardCharts';
+// Effettuiamo il lazy loading dei grafici per alleggerire il bundle iniziale della pagina dashboard
+const GenericPieChart = lazy(() => import('../../components/dashboard/DashboardCharts').then(m => ({ default: m.GenericPieChart })));
+const TrendBarChart = lazy(() => import('../../components/dashboard/DashboardCharts').then(m => ({ default: m.TrendBarChart })));
 import { AiAnalysisCard } from '../../components/dashboard/AiAnalysisCard';
 import * as api from '../../services/api';
 import type { CategoryBreakdownItem, MonthComparisonResponse, MonthlySummaryResponse } from '../../types/api';
@@ -382,7 +384,9 @@ export const DashboardPage = () => {
                                             children: (
                                                 <Row gutter={[16, 16]}>
                                                     <Col xs={24} md={10}>
-                                                        <GenericPieChart data={expensesByCategory} />
+                                                        <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} />}>
+                                                            <GenericPieChart data={expensesByCategory} />
+                                                        </Suspense>
                                                     </Col>
                                                     {!isMobile && (
                                                         <Col xs={24} md={14}>
@@ -405,7 +409,9 @@ export const DashboardPage = () => {
                                             children: (
                                                 <Row gutter={[16, 16]}>
                                                     <Col xs={24} md={10}>
-                                                        <GenericPieChart data={incomeByCategory} />
+                                                        <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} />}>
+                                                            <GenericPieChart data={incomeByCategory} />
+                                                        </Suspense>
                                                     </Col>
                                                     {!isMobile && (
                                                         <Col xs={24} md={14}>
@@ -467,7 +473,9 @@ export const DashboardPage = () => {
                                         />
                                     </Flex>
                                 )}
-                                <TrendBarChart data={monthlyTrend} />
+                                <Suspense fallback={<Skeleton active paragraph={{ rows: 8 }} />}>
+                                    <TrendBarChart data={monthlyTrend} />
+                                </Suspense>
                             </Card>
                         </Col>
                     </Row>

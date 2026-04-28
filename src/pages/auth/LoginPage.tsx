@@ -47,7 +47,7 @@ export const LoginPage = () => {
                     boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-                        <img src="/pwa-192x192.png" alt={t('app.name')} style={{ width: '64px', height: '64px' }} />
+                        <img src="/pwa-192x192.png?v=2" alt={t('app.name')} style={{ width: '64px', height: '64px' }} />
                     </div>
                     <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>{t('auth.loginTitle')}</Title>
                     {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 24 }} />}
