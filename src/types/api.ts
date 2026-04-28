@@ -200,6 +200,33 @@ export interface MonthComparisonResponse {
     expenseChange: number;
 }
 
+export interface ApiKeyResponse {
+    id: string;
+    name: string;
+    scopes: string;
+    expiresAt?: string;
+    lastUsedAt?: string;
+    active: boolean;
+    createdAt: string;
+}
+
+export interface CreateApiKeyRequest {
+    name: string;
+    scopes?: string;
+    expiresAt?: string;
+}
+
+export interface CreateApiKeyResponse extends ApiKeyResponse {
+    plaintextKey: string;
+}
+
+export interface UpdateApiKeyRequest {
+    name: string;
+    scopes?: string;
+    expiresAt?: string;
+    active: boolean;
+}
+
 export interface MonthlyProjectionResponse {
     year: number;
     month: number;

@@ -4,6 +4,7 @@ import {usePreferences} from '../../contexts/PreferencesContext';
 import {useAuth} from '../../contexts/AuthContext';
 import {updateUserProfile} from '../../services/api';
 import {useState} from 'react';
+import {ApiKeysCard} from './ApiKeysCard';
 
 const { Title, Text } = Typography;
 
@@ -84,6 +85,8 @@ export const SettingsPage = () => {
                     </Form.Item>
                 </Form>
             </Card>
+
+            <ApiKeysCard />
 
             <Card title={t('settings.serverTitle')}>
                 <Text type="secondary">{t('settings.serverPlaceholder')}</Text>

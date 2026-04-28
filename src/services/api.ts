@@ -198,6 +198,12 @@ export const createBudgetTemplate = (data: BudgetTemplateRequest): Promise<Axios
 export const updateBudgetTemplate = (id: string, data: BudgetTemplateRequest): Promise<AxiosResponse<BudgetTemplate>> => apiClient.put(`/budget-templates/${id}`, data);
 export const deleteBudgetTemplate = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/budget-templates/${id}`);
 
+// API Keys
+export const getApiKeys = (): Promise<AxiosResponse<import('../types/api').ApiKeyResponse[]>> => apiClient.get('/api-keys');
+export const createApiKey = (data: import('../types/api').CreateApiKeyRequest): Promise<AxiosResponse<import('../types/api').CreateApiKeyResponse>> => apiClient.post('/api-keys', data);
+export const updateApiKey = (id: string, data: import('../types/api').UpdateApiKeyRequest): Promise<AxiosResponse<import('../types/api').ApiKeyResponse>> => apiClient.put(`/api-keys/${id}`, data);
+export const deleteApiKey = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/api-keys/${id}`);
+
 // Budget Monthly Summary
 export const getBudgetMonthlySummary = (date?: string): Promise<AxiosResponse<MonthlySummaryResponse[]>> =>
     apiClient.get(`/budgets/monthly-summary${date ? `?date=${date}` : ''}`);
