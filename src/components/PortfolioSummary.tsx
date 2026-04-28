@@ -1,9 +1,12 @@
 import React, {useMemo} from 'react';
-import {Button, Card, Col, Popconfirm, Row, Statistic, Table, Tag} from 'antd';
+import {Button, Card, Col, Collapse, List, Popconfirm, Row, Statistic, Table, Tag, Typography, Flex} from 'antd';
 import {DeleteOutlined, EditOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import type {CryptoAsset, PortfolioValueResponse} from '../types/api.ts';
 import {COLOR_POSITIVE} from '../theme/tokens';
+import {useMediaQuery} from '../hooks/useMediaQuery';
+
+const { Text } = Typography;
 
 interface PortfolioSummaryProps {
     data: PortfolioValueResponse | null;
@@ -23,6 +26,7 @@ interface GroupedAsset {
 export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loading, onEditAsset, onDeleteAsset }) => {
     const { t, i18n } = useTranslation();
     const locale = i18n.language === 'it' ? 'it-IT' : 'en-US';
+    const isMobile = useMediaQuery('(max-width: 768px)');
     const groupedAssets = useMemo(() => {
         if (!data?.assets) return [];
         const groups: Record<string, GroupedAsset> = {};
@@ -146,18 +150,89 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
             </Row>
 
             <Card title={t('portfolio.yourAssets')} bordered={false}>
-                <Table
-                    dataSource={groupedAssets}
-                    columns={columns}
-                    rowKey="symbol"
-                    loading={loading}
-                    pagination={false}
-                    scroll={{ x: true }}
-                    expandable={{
-                        expandedRowRender,
-                        defaultExpandedRowKeys: [], // Optionally expand all by default if needed
-                    }}
-                />
+                {isMobile ? (
+                    <List
+                        dataSource={groupedAssets}
+                        loading={loading}
+                        renderItem={(record, index) => (
+                            <Card size="small" style={{ marginBottom: 12 }}>
+                                <Collapse
+                                    ghost
+                                    items={[
+                                        {
+                                            key: record.symbol,
+                                            label: (
+                                                <Flex justify="space-between" align="center" style={{ width: '100%' }}>
+                                                    <Tag color={colors[index % colors.length]}>{record.symbol}</Tag>
+                                                    <div style={{ textAlign: 'right' }}>
+                                                        <div><Text strong>{new Intl.NumberFormat(locale, { style: 'currency', currency: data?.currency || 'USD' }).format(record.value)}</Text></div>
+                                                        <div><Text type="secondary" style={{ fontSize: '12px' }}>{record.amount.toLocaleString(locale, { maximumFractionDigits: 8 })}</Text></div>
+                                                    </div>
+                                                </Flex>
+                                            ),
+                                            children: (
+                                                <List
+                                                    dataSource={record.assets}
+                                                    rowKey="id"
+                                                    renderItem={(asset) => (
+                                                        <List.Item
+                                                            style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}
+                                                            actions={
+                                                                asset.source === 'MANUAL'
+                                                                    ? [
+                                                                        <Button
+                                                                            type="text"
+                                                                            icon={<EditOutlined />}
+                                                                            size="small"
+                                                                            onClick={() => onEditAsset?.(asset)}
+                                                                            aria-label={t('common.edit')}
+                                                                        />,
+                                                                        <Popconfirm
+                                                                            title={t('portfolio.deleteHolding')}
+                                                                            description={t('portfolio.deleteHoldingConfirm')}
+                                                                            onConfirm={() => onDeleteAsset?.(asset)}
+                                                                            okText={t('common.yes')}
+                                                                            cancelText={t('common.no')}
+                                                                        >
+                                                                            <Button type="text" danger icon={<DeleteOutlined />} size="small" aria-label={t('common.delete')} />
+                                                                        </Popconfirm>,
+                                                                    ]
+                                                                    : []
+                                                            }
+                                                        >
+                                                            <List.Item.Meta
+                                                                title={<Text strong>{asset.source}</Text>}
+                                                                description={
+                                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                        <span>{t('portfolio.amount')}: {asset.amount.toLocaleString(locale, { maximumFractionDigits: 8 })}</span>
+                                                                        <span>{t('portfolio.value')}: {new Intl.NumberFormat(locale, { style: 'currency', currency: data?.currency || 'USD' }).format(asset.value)}</span>
+                                                                    </div>
+                                                                }
+                                                            />
+                                                        </List.Item>
+                                                    )}
+                                                />
+                                            )
+                                        }
+                                    ]}
+                                />
+                            </Card>
+                        )}
+                    />
+                ) : (
+                    <Table
+                        dataSource={groupedAssets}
+                        columns={columns}
+                        rowKey="symbol"
+                        loading={loading}
+                        pagination={false}
+                        scroll={{ x: true }}
+                        expandable={{
+                            expandedRowRender,
+                            defaultExpandedRowKeys: [],
+                        }}
+                    />
+                )}
             </Card>
         </div>
     );
