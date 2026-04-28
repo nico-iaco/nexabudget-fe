@@ -87,6 +87,35 @@ export default defineConfig(({ mode }) => {
                 },
 
             }
+        },
+        build: {
+            chunkSizeWarningLimit: 1500,
+            rollupOptions: {
+                output: {
+                    manualChunks(id) {
+                        if (id.includes('node_modules')) {
+                            // Separazione di chart librerie grandi
+                            if (id.includes('@antv') || id.includes('@ant-design/plots') || id.includes('@ant-design/charts')) {
+                                return 'vendor-charts';
+                            }
+                            if (id.includes('antd') || id.includes('@ant-design/icons') || id.includes('rc-')) {
+                                return 'vendor-antd';
+                            }
+                            if (id.includes('react') && !id.includes('react-markdown')) {
+                                return 'vendor-react';
+                            }
+                            if (id.includes('react-markdown') || id.includes('remark') || id.includes('rehype') || id.includes('unified')) {
+                                return 'vendor-markdown';
+                            }
+                            if (id.includes('axios')) return 'vendor-axios';
+                            if (id.includes('i18next')) return 'vendor-i18n';
+                            if (id.includes('lodash')) return 'vendor-lodash';
+                            
+                            return 'vendor'; // tutti gli altri
+                        }
+                    }
+                }
+            }
         }
     }
 })
