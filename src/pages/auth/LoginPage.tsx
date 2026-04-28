@@ -47,7 +47,7 @@ export const LoginPage = () => {
                     boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
                 }}>
                     <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
-                        <img src="/pwa-192x192.png?v=2" alt={t('app.name')} style={{ width: '64px', height: '64px' }} />
+                        <img src="/pwa-192x192.png?v=2" alt={t('app.name')} width="64" height="64" style={{ width: '64px', height: '64px' }} />
                     </div>
                     <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>{t('auth.loginTitle')}</Title>
                     {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 24 }} />}
@@ -56,13 +56,13 @@ export const LoginPage = () => {
                             name="username"
                             rules={[{ required: true, message: t('auth.usernameRequired') }]}
                         >
-                            <Input prefix={<UserOutlined />} placeholder={t('auth.username')} />
+                            <Input prefix={<UserOutlined />} placeholder={t('auth.username')} aria-label={t('auth.username')} />
                         </Form.Item>
                         <Form.Item
                             name="password"
                             rules={[{ required: true, message: t('auth.passwordRequired') }]}
                         >
-                            <Input.Password prefix={<LockOutlined />} placeholder={t('auth.password')} />
+                            <Input.Password prefix={<LockOutlined />} placeholder={t('auth.password')} aria-label={t('auth.password')} />
                         </Form.Item>
                         <Form.Item>
                             <Button type="primary" htmlType="submit" loading={loading} style={{ width: '100%' }}>

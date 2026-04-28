@@ -226,7 +226,7 @@ export const AppSider = ({
             )}
             {!isMobile && (
                 <div style={{ height: '32px', margin: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src="/pwa-192x192.png" alt={t('app.name')} style={{ height: '32px', width: '32px' }} />
+                    <img src="/pwa-192x192.png" alt={t('app.name')} width="32" height="32" style={{ height: '32px', width: '32px' }} />
                     <Title level={4} style={{ color: 'white', margin: '0 0 0 10px', fontSize: '18px' }}>{t('app.name')}</Title>
                 </div>
             )}
@@ -318,7 +318,7 @@ export const AppSider = ({
                 </Flex>
                 <div style={{ padding: '0 16px 16px' }}>
                     <Statistic
-                        title={<Text style={{ color: 'rgba(255, 255, 255, 0.45)' }}>{t('accounts.totalBalance')}</Text>}
+                        title={<Text style={{ color: 'rgba(255, 255, 255, 0.65)' }}>{t('accounts.totalBalance')}</Text>}
                         value={totalBalance}
                         precision={2}
                         valueStyle={{ color: '#fff' }}

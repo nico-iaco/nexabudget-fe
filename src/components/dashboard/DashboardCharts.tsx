@@ -53,7 +53,7 @@ export const GenericPieChart = ({ data }: PieChartProps) => {
                                     {item.value.toFixed(2)} ({pct}%)
                                 </Text>
                             </Flex>
-                            <Progress percent={pct} showInfo={false} size="small" strokeColor={isDark ? '#177ddc' : '#1890ff'} />
+                            <Progress aria-label={`${item.category} ${pct}%`} percent={pct} showInfo={false} size="small" strokeColor={isDark ? '#177ddc' : '#1890ff'} />
                         </div>
                     );
                 })}

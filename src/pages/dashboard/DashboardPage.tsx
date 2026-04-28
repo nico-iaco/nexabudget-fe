@@ -105,6 +105,7 @@ export const DashboardPage = () => {
                     </Text>
                 </Flex>
                 <Progress
+                    aria-label={`${t('budgets.used')}: ${item.percentageUsed.toFixed(0)}%`}
                     percent={Math.min(item.percentageUsed, 100)}
                     size="small"
                     strokeColor={budgetProgressColor(item.percentageUsed)}
@@ -324,7 +325,7 @@ export const DashboardPage = () => {
                                             <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
                                                 {t('dashboard.projectionDay', { elapsed: projection.daysElapsed, total: projection.daysInMonth })}
                                             </Text>
-                                            <Progress percent={Math.round((projection.daysElapsed / projection.daysInMonth) * 100)} size="small" />
+                                            <Progress aria-label={t('dashboard.projectionDay', { elapsed: projection.daysElapsed, total: projection.daysInMonth })} percent={Math.round((projection.daysElapsed / projection.daysInMonth) * 100)} size="small" />
                                         </Col>
                                     </Row>
                                 </Card>

@@ -628,6 +628,7 @@ export const TransactionsPage = () => {
             <Flex vertical gap="middle" style={{ marginBottom: 16 }}>
                 <Flex gap="small" align="stretch">
                     <Input
+                        aria-label={t('transactions.searchPlaceholder')}
                         placeholder={t('transactions.searchPlaceholder')}
                         allowClear
                         size="middle"
