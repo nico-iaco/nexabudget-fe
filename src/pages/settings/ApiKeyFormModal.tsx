@@ -15,7 +15,6 @@ interface ApiKeyFormModalProps {
 export const ApiKeyFormModal = ({ open, onCancel, onOk, editingKey, loading }: ApiKeyFormModalProps) => {
     const { t } = useTranslation();
     const [form] = Form.useForm();
-    const [formValues, setFormValues] = useState<any>({});
 
     useEffect(() => {
         if (open) {
@@ -26,7 +25,6 @@ export const ApiKeyFormModal = ({ open, onCancel, onOk, editingKey, loading }: A
                     scopes: scopesArr,
                     expiresAt: editingKey.expiresAt ? dayjs(editingKey.expiresAt) : undefined,
                 });
-                setFormValues(form.getFieldsValue());
             } else {
                 form.resetFields();
                 form.setFieldsValue({
@@ -74,7 +72,7 @@ export const ApiKeyFormModal = ({ open, onCancel, onOk, editingKey, loading }: A
             okText={t('common.save')}
             cancelText={t('common.cancel')}
         >
-            <Form form={form} layout="vertical" onValuesChange={(_, all) => setFormValues(all)}>
+            <Form form={form} layout="vertical">
                 <Form.Item
                     name="name"
                     label={t('settings.apiKeys.name')}

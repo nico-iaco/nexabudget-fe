@@ -1,4 +1,4 @@
-import { Modal, Typography, Button, Alert, message, Space } from 'antd';
+import { Modal, Typography, Button, Alert, message } from 'antd';
 import { CopyOutlined, CheckOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
