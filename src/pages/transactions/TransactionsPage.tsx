@@ -810,7 +810,7 @@ export const TransactionsPage = () => {
                 onCancel={handleCancel} footer={null} destroyOnClose>
                 <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: 24 }}>
                     <Form.Item name="accountId" label={t('transactions.account')} rules={[{ required: true }]}>
-                        <Select placeholder={t('transactions.selectAccount')} disabled={!!accountId || !!editingRecord}>
+                        <Select placeholder={t('transactions.selectAccount')} disabled={!!accountId || !!editingRecord} getPopupContainer={triggerNode => triggerNode.parentNode}>
                             {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
                         </Select>
                     </Form.Item>
@@ -818,13 +818,13 @@ export const TransactionsPage = () => {
                         <InputNumber style={{ width: '100%' }} min={0} addonAfter={formSelectedCurrency} />
                     </Form.Item>
                     <Form.Item name="type" label={t('transactions.type')} rules={[{ required: true }]}>
-                        <Select placeholder={t('transactions.selectType')}>
+                        <Select placeholder={t('transactions.selectType')} getPopupContainer={triggerNode => triggerNode.parentNode}>
                             <Option value="IN">{t('transactions.typeIn')}</Option>
                             <Option value="OUT">{t('transactions.typeOut')}</Option>
                         </Select>
                     </Form.Item>
                     <Form.Item name="categoryId" label={t('transactions.category')}>
-                        <Select placeholder={t('transactions.selectCategory')} allowClear>
+                        <Select placeholder={t('transactions.selectCategory')} allowClear getPopupContainer={triggerNode => triggerNode.parentNode}>
                             {categories.map(cat => <Option key={cat.id} value={cat.id}>{cat.name}</Option>)}
                         </Select>
                     </Form.Item>

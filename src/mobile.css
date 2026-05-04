@@ -61,6 +61,15 @@
         font-size: 14px !important;
     }
 
+    /* Prevent zoom on inputs for iOS Safari */
+    .ant-input,
+    .ant-input-number-input,
+    .ant-select-selection-item,
+    .ant-select-selection-search-input,
+    .ant-picker-input input {
+        font-size: 16px !important;
+    }
+
     /* Better spacing for buttons in space */
     .ant-space-item {
         margin-right: 8px !important;
