@@ -1,4 +1,5 @@
 // src/components/TransactionCard.tsx
+import { memo } from 'react';
 import {Button, Card, Flex, Tag, Typography} from 'antd';
 import {ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, SwapOutlined} from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -6,6 +7,7 @@ import {useTranslation} from 'react-i18next';
 import type {Transaction} from '../types/api';
 import { getCurrencySymbol } from '../utils/currency';
 import { COLOR_POSITIVE, COLOR_NEGATIVE } from '../theme/tokens';
+import { haptic } from '../utils/haptic';
 
 const { Text } = Typography;
 
@@ -17,7 +19,7 @@ interface TransactionCardProps {
     onConvertToTransfer: (transaction: Transaction) => void;
 }
 
-export const TransactionCard = ({ transaction, currency = 'EUR', onEdit, onDelete, onConvertToTransfer }: TransactionCardProps) => {
+const TransactionCardInner = ({ transaction, currency = 'EUR', onEdit, onDelete, onConvertToTransfer }: TransactionCardProps) => {
     const { t } = useTranslation();
     const isIncome = transaction.type === 'IN';
     const amountColor = isIncome ? COLOR_POSITIVE : COLOR_NEGATIVE;
@@ -79,7 +81,7 @@ export const TransactionCard = ({ transaction, currency = 'EUR', onEdit, onDelet
                 <Button
                     danger
                     icon={<DeleteOutlined />}
-                    onClick={() => onDelete(transaction.id)}
+                    onClick={() => { haptic([10, 50, 10]); onDelete(transaction.id); }}
                     size="small"
                     aria-label={t('common.delete')}
                 />
@@ -87,3 +89,14 @@ export const TransactionCard = ({ transaction, currency = 'EUR', onEdit, onDelet
         </Card>
     );
 };
+
+export const TransactionCard = memo(
+    TransactionCardInner,
+    (prev, next) =>
+        prev.transaction.id === next.transaction.id &&
+        prev.transaction.amount === next.transaction.amount &&
+        prev.transaction.description === next.transaction.description &&
+        prev.transaction.categoryName === next.transaction.categoryName &&
+        prev.currency === next.currency,
+);
+TransactionCard.displayName = 'TransactionCard';

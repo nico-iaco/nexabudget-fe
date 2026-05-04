@@ -1,6 +1,8 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
+import viteCompression from 'vite-plugin-compression'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -10,6 +12,9 @@ export default defineConfig(({ mode }) => {
     return {
         plugins: [
             react(),
+            viteCompression({ algorithm: 'brotliCompress', ext: '.br' }),
+            viteCompression({ algorithm: 'gzip', ext: '.gz' }),
+            visualizer({ open: false, filename: 'dist/stats.html', gzipSize: true, brotliSize: true }),
             VitePWA({
                 registerType: 'autoUpdate',
                 includeAssets: ['vite.svg', 'robots.txt'],
@@ -51,23 +56,38 @@ export default defineConfig(({ mode }) => {
                     ]
                 },
                 workbox: {
-                    maximumFileSizeToCacheInBytes: 4000000,
+                    maximumFileSizeToCacheInBytes: 6000000,
                     globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+                    navigateFallback: '/offline.html',
+                    navigateFallbackDenylist: [/^\/api\//],
                     runtimeCaching: [
                         {
-                            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+                            // API calls: try network first, fall back to cache (5 min TTL)
+                            urlPattern: /\/api\/.*/i,
+                            handler: 'NetworkFirst',
+                            options: {
+                                cacheName: 'api-cache',
+                                networkTimeoutSeconds: 3,
+                                expiration: {
+                                    maxEntries: 50,
+                                    maxAgeSeconds: 5 * 60,
+                                },
+                                cacheableResponse: { statuses: [0, 200] },
+                            },
+                        },
+                        {
+                            // Static images and icons: cache first, 30 days
+                            urlPattern: /\.(png|jpg|jpeg|svg|gif|webp|ico)(\?.*)?$/i,
                             handler: 'CacheFirst',
                             options: {
-                                cacheName: 'google-fonts-cache',
+                                cacheName: 'static-images',
                                 expiration: {
-                                    maxEntries: 10,
-                                    maxAgeSeconds: 60 * 60 * 24 * 365 // <== 365 days
+                                    maxEntries: 60,
+                                    maxAgeSeconds: 30 * 24 * 60 * 60,
                                 },
-                                cacheableResponse: {
-                                    statuses: [0, 200]
-                                }
-                            }
-                        }
+                                cacheableResponse: { statuses: [0, 200] },
+                            },
+                        },
                     ]
                 },
                 devOptions: {
@@ -89,7 +109,26 @@ export default defineConfig(({ mode }) => {
             }
         },
         build: {
-            chunkSizeWarningLimit: 1500
+            chunkSizeWarningLimit: 1500,
+            rollupOptions: {
+                output: {
+                    manualChunks(id) {
+                        if (id.includes('/node_modules/')) {
+                            if (
+                                id.includes('/react/') ||
+                                id.includes('/react-dom/') ||
+                                id.includes('/react-router') ||
+                                id.includes('/scheduler/')
+                            ) {
+                                return 'vendor-react';
+                            }
+                            if (id.includes('/i18next') || id.includes('/react-i18next')) {
+                                return 'vendor-i18n';
+                            }
+                        }
+                    },
+                },
+            },
         }
     }
 })

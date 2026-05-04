@@ -5,11 +5,13 @@ import {useAuth} from '../../contexts/AuthContext';
 import {updateUserProfile} from '../../services/api';
 import {useState} from 'react';
 import {ApiKeysCard} from './ApiKeysCard';
+import { usePageTitle } from '../../hooks/usePageTitle';
 
 const { Title, Text } = Typography;
 
 export const SettingsPage = () => {
     const { t } = useTranslation();
+    usePageTitle(t('settings.title'));
     const { preferences, setLanguage, setTheme, setServerSettings } = usePreferences();
     const { auth, updateUser } = useAuth();
     const [updatingParams, setUpdatingParams] = useState(false);

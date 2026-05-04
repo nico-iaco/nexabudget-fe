@@ -80,6 +80,17 @@ async function generateIcons() {
         }
     }
 
+    // Apple touch icon — standard 180×180
+    try {
+        const appleBuffer = await createIconBuffer(180, false);
+        await sharp(appleBuffer)
+            .png()
+            .toFile(join(__dirname, '../public/apple-touch-icon.png'));
+        console.log('✓ Generated apple-touch-icon.png');
+    } catch (error) {
+        console.error('Error generating apple-touch-icon.png:', error);
+    }
+
     console.log('Icon generation complete!');
 }
 

@@ -9,9 +9,22 @@ import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useDashboardData } from '../../hooks/useDashboardData';
-// Effettuiamo il lazy loading dei grafici per alleggerire il bundle iniziale della pagina dashboard
-const GenericPieChart = lazy(() => import('../../components/dashboard/DashboardCharts').then(m => ({ default: m.GenericPieChart })));
-const TrendBarChart = lazy(() => import('../../components/dashboard/DashboardCharts').then(m => ({ default: m.TrendBarChart })));
+import { usePageTitle } from '../../hooks/usePageTitle';
+import { usePullToRefresh } from '../../hooks/usePullToRefresh';
+
+// On mobile we load a lightweight chart bundle (no G2Plot); on desktop the full one.
+// Evaluated once at module load — device type is fixed for a PWA session.
+const _isMobileAtLoad = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
+const GenericPieChart = lazy(() =>
+    _isMobileAtLoad
+        ? import('../../components/dashboard/DashboardChartsMobile').then(m => ({ default: m.GenericPieChart }))
+        : import('../../components/dashboard/DashboardCharts').then(m => ({ default: m.GenericPieChart }))
+);
+const TrendBarChart = lazy(() =>
+    _isMobileAtLoad
+        ? import('../../components/dashboard/DashboardChartsMobile').then(m => ({ default: m.TrendBarChart }))
+        : import('../../components/dashboard/DashboardCharts').then(m => ({ default: m.TrendBarChart }))
+);
 import { AiAnalysisCard } from '../../components/dashboard/AiAnalysisCard';
 import * as api from '../../services/api';
 import type { CategoryBreakdownItem, MonthComparisonResponse, MonthlySummaryResponse } from '../../types/api';
@@ -38,6 +51,8 @@ export const DashboardPage = () => {
     const { transactionRefreshKey } = useOutletContext<OutletContextType>();
     const isMobile = useMediaQuery('(max-width: 768px)');
 
+    usePageTitle(t('dashboard.title'));
+
     const [trendMonths, setTrendMonths] = useState(12);
     const [showCustomPicker, setShowCustomPicker] = useState(false);
 
@@ -58,7 +73,10 @@ export const DashboardPage = () => {
         projection,
         budgetSummary,
         hasData,
+        refetch: refetchDashboard,
     } = useDashboardData(transactionRefreshKey, trendMonths);
+
+    usePullToRefresh(refetchDashboard ?? (() => {}), isMobile);
 
     // Confronto mese scelto dall'utente
     const [comparisonMonth, setComparisonMonth] = useState<Dayjs>(dayjs());

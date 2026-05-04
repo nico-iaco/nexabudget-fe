@@ -11,6 +11,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { BudgetTemplateModal } from './BudgetTemplateModal';
 import { BudgetAlertsDrawer } from './BudgetAlertsDrawer';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { usePageTitle } from '../../hooks/usePageTitle';
 
 const { Title } = Typography;
 
@@ -20,6 +21,7 @@ interface OutletContextType {
 
 export const BudgetsPage = () => {
     const { t } = useTranslation();
+    usePageTitle(t('budgets.title'));
     const { categories } = useOutletContext<OutletContextType>();
     const isMobile = useMediaQuery('(max-width: 768px)');
 

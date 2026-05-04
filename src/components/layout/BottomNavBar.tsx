@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { theme } from 'antd';
@@ -8,7 +9,7 @@ import {
     SettingOutlined,
     TransactionOutlined,
 } from '@ant-design/icons';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 const NAV_ITEMS = (t: (k: string) => string) => [
     { path: '/dashboard', icon: <PieChartOutlined />, label: t('nav.dashboard') },
@@ -18,14 +19,14 @@ const NAV_ITEMS = (t: (k: string) => string) => [
     { path: '/settings', icon: <SettingOutlined />, label: t('nav.settings') },
 ];
 
-export const BottomNavBar = () => {
+const BottomNavBarInner = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const location = useLocation();
-    const isMobile = useMediaQuery('(max-width: 768px)');
+    const { isSmallMobile } = useBreakpoints();
     const { token } = theme.useToken();
 
-    if (!isMobile) return null;
+    if (!isSmallMobile) return null;
 
     const items = NAV_ITEMS(t);
 
@@ -80,3 +81,5 @@ export const BottomNavBar = () => {
         </nav>
     );
 };
+
+export const BottomNavBar = memo(BottomNavBarInner);

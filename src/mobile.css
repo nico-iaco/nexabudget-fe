@@ -365,3 +365,11 @@
 .ant-modal-body {
     touch-action: pan-y;
 }
+
+/* Improve rendering performance for off-screen transaction cards on mobile */
+@media (max-width: 768px) {
+    .ant-list-item {
+        content-visibility: auto;
+        contain-intrinsic-size: 0 120px;
+    }
+}

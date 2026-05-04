@@ -6,6 +6,7 @@ import * as api from '../../services/api';
 import type { AuditAction, AuditLogEntry } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { usePageTitle } from '../../hooks/usePageTitle';
 
 const { Title, Text } = Typography;
 
@@ -27,6 +28,7 @@ const ACTION_COLORS: Record<AuditAction, string> = {
 
 export const AuditLogPage = () => {
     const { t } = useTranslation();
+    usePageTitle(t('audit.title'));
     const isMobile = useMediaQuery('(max-width: 768px)');
 
     const [entries, setEntries] = useState<AuditLogEntry[]>([]);

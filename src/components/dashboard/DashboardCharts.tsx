@@ -1,11 +1,8 @@
 import { Column, Line, Pie } from '@ant-design/charts';
-import { Empty, Flex, Progress, Typography } from 'antd';
+import { Empty } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { BarData, LineData } from '../../hooks/useDashboardData';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePreferences } from '../../contexts/PreferencesContext';
-
-const { Text } = Typography;
 
 const TooltipGlobalStyles = ({ isDark }: { isDark: boolean }) => (
     <style>{`
@@ -14,7 +11,6 @@ const TooltipGlobalStyles = ({ isDark }: { isDark: boolean }) => (
             color: ${isDark ? '#ffffff' : '#000000'} !important;
             box-shadow: 0 3px 6px -4px rgba(0,0,0,0.48), 0 6px 16px 0 rgba(0,0,0,0.32), 0 9px 28px 8px rgba(0,0,0,0.2) !important;
         }
-        /* Force all text inside tooltip to follow the theme color */
         .g2-tooltip * {
             color: ${isDark ? '#ffffff' : '#000000'} !important;
         }
@@ -33,33 +29,9 @@ interface PieChartProps {
 
 export const GenericPieChart = ({ data }: PieChartProps) => {
     const { t } = useTranslation();
-    const isMobile = useMediaQuery('(max-width: 768px)');
     const { preferences } = usePreferences();
     const isDark = preferences.theme === 'dark';
     if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
-
-    if (isMobile) {
-        const total = data.reduce((sum, d) => sum + d.value, 0);
-        const sorted = [...data].sort((a, b) => b.value - a.value);
-        return (
-            <Flex vertical gap={10}>
-                {sorted.map((item) => {
-                    const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
-                    return (
-                        <div key={item.type}>
-                            <Flex justify="space-between" style={{ marginBottom: 2 }}>
-                                <Text style={{ fontSize: 13 }}>{item.type}</Text>
-                                <Text style={{ fontSize: 13 }} type="secondary">
-                                    {item.value.toFixed(2)} ({pct}%)
-                                </Text>
-                            </Flex>
-                            <Progress aria-label={`${item.type} ${pct}%`} percent={pct} showInfo={false} size="small" strokeColor={isDark ? '#177ddc' : '#1890ff'} />
-                        </div>
-                    );
-                })}
-            </Flex>
-        );
-    }
 
     const config = {
         data,
@@ -86,15 +58,11 @@ interface BarChartProps {
 
 export const TrendBarChart = ({ data }: BarChartProps) => {
     const { t } = useTranslation();
-    const isMobile = useMediaQuery('(max-width: 768px)');
     const { preferences } = usePreferences();
     const isDark = preferences.theme === 'dark';
     if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
 
-    const months = [...new Set(data.map(d => d.month))];
-    const minWidth = Math.max(months.length * 56, 300);
-
-    const baseConfig = {
+    const config = {
         data,
         xField: 'month',
         yField: 'value',
@@ -103,7 +71,7 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
         seriesField: 'type',
         theme: isDark ? 'dark' : undefined,
         columnStyle: { radius: [2, 2, 0, 0] },
-        legend: { position: (isMobile ? 'bottom' : 'top-left') as 'bottom' | 'top-left' },
+        legend: { position: 'top-left' as const },
         xAxis: { label: { style: { fill: isDark ? '#ffffff' : '#000000' } } },
         yAxis: { label: { style: { fill: isDark ? '#ffffff' : '#000000' } } },
     };
@@ -111,13 +79,7 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
     return (
         <>
             <TooltipGlobalStyles isDark={isDark} />
-            {isMobile ? (
-                <div className="trend-chart-scroll" style={{ overflowX: 'scroll', WebkitOverflowScrolling: 'touch' }}>
-                    <Column {...baseConfig} autoFit={false} width={minWidth} height={280} />
-                </div>
-            ) : (
-                <Column {...baseConfig} />
-            )}
+            <Column {...config} />
         </>
     );
 };

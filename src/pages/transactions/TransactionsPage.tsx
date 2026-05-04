@@ -1,5 +1,5 @@
 // src/pages/transactions/TransactionsPage.tsx
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext, useParams } from 'react-router-dom';
 import {
     Alert,
@@ -36,7 +36,9 @@ import type {
 } from '../../types/api';
 import { useAuth } from '../../contexts/AuthContext';
 import dayjs, { type Dayjs } from 'dayjs';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
+import { usePageTitle } from '../../hooks/usePageTitle';
+import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { TransactionCard } from '../../components/TransactionCard';
 import { TransactionImportModal } from '../../components/modals/TransactionImportModal';
 import { getCurrencySymbol } from '../../utils/currency';
@@ -88,7 +90,17 @@ export const TransactionsPage = () => {
     const [editingRecord, setEditingRecord] = useState<Transaction | null>(null);
 
     const [form] = Form.useForm<FormValues>();
-    const isMobile = useMediaQuery('(max-width: 768px)');
+    const { isSmallMobile: isMobile } = useBreakpoints();
+
+    usePageTitle(accountId
+        ? accounts.find(a => a.id === accountId)?.name ?? t('nav.transactions')
+        : t('nav.transactions')
+    );
+
+    usePullToRefresh(() => {
+        setCurrentPage(1);
+        fetchTransactionsRef.current(1, filters, false);
+    }, isMobile);
 
     // State for sorting and filtering
     const [sortConfig, setSortConfig] = useState<SorterResult<Transaction>>({
@@ -204,7 +216,7 @@ export const TransactionsPage = () => {
     };
 
 
-    const fetchTransactions = (page = currentPage, currentFilters = filters) => {
+    const fetchTransactions = (page = currentPage, currentFilters = filters, append = false) => {
         if (!auth) return;
         setLoading(true);
 
@@ -225,21 +237,31 @@ export const TransactionsPage = () => {
 
         call
             .then(response => {
-                setTransactions(response.data.content);
+                if (append) {
+                    setTransactions(prev => [...prev, ...response.data.content]);
+                } else {
+                    setTransactions(response.data.content);
+                }
                 setTotalTransactions(response.data.totalElements);
             })
             .catch(console.error)
             .finally(() => setLoading(false));
     };
 
+    // Stable ref so useCallback closures always call the latest version
+    const fetchTransactionsRef = useRef(fetchTransactions);
+    useEffect(() => { fetchTransactionsRef.current = fetchTransactions; });
+
     useEffect(() => {
         setCurrentPage(1);
-        fetchTransactions(1);
+        fetchTransactionsRef.current(1, filters, /* append */ false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [accountId, auth, transactionRefreshKey]);
 
     useEffect(() => {
         setCurrentPage(1);
-        fetchTransactions(1, filters);
+        fetchTransactionsRef.current(1, filters, /* append */ false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters, sortConfig]);
 
     useEffect(() => {
@@ -274,7 +296,7 @@ export const TransactionsPage = () => {
     }, [destinationAccountId, sourceTransaction]);
 
 
-    const handleDelete = async (id: string) => {
+    const handleDelete = useCallback(async (id: string) => {
         Modal.confirm({
             title: t('transactions.deleteConfirm'),
             content: t('trash.recoverableFor30Days'),
@@ -285,7 +307,7 @@ export const TransactionsPage = () => {
                 try {
                     await api.deleteTransaction(id);
                     message.success(t('trash.movedToTrash'));
-                    fetchTransactions();
+                    fetchTransactionsRef.current();
                     fetchLayoutAccounts();
                 } catch (error) {
                     console.error("Failed to delete transaction", error);
@@ -293,7 +315,22 @@ export const TransactionsPage = () => {
                 }
             }
         });
-    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [t, fetchLayoutAccounts]);
+
+    const handleOpenEditModal = useCallback((record: Transaction) => {
+        setEditingRecord(record);
+        form.setFieldsValue({
+            ...record,
+            date: record.date ? dayjs(record.date) : null,
+        });
+        setIsModalOpen(true);
+    }, [form]);
+
+    const handleOpenLinkTransferModal = useCallback((transaction: Transaction) => {
+        setSourceTransaction(transaction);
+        setIsLinkModalOpen(true);
+    }, []);
 
     const handleOpenCreateModal = () => {
         setEditingRecord(null);
@@ -303,16 +340,6 @@ export const TransactionsPage = () => {
         }
         setIsModalOpen(true);
     };
-
-    const handleOpenEditModal = (record: Transaction) => {
-        setEditingRecord(record);
-        form.setFieldsValue({
-            ...record,
-            date: record.date ? dayjs(record.date) : null,
-        });
-        setIsModalOpen(true);
-    };
-
 
     const handleCancel = () => {
         setIsModalOpen(false);
@@ -343,11 +370,6 @@ export const TransactionsPage = () => {
             console.error("Failed to save transaction", error);
             message.error(t('transactions.saveError'));
         }
-    };
-
-    const handleOpenLinkTransferModal = (transaction: Transaction) => {
-        setSourceTransaction(transaction);
-        setIsLinkModalOpen(true);
     };
 
     const handleCancelLinkTransferModal = () => {
@@ -509,6 +531,14 @@ export const TransactionsPage = () => {
 
     if (loading && transactions.length === 0) return <Spin size="large" />;
 
+    const hasMore = transactions.length < totalTransactions;
+
+    const handleLoadMore = () => {
+        const nextPage = currentPage + 1;
+        setCurrentPage(nextPage);
+        fetchTransactions(nextPage, filters, /* append */ true);
+    };
+
     const renderContent = () => {
         if (isMobile) {
             return (
@@ -533,20 +563,20 @@ export const TransactionsPage = () => {
                                 onConvertToTransfer={handleOpenLinkTransferModal}
                             />
                         )}
-                        pagination={{
-                            current: currentPage,
-                            pageSize,
-                            total: totalTransactions,
-                            position: 'bottom',
-                            align: 'center',
-                            showSizeChanger: false,
-                            showTotal: (total) => t('transactions.totalLabel', { total }),
-                            onChange: (page) => {
-                                setCurrentPage(page);
-                                fetchTransactions(page);
-                            },
-                        }}
                     />
+                    {hasMore && (
+                        <Button
+                            block
+                            onClick={handleLoadMore}
+                            loading={loading}
+                            style={{ marginTop: 8 }}
+                        >
+                            {t('transactions.loadMore', { count: Math.min(pageSize, totalTransactions - transactions.length) })}
+                        </Button>
+                    )}
+                    <div style={{ textAlign: 'center', marginTop: 8, color: 'var(--ant-color-text-secondary)', fontSize: 12 }}>
+                        {t('transactions.totalLabel', { total: totalTransactions })}
+                    </div>
                 </>
             );
         }

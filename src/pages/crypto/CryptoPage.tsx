@@ -4,6 +4,7 @@ import {KeyOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import {deleteManualHolding, getPortfolioValue, syncFromBinance} from '../../services/api';
 import {useMediaQuery} from '../../hooks/useMediaQuery';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import type {CryptoAsset, PortfolioValueResponse} from '../../types/api';
 import {PortfolioSummary} from '../../components/PortfolioSummary';
 import {BinanceKeysModal} from '../../components/BinanceKeysModal';
@@ -13,6 +14,7 @@ const { Title } = Typography;
 
 export const CryptoPage: React.FC = () => {
     const { t } = useTranslation();
+    usePageTitle(t('crypto.title'));
     const [portfolioData, setPortfolioData] = useState<PortfolioValueResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [syncing, setSyncing] = useState(false);

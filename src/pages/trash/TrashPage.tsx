@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button, Empty, Flex, Table, Tabs, Tag, Typography, message } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { usePageTitle } from '../../hooks/usePageTitle';
 import dayjs from 'dayjs';
 import * as api from '../../services/api';
 import type { DeletedAccount, Transaction } from '../../types/api';
@@ -10,6 +11,7 @@ const { Title } = Typography;
 
 export const TrashPage = () => {
     const { t } = useTranslation();
+    usePageTitle(t('trash.title'));
 
     const [deletedTransactions, setDeletedTransactions] = useState<Transaction[]>([]);
     const [deletedAccounts, setDeletedAccounts] = useState<DeletedAccount[]>([]);

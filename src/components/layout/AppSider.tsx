@@ -55,7 +55,6 @@ interface AppSiderProps {
     collapsed: boolean;
     setCollapsed: (collapsed: boolean) => void;
     isMobile: boolean;
-    setIsMobile: (isMobile: boolean) => void;
     accounts: Account[];
     loading: boolean;
     totalBalance: number;
@@ -72,7 +71,6 @@ export const AppSider = ({
     collapsed,
     setCollapsed,
     isMobile,
-    setIsMobile,
     accounts,
     loading,
     totalBalance,
@@ -196,7 +194,6 @@ export const AppSider = ({
             breakpoint="lg"
             collapsedWidth={0}
             onBreakpoint={broken => {
-                setIsMobile(broken);
                 setCollapsed(broken);
             }}
             onCollapse={(isCollapsed) => setCollapsed(isCollapsed)}

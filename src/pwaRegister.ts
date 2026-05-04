@@ -1,16 +1,16 @@
-// src/pwaRegister.ts
-import {registerSW} from 'virtual:pwa-register';
+import { registerSW } from 'virtual:pwa-register';
+
+let _updateSW: ((reloadPage?: boolean) => void) | undefined;
+
+export const applyPWAUpdate = () => _updateSW?.(true);
 
 export const registerPWA = () => {
-    const updateSW = registerSW({
+    _updateSW = registerSW({
         onNeedRefresh() {
-            if (confirm('Nuova versione disponibile. Vuoi ricaricare?')) {
-                updateSW(true);
-            }
+            window.dispatchEvent(new CustomEvent('pwa-update-available'));
         },
         onOfflineReady() {
-            console.log('App pronta per l\'uso offline');
+            // App shell is cached — no UI needed
         },
     });
 };
-

@@ -32,7 +32,8 @@ const resources = {
                 logout: 'Logout',
                 menu: 'Menu',
                 total: 'Totale',
-                actions: 'Azioni'
+                actions: 'Azioni',
+                closeMenu: 'Chiudi menu'
             },
             nav: {
                 dashboard: 'Dashboard',
@@ -317,6 +318,7 @@ const resources = {
                 deleteConfirm: 'Sei sicuro di voler spostare questa transazione nel cestino?',
                 syncing: 'Sincronizzazione...',
                 totalLabel: '{{total}} transazioni',
+                loadMore: 'Carica altri {{count}}',
                 filters: 'Filtri',
                 clearFilters: 'Azzera',
                 applyFilters: 'Applica'
@@ -372,7 +374,10 @@ const resources = {
             pwa: {
                 title: 'Installa NexaBudget',
                 description: "Aggiungi l'app alla tua schermata Home per un accesso rapido",
-                install: 'Installa'
+                install: 'Installa',
+                updateAvailable: 'Aggiornamento disponibile',
+                updateDescription: 'È disponibile una nuova versione di NexaBudget.',
+                updateNow: 'Aggiorna ora'
             },
             settings: {
                 title: 'Impostazioni',
@@ -570,7 +575,8 @@ const resources = {
                 logout: 'Logout',
                 menu: 'Menu',
                 total: 'Total',
-                actions: 'Actions'
+                actions: 'Actions',
+                closeMenu: 'Close menu'
             },
             nav: {
                 dashboard: 'Dashboard',
@@ -855,6 +861,7 @@ const resources = {
                 deleteConfirm: 'Are you sure you want to move this transaction to the trash?',
                 syncing: 'Syncing...',
                 totalLabel: '{{total}} transactions',
+                loadMore: 'Load {{count}} more',
                 filters: 'Filters',
                 clearFilters: 'Clear',
                 applyFilters: 'Apply'
@@ -910,7 +917,10 @@ const resources = {
             pwa: {
                 title: 'Install NexaBudget',
                 description: 'Add the app to your Home screen for quick access',
-                install: 'Install'
+                install: 'Install',
+                updateAvailable: 'Update available',
+                updateDescription: 'A new version of NexaBudget is available.',
+                updateNow: 'Update now'
             },
             settings: {
                 title: 'Settings',

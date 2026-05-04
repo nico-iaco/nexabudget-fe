@@ -1,7 +1,7 @@
 // src/components/Layout.tsx
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { Layout as AntLayout, message, Modal, theme } from 'antd';
+import { App, Button, Layout as AntLayout, message, Modal, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import * as api from '../services/api';
@@ -11,7 +11,8 @@ import { PWAInstallPrompt } from './PWAInstallPrompt';
 import { AppSider } from './layout/AppSider';
 import { AppHeader } from './layout/AppHeader';
 import { BottomNavBar } from './layout/BottomNavBar';
-import { useMediaQuery } from '../hooks/useMediaQuery';
+import { useBreakpoints } from '../hooks/useBreakpoints';
+import { applyPWAUpdate } from '../pwaRegister';
 import { AccountModal } from './modals/AccountModal';
 import { type TransferFormValues, TransferModal } from './modals/TransferModal';
 import { GoCardlessModal } from './modals/GoCardlessModal';
@@ -20,8 +21,8 @@ const { Content } = AntLayout;
 
 export const Layout = () => {
     const { t } = useTranslation();
+    const { notification } = App.useApp();
     const [collapsed, setCollapsed] = useState(true);
-    const [isMobile, setIsMobile] = useState(window.innerWidth < 992);
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [totalBalance, setTotalBalance] = useState<number>(0);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -44,7 +45,7 @@ export const Layout = () => {
     const [selectedBank, setSelectedBank] = useState<string | null>(null);
     const [syncingAccounts, setSyncingAccounts] = useState(false);
 
-    const isSmallMobile = useMediaQuery('(max-width: 768px)');
+    const { isMobile, isSmallMobile } = useBreakpoints();
     const { auth, logout } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
@@ -99,21 +100,50 @@ export const Layout = () => {
         fetchCategories();
     }, [auth]);
 
-    // Polling per aggiornare lo stato di sincronizzazione
+    // Banner aggiornamento PWA — sostituisce window.confirm con una notifica AntD
     useEffect(() => {
-        const isSyncing = accounts.some(acc => acc.synchronizing);
-        let intervalId: ReturnType<typeof setInterval>;
-
-        if (isSyncing) {
-            intervalId = setInterval(() => {
-                fetchAccounts(true);
-            }, 10000); // 10 secondi
-        }
-
-        return () => {
-            if (intervalId) clearInterval(intervalId);
+        const handler = () => {
+            notification.info({
+                message: t('pwa.updateAvailable'),
+                description: t('pwa.updateDescription'),
+                btn: (
+                    <Button type="primary" size="small" onClick={() => applyPWAUpdate()}>
+                        {t('pwa.updateNow')}
+                    </Button>
+                ),
+                duration: 0,
+                placement: 'bottomRight',
+                key: 'pwa-update',
+            });
         };
-    }, [accounts]);
+        window.addEventListener('pwa-update-available', handler);
+        return () => window.removeEventListener('pwa-update-available', handler);
+    }, [notification, t]);
+
+    // Chiudi il drawer mobile con Escape
+    useEffect(() => {
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape' && isMobile && !collapsed) setCollapsed(true);
+        };
+        document.addEventListener('keydown', onKeyDown);
+        return () => document.removeEventListener('keydown', onKeyDown);
+    }, [isMobile, collapsed]);
+
+    // Polling per aggiornare lo stato di sincronizzazione.
+    // Dipende solo da isSyncing (boolean), non dall'intero array accounts,
+    // così l'interval non riparte ad ogni refetch.
+    const isSyncing = accounts.some(acc => acc.synchronizing);
+    const fetchAccountsRef = useRef(fetchAccounts);
+    useEffect(() => { fetchAccountsRef.current = fetchAccounts; });
+
+    useEffect(() => {
+        if (!isSyncing) return;
+        const id = setInterval(() => {
+            if (!document.hidden) fetchAccountsRef.current(true);
+        }, 10000);
+        return () => clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isSyncing]);
 
     const handleLogout = () => {
         logout();
@@ -326,7 +356,6 @@ export const Layout = () => {
                     collapsed={collapsed}
                     setCollapsed={setCollapsed}
                     isMobile={isMobile}
-                    setIsMobile={setIsMobile}
                     accounts={accounts}
                     loading={loading}
                     totalBalance={totalBalance}
@@ -376,6 +405,9 @@ export const Layout = () => {
 
             {isMobile && !collapsed && (
                 <div
+                    role="button"
+                    tabIndex={0}
+                    aria-label={t('common.closeMenu')}
                     style={{
                         position: 'fixed',
                         top: 0,
@@ -386,49 +418,63 @@ export const Layout = () => {
                         zIndex: 1000,
                     }}
                     onClick={() => setCollapsed(true)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            setCollapsed(true);
+                        }
+                    }}
                 />
             )}
 
-            <AccountModal
-                open={isAccountModalOpen}
-                onCancel={handleCancelAccountModal}
-                onFinish={onFinishAccount}
-                editingAccount={editingAccount}
-            />
+            {isAccountModalOpen && (
+                <AccountModal
+                    open={isAccountModalOpen}
+                    onCancel={handleCancelAccountModal}
+                    onFinish={onFinishAccount}
+                    editingAccount={editingAccount}
+                />
+            )}
 
-            <Modal
-                title={t('accounts.deleteTitle')}
-                open={isDeleteModalOpen}
-                onOk={handleConfirmDelete}
-                onCancel={handleCancelDeleteModal}
-                okText={t('common.delete')}
-                cancelText={t('common.cancel')}
-                okButtonProps={{ danger: true }}
-            >
-                <p>{t('accounts.deleteConfirm', { name: deletingAccount?.name ?? '' })}</p>
-                <p style={{ color: 'rgba(0,0,0,0.45)' }}>{t('accounts.deleteConfirmWarning')}</p>
-            </Modal>
+            {isDeleteModalOpen && (
+                <Modal
+                    title={t('accounts.deleteTitle')}
+                    open={isDeleteModalOpen}
+                    onOk={handleConfirmDelete}
+                    onCancel={handleCancelDeleteModal}
+                    okText={t('common.delete')}
+                    cancelText={t('common.cancel')}
+                    okButtonProps={{ danger: true }}
+                >
+                    <p>{t('accounts.deleteConfirm', { name: deletingAccount?.name ?? '' })}</p>
+                    <p style={{ color: 'rgba(0,0,0,0.45)' }}>{t('accounts.deleteConfirmWarning')}</p>
+                </Modal>
+            )}
 
-            <TransferModal
-                open={isTransferModalOpen}
-                onCancel={handleCancelTransferModal}
-                onFinish={onFinishTransfer}
-                accounts={accounts}
-            />
+            {isTransferModalOpen && (
+                <TransferModal
+                    open={isTransferModalOpen}
+                    onCancel={handleCancelTransferModal}
+                    onFinish={onFinishTransfer}
+                    accounts={accounts}
+                />
+            )}
 
-            <GoCardlessModal
-                open={isGoCardlessModalOpen}
-                onCancel={handleCancelGoCardlessModal}
-                account={linkingAccount}
-                currentStep={currentStep}
-                selectedCountry={selectedCountry}
-                banks={banks}
-                loadingBanks={loadingBanks}
-                selectedBank={selectedBank}
-                onCountrySelect={handleCountrySelect}
-                onBankSelect={handleBankSelect}
-                onConfirm={handleConfirmBankLink}
-            />
+            {isGoCardlessModalOpen && (
+                <GoCardlessModal
+                    open={isGoCardlessModalOpen}
+                    onCancel={handleCancelGoCardlessModal}
+                    account={linkingAccount}
+                    currentStep={currentStep}
+                    selectedCountry={selectedCountry}
+                    banks={banks}
+                    loadingBanks={loadingBanks}
+                    selectedBank={selectedBank}
+                    onCountrySelect={handleCountrySelect}
+                    onBankSelect={handleBankSelect}
+                    onConfirm={handleConfirmBankLink}
+                />
+            )}
 
             {/* PWA Install Prompt */}
             <PWAInstallPrompt />
