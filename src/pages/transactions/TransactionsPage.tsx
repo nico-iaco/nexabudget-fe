@@ -377,6 +377,23 @@ export const TransactionsPage = () => {
         }
     };
 
+    const handleConvertSingleToTransfer = async () => {
+        if (!sourceTransaction || !destinationAccountId) return;
+
+        try {
+            await api.convertSingleToTransfer({
+                sourceTransactionId: sourceTransaction.id,
+                targetAccountId: destinationAccountId,
+            });
+            message.success(t('transactions.linkTransferSuccess'));
+            handleCancelLinkTransferModal();
+            fetchTransactions();
+        } catch (error) {
+            console.error("Failed to convert single transaction to transfer", error);
+            message.error(t('transactions.linkTransferError'));
+        }
+    };
+
     const columns: ColumnsType<Transaction> = [
         {
             title: t('transactions.data'),
@@ -850,6 +867,10 @@ export const TransactionsPage = () => {
                 onCancel={handleCancelLinkTransferModal}
                 footer={[
                     <Button key="back" onClick={handleCancelLinkTransferModal}>{t('common.cancel')}</Button>,
+                    <Button key="convert" type="default" onClick={handleConvertSingleToTransfer}
+                        disabled={!destinationAccountId}>
+                        {t('transactions.linkTransferCreate')}
+                    </Button>,
                     <Button key="submit" type="primary" onClick={handleConfirmLinkTransfer}
                         disabled={!selectedDestTransactionId}>
                         {t('transactions.linkTransferSave')}

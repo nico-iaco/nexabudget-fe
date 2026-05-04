@@ -82,6 +82,11 @@ export interface LinkTransferRequest {
     destinationTransactionId: string;
 }
 
+export interface ConvertSingleToTransferRequest {
+    sourceTransactionId: string;
+    targetAccountId: string;
+}
+
 export interface Category {
     id: string;
     name: string;

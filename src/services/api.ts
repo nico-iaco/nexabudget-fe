@@ -14,6 +14,7 @@ import type {
     Category,
     CategoryBreakdownResponse,
     CategoryRequest,
+    ConvertSingleToTransferRequest,
     CryptoHolding,
     DeletedAccount,
     GoCardlessBank,
@@ -135,6 +136,7 @@ export const updateTransaction = (id: string, data: TransactionRequest): Promise
 export const createTransfer = (data: TransferRequest): Promise<AxiosResponse<Transaction[]>> => apiClient.post('/transactions/transfer', data);
 export const deleteTransaction = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/transactions/${id}`);
 export const linkTransactionsAsTransfer = (data: LinkTransferRequest): Promise<AxiosResponse<void>> => apiClient.post('/transactions/convert-to-transfer', data);
+export const convertSingleToTransfer = (data: ConvertSingleToTransferRequest): Promise<AxiosResponse<void>> => apiClient.post('/transactions/convert-single-to-transfer', data);
 
 const buildImportFormData = (file: File, mapping?: CsvColumnMapping, confirm?: ImportConfirmRequest): FormData => {
     const formData = new FormData();
