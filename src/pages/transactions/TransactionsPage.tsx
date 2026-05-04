@@ -15,6 +15,7 @@ import {
     message,
     Modal,
     notification,
+    Pagination,
     Radio,
     Select,
     Space,
@@ -531,14 +532,6 @@ export const TransactionsPage = () => {
 
     if (loading && transactions.length === 0) return <Spin size="large" />;
 
-    const hasMore = transactions.length < totalTransactions;
-
-    const handleLoadMore = () => {
-        const nextPage = currentPage + 1;
-        setCurrentPage(nextPage);
-        fetchTransactions(nextPage, filters, /* append */ true);
-    };
-
     const renderContent = () => {
         if (isMobile) {
             return (
@@ -564,19 +557,19 @@ export const TransactionsPage = () => {
                             />
                         )}
                     />
-                    {hasMore && (
-                        <Button
-                            block
-                            onClick={handleLoadMore}
-                            loading={loading}
-                            style={{ marginTop: 8 }}
-                        >
-                            {t('transactions.loadMore', { count: Math.min(pageSize, totalTransactions - transactions.length) })}
-                        </Button>
-                    )}
-                    <div style={{ textAlign: 'center', marginTop: 8, color: 'var(--ant-color-text-secondary)', fontSize: 12 }}>
-                        {t('transactions.totalLabel', { total: totalTransactions })}
-                    </div>
+                    <Pagination
+                        current={currentPage}
+                        pageSize={pageSize}
+                        total={totalTransactions}
+                        onChange={(page) => {
+                            setCurrentPage(page);
+                            fetchTransactions(page, filters, false);
+                        }}
+                        showSizeChanger={false}
+                        showTotal={(total) => t('transactions.totalLabel', { total })}
+                        size="small"
+                        style={{ textAlign: 'center', marginTop: 16 }}
+                    />
                 </>
             );
         }

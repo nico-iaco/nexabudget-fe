@@ -44,6 +44,8 @@ const BottomNavBarInner = () => {
                 display: 'flex',
                 zIndex: 999,
                 boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
+                transform: 'translateZ(0)',
+                willChange: 'transform',
             }}
         >
             {items.map(({ path, icon, label }) => {

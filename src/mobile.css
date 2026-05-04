@@ -5,11 +5,6 @@
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
 }
 
-/* Better scrolling on iOS */
-.ant-layout,
-.ant-layout-content {
-    -webkit-overflow-scrolling: touch;
-}
 
 /* Optimize font sizes for mobile */
 @media (max-width: 768px) {
@@ -312,6 +307,12 @@
 
 /* PWA-specific styles */
 @media all and (display-mode: standalone) {
+    /* Prevent body scroll so position:fixed elements (BottomNavBar) stay anchored */
+    html, body {
+        height: 100%;
+        overflow: hidden;
+    }
+
     /* Add padding for notched devices when in PWA mode */
     body {
         padding-top: env(safe-area-inset-top);

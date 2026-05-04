@@ -101,7 +101,16 @@ function App() {
     const algorithm = preferences.theme === 'dark' ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm;
 
     return (
-        <ConfigProvider theme={{ algorithm }}>
+        <ConfigProvider
+            theme={{ algorithm }}
+            getPopupContainer={(triggerNode) => {
+                const drawer = triggerNode?.closest?.('.ant-drawer-body');
+                if (drawer) return drawer as HTMLElement;
+                const modal = triggerNode?.closest?.('.ant-modal-body');
+                if (modal) return modal as HTMLElement;
+                return document.body;
+            }}
+        >
             <AntApp>
                 <RouterProvider router={router} />
             </AntApp>
