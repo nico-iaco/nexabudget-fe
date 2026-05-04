@@ -546,6 +546,7 @@ export const TransactionsPage = () => {
                         />
                     )}
                     <List
+                        loading={loading}
                         dataSource={processedTransactions}
                         renderItem={item => (
                             <TransactionCard
