@@ -42,7 +42,7 @@ export const AuditLogPage = () => {
         try {
             const resp = await api.getAuditLog(p - 1, pageSize);
             setEntries(resp.data.content);
-            setTotal(resp.data.totalElements);
+            setTotal(resp.data.page.totalElements);
         } catch {
             message.error(t('audit.loadError'));
         } finally {

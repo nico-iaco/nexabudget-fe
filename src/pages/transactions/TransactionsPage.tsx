@@ -243,7 +243,7 @@ export const TransactionsPage = () => {
                 } else {
                     setTransactions(response.data.content);
                 }
-                setTotalTransactions(response.data.totalElements);
+                setTotalTransactions(response.data.page.totalElements);
             })
             .catch(console.error)
             .finally(() => setLoading(false));
