@@ -1,0 +1,22 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1890ff"/>
+      <stop offset="100%" stop-color="#003a8c"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Subtle accent circle -->
+  <circle cx="390" cy="100" r="170" fill="white" fill-opacity="0.06"/>
+  <!-- 3 ascending bars -->
+  <rect x="90"  y="340" width="92" height="120" rx="14" fill="white" fill-opacity="0.75"/>
+  <rect x="210" y="255" width="92" height="205" rx="14" fill="white" fill-opacity="0.88"/>
+  <rect x="330" y="170" width="92" height="290" rx="14" fill="white"/>
+  <!-- Upward trend line -->
+  <polyline points="136,315 256,228 376,143"
+            stroke="white" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"
+            fill="none" stroke-opacity="0.70"/>
+  <!-- Dot at trend tip -->
+  <circle cx="376" cy="143" r="22" fill="white"/>
+</svg>
