@@ -307,7 +307,7 @@
 
 /* PWA-specific styles */
 @media all and (display-mode: standalone) {
-    /* Prevent body scroll so position:fixed elements (BottomNavBar) stay anchored */
+    /* Body is fixed so position:fixed elements (BottomNavBar) stay anchored */
     html, body {
         height: 100%;
         overflow: hidden;
@@ -320,6 +320,22 @@
 
     .ant-layout-header {
         padding-top: calc(16px + env(safe-area-inset-top));
+    }
+
+    /* Layout fills the full viewport height and clips overflow */
+    .ant-layout {
+        height: 100dvh;
+        overflow: hidden;
+    }
+
+    /* Content area is the only scroll container — flex: 1 1 0 + min-height: 0
+       constrains it to the remaining space (viewport - header) instead of growing
+       unboundedly, so overflow-y: auto actually kicks in */
+    .site-layout > .ant-layout-content {
+        flex: 1 1 0 !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch;
+        min-height: 0 !important;
     }
 }
 
