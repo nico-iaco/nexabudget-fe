@@ -42,12 +42,13 @@ import { usePageTitle } from '../../hooks/usePageTitle';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { TransactionCard } from '../../components/TransactionCard';
 import { TransactionImportModal } from '../../components/modals/TransactionImportModal';
+import { PageHeader } from '../../components/PageHeader';
 import { getCurrencySymbol } from '../../utils/currency';
 import { COLOR_POSITIVE, COLOR_NEGATIVE } from '../../theme/tokens';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { Option } = Select;
 
 interface OutletContextType {
@@ -583,6 +584,7 @@ export const TransactionsPage = () => {
                     loading={loading}
                     onChange={handleTableChange}
                     size={'small'}
+                    scroll={{ x: 'max-content' }}
                     pagination={{
                         current: currentPage,
                         pageSize,
@@ -606,6 +608,7 @@ export const TransactionsPage = () => {
                 loading={loading}
                 onChange={handleTableChange}
                 size={'small'}
+                scroll={{ x: 'max-content' }}
                 pagination={{
                     current: currentPage,
                     pageSize,
@@ -625,45 +628,47 @@ export const TransactionsPage = () => {
     return (
         <>
             {contextHolder}
-            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }} wrap="wrap" gap="small">
-                <Title level={2} style={{ margin: 0, fontSize: isMobile ? '1.5rem' : '2rem' }}>{pageTitle}</Title>
-                <Space wrap size={isMobile ? 'small' : 'middle'}>
-                    {accountId && accounts.find(acc => acc.id === accountId)?.linkedToExternal && (
+            <PageHeader
+                title={pageTitle}
+                actions={
+                    <Space wrap size={isMobile ? 'small' : 'middle'} style={{ width: isMobile ? '100%' : 'auto' }}>
+                        {accountId && accounts.find(acc => acc.id === accountId)?.linkedToExternal && (
+                            <Button
+                                icon={<RetweetOutlined spin={accounts.find(acc => acc.id === accountId)?.synchronizing} />}
+                                onClick={() => setIsBalanceModalOpen(true)}
+                                loading={syncingTransactions || accounts.find(acc => acc.id === accountId)?.synchronizing}
+                                disabled={accounts.find(acc => acc.id === accountId)?.synchronizing}
+                                size={isMobile ? 'middle' : 'large'}
+                            >
+                                {accounts.find(acc => acc.id === accountId)?.synchronizing ? t('transactions.syncing') : t('transactions.syncGoCardless')}
+                            </Button>
+                        )}
                         <Button
-                            icon={<RetweetOutlined spin={accounts.find(acc => acc.id === accountId)?.synchronizing} />}
-                            onClick={() => setIsBalanceModalOpen(true)}
-                            loading={syncingTransactions || accounts.find(acc => acc.id === accountId)?.synchronizing}
-                            disabled={accounts.find(acc => acc.id === accountId)?.synchronizing}
+                            icon={<RetweetOutlined />}
+                            onClick={handleOpenTransferModal}
                             size={isMobile ? 'middle' : 'large'}
                         >
-                            {accounts.find(acc => acc.id === accountId)?.synchronizing ? t('transactions.syncing') : t('transactions.syncGoCardless')}
+                            {t('transactions.newTransfer')}
                         </Button>
-                    )}
-                    <Button
-                        icon={<RetweetOutlined />}
-                        onClick={handleOpenTransferModal}
-                        size={isMobile ? 'middle' : 'large'}
-                    >
-                        {t('transactions.newTransfer')}
-                    </Button>
-                    <Button
-                        icon={<UploadOutlined />}
-                        onClick={() => setIsImportModalOpen(true)}
-                        size={isMobile ? 'middle' : 'large'}
-                        disabled={!accountId}
-                    >
-                        {t('transactions.import.open')}
-                    </Button>
-                    <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={handleOpenCreateModal}
-                        size={isMobile ? 'middle' : 'large'}
-                    >
-                        {t('transactions.newTransaction')}
-                    </Button>
-                </Space>
-            </Flex>
+                        <Button
+                            icon={<UploadOutlined />}
+                            onClick={() => setIsImportModalOpen(true)}
+                            size={isMobile ? 'middle' : 'large'}
+                            disabled={!accountId}
+                        >
+                            {t('transactions.import.open')}
+                        </Button>
+                        <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
+                            onClick={handleOpenCreateModal}
+                            size={isMobile ? 'middle' : 'large'}
+                        >
+                            {t('transactions.newTransaction')}
+                        </Button>
+                    </Space>
+                }
+            />
 
 
             <Flex vertical gap="middle" style={{ marginBottom: 16 }}>

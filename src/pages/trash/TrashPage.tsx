@@ -1,13 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Button, Empty, Flex, Table, Tabs, Tag, Typography, message } from 'antd';
+import { Button, Empty, Table, Tabs, Tag, message } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import dayjs from 'dayjs';
 import * as api from '../../services/api';
 import type { DeletedAccount, Transaction } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
-
-const { Title } = Typography;
+import { PageHeader } from '../../components/PageHeader';
 
 export const TrashPage = () => {
     const { t } = useTranslation();
@@ -178,9 +177,7 @@ export const TrashPage = () => {
 
     return (
         <>
-            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
-                <Title level={2} style={{ margin: 0 }}>{t('trash.title')}</Title>
-            </Flex>
+            <PageHeader title={t('trash.title')} />
             <Tabs
                 items={[
                     {
@@ -193,6 +190,7 @@ export const TrashPage = () => {
                                 rowKey="id"
                                 loading={loadingTx}
                                 size="small"
+                                scroll={{ x: 'max-content' }}
                                 locale={{ emptyText: <Empty description={t('trash.emptyTransactions')} /> }}
                                 pagination={{ defaultPageSize: 20, showSizeChanger: false }}
                             />
@@ -208,6 +206,7 @@ export const TrashPage = () => {
                                 rowKey="id"
                                 loading={loadingAcc}
                                 size="small"
+                                scroll={{ x: 'max-content' }}
                                 locale={{ emptyText: <Empty description={t('trash.emptyAccounts')} /> }}
                                 pagination={{ defaultPageSize: 20, showSizeChanger: false }}
                             />

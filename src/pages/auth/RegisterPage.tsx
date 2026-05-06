@@ -1,6 +1,6 @@
 // src/pages/auth/RegisterPage.tsx
 import {LockOutlined, MailOutlined, UserOutlined} from '@ant-design/icons';
-import {Alert, Button, Card, Form, Input, Layout, Typography} from 'antd';
+import {Alert, Button, Card, Form, Input, Layout, theme, Typography} from 'antd';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link, useNavigate} from 'react-router-dom';
@@ -15,6 +15,7 @@ export const RegisterPage = () => {
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { token: { colorBgLayout } } = theme.useToken();
 
     const onFinish = async (values: UserRequest) => {
         setLoading(true);
@@ -31,7 +32,7 @@ export const RegisterPage = () => {
     };
 
     return (
-        <Layout style={{ minHeight: '100vh', background: '#f0f2f5' }}>
+        <Layout style={{ minHeight: '100vh', background: colorBgLayout }}>
             <Content style={{
                 display: 'flex',
                 justifyContent: 'center',

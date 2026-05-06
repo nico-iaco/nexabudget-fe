@@ -15,7 +15,7 @@ interface AppHeaderProps {
 export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout }: AppHeaderProps) => {
     const { t } = useTranslation();
     const {
-        token: { colorBgContainer },
+        token: { colorBgContainer, colorPrimary, colorPrimaryActive },
     } = theme.useToken();
 
     return (
@@ -44,7 +44,7 @@ export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout }: AppHe
                     margin: 0,
                     fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
                     fontWeight: 700,
-                    background: 'linear-gradient(135deg, #1890ff 0%, #096dd9 100%)',
+                    background: `linear-gradient(135deg, ${colorPrimary} 0%, ${colorPrimaryActive} 100%)`,
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',
                     backgroundClip: 'text',

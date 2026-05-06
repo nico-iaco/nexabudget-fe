@@ -30,9 +30,10 @@ import * as api from '../../services/api';
 import type { CategoryBreakdownItem, MonthComparisonResponse, MonthlySummaryResponse } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT } from '../../theme/tokens';
+import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT, SPACING } from '../../theme/tokens';
+import { PageHeader } from '../../components/PageHeader';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 interface OutletContextType {
@@ -145,31 +146,26 @@ export const DashboardPage = () => {
 
     if (loading) {
         return (
-            <div style={{ padding: 24 }}>
+            <>
+                <PageHeader title={t('dashboard.title')} />
                 <Skeleton active paragraph={{ rows: 1 }} />
-                <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                <Row gutter={[SPACING.md, SPACING.md]} style={{ marginTop: SPACING.md }}>
                     <Col xs={24} sm={8}><Skeleton.Button active block style={{ height: 120 }} /></Col>
                     <Col xs={24} sm={8}><Skeleton.Button active block style={{ height: 120 }} /></Col>
                     <Col xs={24} sm={8}><Skeleton.Button active block style={{ height: 120 }} /></Col>
                 </Row>
-                <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                <Row gutter={[SPACING.md, SPACING.md]} style={{ marginTop: SPACING.md }}>
                     <Col xs={24} md={12}><Skeleton active paragraph={{ rows: 6 }} /></Col>
                     <Col xs={24} md={12}><Skeleton active paragraph={{ rows: 6 }} /></Col>
                 </Row>
-                <Skeleton active paragraph={{ rows: 6 }} style={{ marginTop: 16 }} />
-            </div>
+                <Skeleton active paragraph={{ rows: 6 }} style={{ marginTop: SPACING.md }} />
+            </>
         );
     }
 
-    return (
-        <>
-            {/* Header */}
-            <Row justify="space-between" align="middle" gutter={[8, 8]} style={{ marginBottom: 16 }}>
-                <Col xs={24} sm={12}>
-                    <Title level={2} style={{ margin: 0 }}>{t('dashboard.title')}</Title>
-                </Col>
-                <Col xs={24} sm={12}>
-                    {isMobile ? (
+    const filterControls = (
+        <div style={{ width: isMobile ? '100%' : 'auto' }}>
+            {isMobile ? (
                         <Flex vertical gap={8}>
                             <Select
                                 value={showCustomPicker ? 'custom' : (PRESETS(t).findIndex(p => {
@@ -230,8 +226,12 @@ export const DashboardPage = () => {
                             />
                         </Flex>
                     )}
-                </Col>
-            </Row>
+        </div>
+    );
+
+    return (
+        <>
+            <PageHeader title={t('dashboard.title')} actions={filterControls} />
 
             {!hasData ? (
                 <Empty description={t('dashboard.empty')} style={{ marginTop: 48 }} />

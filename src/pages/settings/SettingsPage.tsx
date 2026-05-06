@@ -6,8 +6,10 @@ import {updateUserProfile} from '../../services/api';
 import {useState} from 'react';
 import {ApiKeysCard} from './ApiKeysCard';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { PageHeader } from '../../components/PageHeader';
+import { SPACING } from '../../theme/tokens';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 export const SettingsPage = () => {
     const { t } = useTranslation();
@@ -30,10 +32,10 @@ export const SettingsPage = () => {
     };
 
     return (
-        <div style={{ maxWidth: 720 }}>
-            <Title level={2} style={{ marginTop: 0 }}>{t('settings.title')}</Title>
+        <div style={{ maxWidth: 720, marginInline: 'auto' }}>
+            <PageHeader title={t('settings.title')} />
 
-            <Card title={t('settings.profileTitle')} style={{ marginBottom: 16 }}>
+            <Card title={t('settings.profileTitle')} style={{ marginBottom: SPACING.md }}>
                 <Form layout="vertical">
                     <Form.Item label={t('settings.username')}>
                         <Input value={auth?.username} disabled />
@@ -57,7 +59,7 @@ export const SettingsPage = () => {
                 </Form>
             </Card>
 
-            <Card title={t('settings.appearanceTitle')} style={{ marginBottom: 16 }}>
+            <Card title={t('settings.appearanceTitle')} style={{ marginBottom: SPACING.md }}>
                 <Form layout="vertical">
                     <Form.Item label={t('settings.theme')}>
                         <Radio.Group
@@ -73,7 +75,7 @@ export const SettingsPage = () => {
                 </Form>
             </Card>
 
-            <Card title={t('settings.languageTitle')} style={{ marginBottom: 16 }}>
+            <Card title={t('settings.languageTitle')} style={{ marginBottom: SPACING.md }}>
                 <Form layout="vertical">
                     <Form.Item label={t('settings.language')}>
                         <Select

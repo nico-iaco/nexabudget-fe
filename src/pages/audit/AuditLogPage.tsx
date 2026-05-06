@@ -5,10 +5,11 @@ import dayjs from 'dayjs';
 import * as api from '../../services/api';
 import type { AuditAction, AuditLogEntry } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { PageHeader } from '../../components/PageHeader';
 
-const { Title, Text } = Typography;
+const { Text } = Typography;
 
 const ACTION_COLORS: Record<AuditAction, string> = {
     CREATE_TRANSACTION: 'green',
@@ -29,7 +30,7 @@ const ACTION_COLORS: Record<AuditAction, string> = {
 export const AuditLogPage = () => {
     const { t } = useTranslation();
     usePageTitle(t('audit.title'));
-    const isMobile = useMediaQuery('(max-width: 768px)');
+    const { isSmallMobile: isMobile } = useBreakpoints();
 
     const [entries, setEntries] = useState<AuditLogEntry[]>([]);
     const [total, setTotal] = useState(0);
@@ -110,9 +111,7 @@ export const AuditLogPage = () => {
 
     return (
         <>
-            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
-                <Title level={2} style={{ margin: 0, fontSize: isMobile ? '1.5rem' : '2rem' }}>{t('audit.title')}</Title>
-            </Flex>
+            <PageHeader title={t('audit.title')} />
             {isMobile ? (
                 <List
                     dataSource={entries}
@@ -161,6 +160,7 @@ export const AuditLogPage = () => {
                     rowKey="id"
                     loading={loading}
                     size="small"
+                    scroll={{ x: 'max-content' }}
                     expandable={{
                         expandedRowRender: (record) => (
                             <pre style={{ fontSize: 12, maxHeight: 300, overflow: 'auto', margin: 0 }}>

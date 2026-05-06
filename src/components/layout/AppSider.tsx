@@ -26,6 +26,7 @@ import { useTranslation } from 'react-i18next';
 import type { Account } from '../../types/api';
 import { getCurrencySymbol } from '../../utils/currency';
 import { useAuth } from '../../contexts/AuthContext';
+import { SIDER_BG, SIDER_TEXT_PRIMARY, SIDER_TEXT_SECONDARY } from '../../theme/tokens';
 
 const { Sider } = Layout;
 const { Title, Text } = Typography;
@@ -145,7 +146,7 @@ export const AppSider = ({
                     <Flex justify="space-between" align="center" gap="small">
                         <Flex vertical style={{ flex: 1, minWidth: 0 }}>
                             <Text style={{
-                                color: 'rgba(255, 255, 255, 0.85)',
+                                color: SIDER_TEXT_PRIMARY,
                                 fontWeight: 500,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
@@ -155,7 +156,7 @@ export const AppSider = ({
                             </Text>
                             <Text style={{
                                 fontSize: '0.85em',
-                                color: 'rgba(255, 255, 255, 0.65)'
+                                color: SIDER_TEXT_SECONDARY
                             }}>
                                 {acc.actualBalance.toFixed(2)} {getCurrencySymbol(acc.currency)}
                             </Text>
@@ -168,7 +169,7 @@ export const AppSider = ({
                             <Button
                                 type="text"
                                 size="small"
-                                icon={<EllipsisOutlined style={{ color: 'rgba(255, 255, 255, 0.65)' }} />}
+                                icon={<EllipsisOutlined style={{ color: SIDER_TEXT_SECONDARY }} />}
                                 onClick={(e) => e.stopPropagation()}
                                 aria-label={t('common.actions')}
                             />
@@ -211,7 +212,7 @@ export const AppSider = ({
             }}
         >
             {isMobile && !collapsed && (
-                <Flex justify="space-between" align="center" style={{ padding: '16px', background: '#001529' }}>
+                <Flex justify="space-between" align="center" style={{ padding: '16px', background: SIDER_BG }}>
                     <Title level={4} style={{ color: '#fff', margin: 0 }}>{t('common.menu')}</Title>
                     <Button
                         type="text"
@@ -299,7 +300,7 @@ export const AppSider = ({
             />
             <Flex vertical style={{ padding: '0 8px' }}>
                 <Flex justify="space-between" align="center" style={{ padding: '16px 16px 8px' }}>
-                    <Title level={5} style={{ color: 'rgba(255, 255, 255, 0.65)', margin: 0 }}>{t('nav.accounts')}</Title>
+                    <Title level={5} style={{ color: SIDER_TEXT_SECONDARY, margin: 0 }}>{t('nav.accounts')}</Title>
                     <Flex gap="small">
                         {hasSyncableAccounts && (
                             <Button
@@ -315,7 +316,7 @@ export const AppSider = ({
                 </Flex>
                 <div style={{ padding: '0 16px 16px' }}>
                     <Statistic
-                        title={<Text style={{ color: 'rgba(255, 255, 255, 0.65)' }}>{t('accounts.totalBalance')}</Text>}
+                        title={<Text style={{ color: SIDER_TEXT_SECONDARY }}>{t('accounts.totalBalance')}</Text>}
                         value={totalBalance}
                         precision={2}
                         valueStyle={{ color: '#fff' }}

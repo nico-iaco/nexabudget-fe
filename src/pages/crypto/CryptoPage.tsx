@@ -1,16 +1,15 @@
 import React, {useEffect, useState} from 'react';
-import {Button, message, Space, Typography} from 'antd';
+import {Button, message, Space} from 'antd';
 import {KeyOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import {deleteManualHolding, getPortfolioValue, syncFromBinance} from '../../services/api';
-import {useMediaQuery} from '../../hooks/useMediaQuery';
+import {useBreakpoints} from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import type {CryptoAsset, PortfolioValueResponse} from '../../types/api';
 import {PortfolioSummary} from '../../components/PortfolioSummary';
 import {BinanceKeysModal} from '../../components/BinanceKeysModal';
 import {ManualHoldingModal} from '../../components/ManualHoldingModal';
-
-const { Title } = Typography;
+import {PageHeader} from '../../components/PageHeader';
 
 export const CryptoPage: React.FC = () => {
     const { t } = useTranslation();
@@ -77,45 +76,40 @@ export const CryptoPage: React.FC = () => {
         setEditingAsset(null);
     };
 
-    const isMobile = useMediaQuery('(max-width: 768px)');
+    const { isSmallMobile: isMobile } = useBreakpoints();
 
     return (
-        <div style={{ padding: isMobile ? '16px' : '24px' }}>
-            <div style={{
-                display: 'flex',
-                flexDirection: isMobile ? 'column' : 'row',
-                justifyContent: 'space-between',
-                alignItems: isMobile ? 'flex-start' : 'center',
-                marginBottom: '24px',
-                gap: isMobile ? '16px' : '0'
-            }}>
-                <Title level={2} style={{ margin: 0 }}>{t('crypto.title')}</Title>
-                <Space wrap style={{ width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'flex-start' : 'flex-end' }}>
-                    <Button
-                        icon={<KeyOutlined />}
-                        onClick={() => setShowBinanceModal(true)}
-                        block={isMobile}
-                    >
-                        {t('crypto.connectBinance')}
-                    </Button>
-                    <Button
-                        icon={<PlusOutlined />}
-                        onClick={() => setShowManualModal(true)}
-                        block={isMobile}
-                    >
-                        {t('crypto.addHolding')}
-                    </Button>
-                    <Button
-                        type="primary"
-                        icon={<ReloadOutlined />}
-                        loading={syncing}
-                        onClick={handleSyncBinance}
-                        block={isMobile}
-                    >
-                        {t('crypto.syncBinance')}
-                    </Button>
-                </Space>
-            </div>
+        <>
+            <PageHeader
+                title={t('crypto.title')}
+                actions={
+                    <Space wrap style={{ width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'stretch' : 'flex-end' }}>
+                        <Button
+                            icon={<KeyOutlined />}
+                            onClick={() => setShowBinanceModal(true)}
+                            block={isMobile}
+                        >
+                            {t('crypto.connectBinance')}
+                        </Button>
+                        <Button
+                            icon={<PlusOutlined />}
+                            onClick={() => setShowManualModal(true)}
+                            block={isMobile}
+                        >
+                            {t('crypto.addHolding')}
+                        </Button>
+                        <Button
+                            type="primary"
+                            icon={<ReloadOutlined />}
+                            loading={syncing}
+                            onClick={handleSyncBinance}
+                            block={isMobile}
+                        >
+                            {t('crypto.syncBinance')}
+                        </Button>
+                    </Space>
+                }
+            />
 
             <PortfolioSummary
                 data={portfolioData}
@@ -136,6 +130,6 @@ export const CryptoPage: React.FC = () => {
                 onSuccess={fetchPortfolio}
                 editingAsset={editingAsset}
             />
-        </div>
+        </>
     );
 };

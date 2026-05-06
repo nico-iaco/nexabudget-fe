@@ -10,10 +10,9 @@ import type { BudgetTemplate, BudgetTemplateRequest, Category } from '../../type
 import type { ColumnsType } from 'antd/es/table';
 import { BudgetTemplateModal } from './BudgetTemplateModal';
 import { BudgetAlertsDrawer } from './BudgetAlertsDrawer';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
-
-const { Title } = Typography;
+import { PageHeader } from '../../components/PageHeader';
 
 interface OutletContextType {
     categories: Category[];
@@ -23,7 +22,7 @@ export const BudgetsPage = () => {
     const { t } = useTranslation();
     usePageTitle(t('budgets.title'));
     const { categories } = useOutletContext<OutletContextType>();
-    const isMobile = useMediaQuery('(max-width: 768px)');
+    const { isSmallMobile: isMobile } = useBreakpoints();
 
     const [budgets, setBudgets] = useState<BudgetTemplate[]>([]);
     const [loading, setLoading] = useState(true);
@@ -139,16 +138,19 @@ export const BudgetsPage = () => {
 
     return (
         <>
-            <Flex justify="space-between" align="center" style={{ marginBottom: 16 }}>
-                <Title level={2} style={{ margin: 0 }}>{t('budgets.title')}</Title>
-                <Button
-                    type="primary"
-                    icon={<PlusOutlined />}
-                    onClick={() => { setEditing(null); setIsModalOpen(true); }}
-                >
-                    {t('budgets.newBudget')}
-                </Button>
-            </Flex>
+            <PageHeader
+                title={t('budgets.title')}
+                actions={
+                    <Button
+                        type="primary"
+                        icon={<PlusOutlined />}
+                        onClick={() => { setEditing(null); setIsModalOpen(true); }}
+                        block={isMobile}
+                    >
+                        {t('budgets.newBudget')}
+                    </Button>
+                }
+            />
 
             {!loading && budgets.length === 0 ? (
                 <Empty description={t('budgets.emptyList')} />
@@ -206,6 +208,7 @@ export const BudgetsPage = () => {
                     rowKey="id"
                     loading={loading}
                     size="small"
+                    scroll={{ x: 'max-content' }}
                     pagination={{ defaultPageSize: 20, showSizeChanger: false }}
                 />
             )}
