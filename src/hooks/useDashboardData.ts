@@ -30,6 +30,13 @@ export interface LineData {
     monthlyNet: number;
 }
 
+export interface TrendPoint {
+    month: string;
+    income: number;
+    expense: number;
+    net: number;
+}
+
 interface DashboardQueryResult {
     comp: MonthComparisonResponse | null;
     trend: MonthlyTrendItem[];
@@ -86,29 +93,17 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
     const projection = data?.proj ?? null;
     const budgetSummary = data?.budgets ?? [];
 
-    const totalIncome = useMemo(() => {
-        const start = dateRange?.[0];
-        const end = dateRange?.[1];
-        return monthlyTrendItems
-            .filter(item => {
-                const itemDate = dayjs(`${item.year}-${String(item.month).padStart(2, '0')}-01`);
-                return (!start || !itemDate.isBefore(start, 'month')) &&
-                       (!end || !itemDate.isAfter(end, 'month'));
-            })
-            .reduce((sum, item) => sum + item.income, 0);
-    }, [monthlyTrendItems, dateRange]);
+    // Totals are derived from the category breakdown so they always reflect the
+    // selected date range, not the (monthly-granularity) trend series.
+    const totalIncome = useMemo(
+        () => incomeBreakdown.reduce((sum, c) => sum + c.net, 0),
+        [incomeBreakdown]
+    );
 
-    const totalExpenses = useMemo(() => {
-        const start = dateRange?.[0];
-        const end = dateRange?.[1];
-        return monthlyTrendItems
-            .filter(item => {
-                const itemDate = dayjs(`${item.year}-${String(item.month).padStart(2, '0')}-01`);
-                return (!start || !itemDate.isBefore(start, 'month')) &&
-                       (!end || !itemDate.isAfter(end, 'month'));
-            })
-            .reduce((sum, item) => sum + item.expense, 0);
-    }, [monthlyTrendItems, dateRange]);
+    const totalExpenses = useMemo(
+        () => expenseBreakdown.reduce((sum, c) => sum + Math.abs(c.net), 0),
+        [expenseBreakdown]
+    );
 
     const netBalance = totalIncome - totalExpenses;
 
@@ -132,8 +127,32 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
         return result;
     }, [monthlyTrendItems]);
 
+    const trendPoints = useMemo((): TrendPoint[] =>
+        monthlyTrendItems.map(item => ({
+            month: dayjs(`${item.year}-${String(item.month).padStart(2, '0')}-01`).format('MMM YY'),
+            income: item.income,
+            expense: item.expense,
+            net: item.net,
+        })),
+        [monthlyTrendItems]
+    );
+
+    const incomeSparkline = useMemo(
+        () => monthlyTrendItems.slice(-6).map(i => i.income),
+        [monthlyTrendItems]
+    );
+    const expenseSparkline = useMemo(
+        () => monthlyTrendItems.slice(-6).map(i => i.expense),
+        [monthlyTrendItems]
+    );
+    const netSparkline = useMemo(
+        () => monthlyTrendItems.slice(-6).map(i => i.net),
+        [monthlyTrendItems]
+    );
+
     const hasData = totalIncome > 0 || totalExpenses > 0 || monthlyTrendItems.length > 0;
 
+    // Use server-provided change when available (avoids div-by-zero ambiguity client-side).
     const expenseComparison = useMemo(() => {
         if (!monthComparison) return null;
         const prev = monthComparison.previousMonth?.expense ?? 0;
@@ -155,6 +174,10 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
         incomeBreakdown,
         expenseBreakdown,
         monthlyTrend,
+        trendPoints,
+        incomeSparkline,
+        expenseSparkline,
+        netSparkline,
         expenseComparison,
         portfolioValue,
         projection,

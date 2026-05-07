@@ -1,13 +1,14 @@
 // src/pages/dashboard/DashboardPage.tsx
-import { useCallback, useEffect, useState, lazy, Suspense } from 'react';
+import { useState, lazy, Suspense } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
     Button, Card, Col, DatePicker, Empty, Flex, Progress, Row,
-    Select, Skeleton, Statistic, Table, Tabs, Typography, message
+    Select, Skeleton, Statistic, Table, Tabs, Typography
 } from 'antd';
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import dayjs, { type Dayjs } from 'dayjs';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { useDashboardData } from '../../hooks/useDashboardData';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
@@ -15,16 +16,14 @@ import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 // On mobile we load a lightweight chart bundle (no G2Plot); on desktop the full one.
 // Evaluated once at module load — device type is fixed for a PWA session.
 const _isMobileAtLoad = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
-const GenericPieChart = lazy(() =>
+const _chartsModule = () =>
     _isMobileAtLoad
-        ? import('../../components/dashboard/DashboardChartsMobile').then(m => ({ default: m.GenericPieChart }))
-        : import('../../components/dashboard/DashboardCharts').then(m => ({ default: m.GenericPieChart }))
-);
-const TrendBarChart = lazy(() =>
-    _isMobileAtLoad
-        ? import('../../components/dashboard/DashboardChartsMobile').then(m => ({ default: m.TrendBarChart }))
-        : import('../../components/dashboard/DashboardCharts').then(m => ({ default: m.TrendBarChart }))
-);
+        ? import('../../components/dashboard/DashboardChartsMobile')
+        : import('../../components/dashboard/DashboardCharts');
+const GenericPieChart = lazy(() => _chartsModule().then(m => ({ default: m.GenericPieChart })));
+const TrendDualChart = lazy(() => _chartsModule().then(m => ({ default: m.TrendDualChart })));
+const ComparisonBars = lazy(() => _chartsModule().then(m => ({ default: m.ComparisonBars })));
+const Sparkline = lazy(() => _chartsModule().then(m => ({ default: m.Sparkline })));
 import { AiAnalysisCard } from '../../components/dashboard/AiAnalysisCard';
 import * as api from '../../services/api';
 import type { CategoryBreakdownItem, MonthComparisonResponse, MonthlySummaryResponse } from '../../types/api';
@@ -68,7 +67,10 @@ export const DashboardPage = () => {
         incomeByCategory,
         incomeBreakdown,
         expenseBreakdown,
-        monthlyTrend,
+        trendPoints,
+        incomeSparkline,
+        expenseSparkline,
+        netSparkline,
         expenseComparison,
         portfolioValue,
         projection,
@@ -79,20 +81,16 @@ export const DashboardPage = () => {
 
     usePullToRefresh(refetchDashboard ?? (() => {}), isMobile);
 
-    // Confronto mese scelto dall'utente
+    // Confronto mese scelto dall'utente — cached via React Query.
     const [comparisonMonth, setComparisonMonth] = useState<Dayjs>(dayjs());
-    const [customComparison, setCustomComparison] = useState<MonthComparisonResponse | null>(null);
-    const [loadingComparison, setLoadingComparison] = useState(false);
-
-    const fetchCustomComparison = useCallback((month: Dayjs) => {
-        setLoadingComparison(true);
-        api.getMonthComparison(month.year(), month.month() + 1)
-            .then(r => setCustomComparison(r.data))
-            .catch(() => message.error(t('reports.loadError')))
-            .finally(() => setLoadingComparison(false));
-    }, [t]);
-
-    useEffect(() => { fetchCustomComparison(comparisonMonth); }, []);
+    const { data: customComparison, isPending: loadingComparison } = useQuery<MonthComparisonResponse | null>({
+        queryKey: ['monthComparison', comparisonMonth.year(), comparisonMonth.month() + 1, transactionRefreshKey],
+        queryFn: () =>
+            api.getMonthComparison(comparisonMonth.year(), comparisonMonth.month() + 1)
+                .then(r => r.data)
+                .catch(() => null),
+        placeholderData: keepPreviousData,
+    });
 
     const showCrypto = portfolioValue && portfolioValue.totalValue > 0;
     const statCols = showCrypto ? { xs: 24, sm: 12, md: 6 } : { xs: 24, sm: 8 };
@@ -138,11 +136,6 @@ export const DashboardPage = () => {
             </div>
         </Col>
     );
-
-    const deltaStyle = (v: number, isExpense = false) => ({
-        color: (isExpense ? v > 0 : v > 0) ? COLOR_NEGATIVE : COLOR_POSITIVE,
-        fontSize: 12
-    });
 
     if (loading) {
         return (
@@ -249,6 +242,9 @@ export const DashboardPage = () => {
                                     prefix={netBalance >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
                                     suffix="€"
                                 />
+                                <Suspense fallback={null}>
+                                    <Sparkline values={netSparkline} color={netBalance >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE} />
+                                </Suspense>
                             </Card>
                         </Col>
                         <Col {...statCols}>
@@ -261,6 +257,9 @@ export const DashboardPage = () => {
                                     prefix={<ArrowUpOutlined />}
                                     suffix="€"
                                 />
+                                <Suspense fallback={null}>
+                                    <Sparkline values={incomeSparkline} color={COLOR_POSITIVE} />
+                                </Suspense>
                             </Card>
                         </Col>
                         <Col {...statCols}>
@@ -274,13 +273,16 @@ export const DashboardPage = () => {
                                     suffix="€"
                                 />
                                 {expenseComparison && (
-                                    <div style={{ marginTop: 8, fontSize: '12px' }}>
+                                    <div style={{ marginTop: 4, fontSize: '12px' }}>
                                         <Text type={expenseComparison.percentageChange >= 0 ? 'danger' : 'success'}>
                                             {expenseComparison.percentageChange.toFixed(2)}%
                                         </Text>
                                         <Text type="secondary"> {t('dashboard.vsPeriod', { period: t('dashboard.previousMonth') })}</Text>
                                     </div>
                                 )}
+                                <Suspense fallback={null}>
+                                    <Sparkline values={expenseSparkline} color={COLOR_NEGATIVE} />
+                                </Suspense>
                             </Card>
                         </Col>
                         {showCrypto && (
@@ -356,34 +358,21 @@ export const DashboardPage = () => {
                                 extra={
                                     <DatePicker.MonthPicker
                                         value={comparisonMonth}
-                                        onChange={m => {
-                                            if (m) {
-                                                setComparisonMonth(m);
-                                                fetchCustomComparison(m);
-                                            }
-                                        }}
+                                        onChange={m => { if (m) setComparisonMonth(m); }}
                                     />
                                 }
                             >
                                 {loadingComparison ? (
                                     <Skeleton active paragraph={{ rows: 2 }} />
                                 ) : customComparison ? (
-                                    <Row gutter={[16, 8]}>
-                                        <Col xs={12}>
-                                            <Statistic title={t('dashboard.totalIncome')} value={customComparison.currentMonth?.income} precision={2} valueStyle={{ color: COLOR_POSITIVE, fontSize: '16px' }} suffix="€" prefix={<ArrowUpOutlined />} />
-                                            <Text style={deltaStyle(customComparison.incomeChange)}>
-                                                {customComparison.incomeChange >= 0 ? '+' : ''}{customComparison.incomeChange.toFixed(2)} €{' '}
-                                                <Text type="secondary" style={{ fontSize: 11 }}>{t('reports.vsPreviousMonth')}</Text>
-                                            </Text>
-                                        </Col>
-                                        <Col xs={12}>
-                                            <Statistic title={t('dashboard.totalExpenses')} value={customComparison.currentMonth?.expense} precision={2} valueStyle={{ color: COLOR_NEGATIVE, fontSize: '16px' }} suffix="€" prefix={<ArrowDownOutlined />} />
-                                            <Text style={deltaStyle(customComparison.expenseChange, true)}>
-                                                {customComparison.expenseChange >= 0 ? '+' : ''}{customComparison.expenseChange.toFixed(2)} €{' '}
-                                                <Text type="secondary" style={{ fontSize: 11 }}>{t('reports.vsPreviousMonth')}</Text>
-                                            </Text>
-                                        </Col>
-                                    </Row>
+                                    <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
+                                        <ComparisonBars
+                                            currentIncome={customComparison.currentMonth?.income ?? 0}
+                                            previousIncome={customComparison.previousMonth?.income ?? 0}
+                                            currentExpense={customComparison.currentMonth?.expense ?? 0}
+                                            previousExpense={customComparison.previousMonth?.expense ?? 0}
+                                        />
+                                    </Suspense>
                                 ) : (
                                     <Empty />
                                 )}
@@ -407,18 +396,16 @@ export const DashboardPage = () => {
                                                             <GenericPieChart data={expensesByCategory} />
                                                         </Suspense>
                                                     </Col>
-                                                    {!isMobile && (
-                                                        <Col xs={24} md={14}>
-                                                            <Table
-                                                                columns={breakdownColumns}
-                                                                dataSource={expenseBreakdown}
-                                                                rowKey="categoryId"
-                                                                size="small"
-                                                                pagination={false}
-                                                                locale={{ emptyText: <Empty description={t('charts.noData')} /> }}
-                                                            />
-                                                        </Col>
-                                                    )}
+                                                    <Col xs={24} md={14}>
+                                                        <Table
+                                                            columns={breakdownColumns}
+                                                            dataSource={expenseBreakdown}
+                                                            rowKey="categoryId"
+                                                            size="small"
+                                                            pagination={false}
+                                                            locale={{ emptyText: <Empty description={t('charts.noData')} /> }}
+                                                        />
+                                                    </Col>
                                                 </Row>
                                             ),
                                         },
@@ -432,18 +419,16 @@ export const DashboardPage = () => {
                                                             <GenericPieChart data={incomeByCategory} />
                                                         </Suspense>
                                                     </Col>
-                                                    {!isMobile && (
-                                                        <Col xs={24} md={14}>
-                                                            <Table
-                                                                columns={breakdownColumns}
-                                                                dataSource={incomeBreakdown}
-                                                                rowKey="categoryId"
-                                                                size="small"
-                                                                pagination={false}
-                                                                locale={{ emptyText: <Empty description={t('charts.noData')} /> }}
-                                                            />
-                                                        </Col>
-                                                    )}
+                                                    <Col xs={24} md={14}>
+                                                        <Table
+                                                            columns={breakdownColumns}
+                                                            dataSource={incomeBreakdown}
+                                                            rowKey="categoryId"
+                                                            size="small"
+                                                            pagination={false}
+                                                            locale={{ emptyText: <Empty description={t('charts.noData')} /> }}
+                                                        />
+                                                    </Col>
                                                 </Row>
                                             ),
                                         },
@@ -493,7 +478,7 @@ export const DashboardPage = () => {
                                     </Flex>
                                 )}
                                 <Suspense fallback={<Skeleton active paragraph={{ rows: 8 }} />}>
-                                    <TrendBarChart data={monthlyTrend} />
+                                    <TrendDualChart points={trendPoints} />
                                 </Suspense>
                             </Card>
                         </Col>
