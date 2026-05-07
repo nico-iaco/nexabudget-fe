@@ -91,7 +91,13 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
     const expenseBreakdown = data?.expenseBreakdown ?? [];
     const portfolioValue = data?.crypto ?? null;
     const projection = data?.proj ?? null;
-    const budgetSummary = data?.budgets ?? [];
+    const budgetSummary = useMemo(
+        () =>
+            [...(data?.budgets ?? [])].sort((a, b) =>
+                a.categoryName.localeCompare(b.categoryName)
+            ),
+        [data?.budgets]
+    );
 
     // Totals are derived from the category breakdown so they always reflect the
     // selected date range, not the (monthly-granularity) trend series.
