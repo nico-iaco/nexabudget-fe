@@ -7,6 +7,7 @@ import type {
     MonthComparisonResponse,
     MonthlyProjectionResponse,
     MonthlyTrendItem,
+    MonthlyTrendResponse,
     MonthlySummaryResponse,
     PortfolioValueResponse
 } from '../types/api';
@@ -39,13 +40,15 @@ export interface TrendPoint {
 
 interface DashboardQueryResult {
     comp: MonthComparisonResponse | null;
-    trend: MonthlyTrendItem[];
+    trend: MonthlyTrendResponse;
     incomeBreakdown: CategoryBreakdownItem[];
     expenseBreakdown: CategoryBreakdownItem[];
     proj: MonthlyProjectionResponse | null;
     crypto: PortfolioValueResponse | null;
     budgets: MonthlySummaryResponse[];
 }
+
+const EMPTY_TREND: MonthlyTrendResponse = { currency: 'EUR', items: [] };
 
 export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12) => {
     const [dateRange, setDateRange] = useState<DateRange>([dayjs().startOf('month'), dayjs().endOf('month')]);
@@ -65,7 +68,7 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
 
             const [comp, trend, breakdown, proj, crypto, budgets] = await Promise.all([
                 safe(api.getMonthComparison(now.year(), now.month() + 1), null),
-                safe(api.getMonthlyTrend(trendMonths), []),
+                safe(api.getMonthlyTrend(trendMonths), EMPTY_TREND),
                 safe(api.getCategoryBreakdown(startDate, endDate), { startDate, endDate, grandTotal: 0, categories: [] }),
                 safe(api.getMonthlyProjection(), null),
                 safe(api.getPortfolioValue('EUR'), null),
@@ -74,7 +77,7 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
 
             return {
                 comp,
-                trend: trend ?? [],
+                trend: trend ?? EMPTY_TREND,
                 incomeBreakdown: (breakdown?.categories ?? []).filter(c => c.inferredType === 'IN'),
                 expenseBreakdown: (breakdown?.categories ?? []).filter(c => c.inferredType === 'OUT'),
                 proj,
@@ -86,7 +89,9 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
     });
 
     const monthComparison = data?.comp ?? null;
-    const monthlyTrendItems = data?.trend ?? [];
+    const trendResponse = data?.trend ?? EMPTY_TREND;
+    const monthlyTrendItems: MonthlyTrendItem[] = Array.isArray(trendResponse.items) ? trendResponse.items : [];
+    const trendCurrency = trendResponse.currency ?? 'EUR';
     const incomeBreakdown = data?.incomeBreakdown ?? [];
     const expenseBreakdown = data?.expenseBreakdown ?? [];
     const portfolioValue = data?.crypto ?? null;
@@ -190,5 +195,6 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
         monthComparison,
         budgetSummary,
         hasData,
+        trendCurrency,
     };
 };

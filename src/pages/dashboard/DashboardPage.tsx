@@ -25,6 +25,7 @@ const TrendDualChart = lazy(() => _chartsModule().then(m => ({ default: m.TrendD
 const ComparisonBars = lazy(() => _chartsModule().then(m => ({ default: m.ComparisonBars })));
 const Sparkline = lazy(() => _chartsModule().then(m => ({ default: m.Sparkline })));
 import { AiAnalysisCard } from '../../components/dashboard/AiAnalysisCard';
+import { BalanceTrendSection } from '../../components/reports/BalanceTrendSection';
 import * as api from '../../services/api';
 import type { CategoryBreakdownItem, MonthComparisonResponse, MonthlySummaryResponse } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
@@ -435,6 +436,13 @@ export const DashboardPage = () => {
                                     ]}
                                 />
                             </Card>
+                        </Col>
+                    </Row>
+
+                    {/* Andamento saldo netto cumulato */}
+                    <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                        <Col xs={24}>
+                            <BalanceTrendSection />
                         </Col>
                     </Row>
 

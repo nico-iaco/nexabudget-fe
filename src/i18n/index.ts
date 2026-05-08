@@ -485,7 +485,18 @@ const resources = {
                 net: 'Netto',
                 percentage: 'Percentuale',
                 transactionCount: 'N° Transazioni',
-                loadError: 'Errore nel caricamento dei report'
+                loadError: 'Errore nel caricamento dei report',
+                balanceTrend: {
+                    title: 'Andamento saldo',
+                    openingBalance: 'Saldo iniziale',
+                    closingBalanceFinal: 'Saldo finale',
+                    closingBalance: 'Saldo a fine mese',
+                    monthlyNet: 'Netto mese',
+                    change: 'Variazione',
+                    month: 'Mese',
+                    invalidRange: 'Seleziona un intervallo di date valido',
+                    loadError: 'Errore nel caricamento dell\'andamento del saldo'
+                }
             },
             budgets: {
                 title: 'Budget',
@@ -1028,7 +1039,18 @@ const resources = {
                 net: 'Net',
                 percentage: 'Percentage',
                 transactionCount: '# Transactions',
-                loadError: 'Error loading reports'
+                loadError: 'Error loading reports',
+                balanceTrend: {
+                    title: 'Balance Trend',
+                    openingBalance: 'Opening Balance',
+                    closingBalanceFinal: 'Closing Balance',
+                    closingBalance: 'End-of-Month Balance',
+                    monthlyNet: 'Monthly Net',
+                    change: 'Change',
+                    month: 'Month',
+                    invalidRange: 'Please select a valid date range',
+                    loadError: 'Error loading the balance trend'
+                }
             },
             budgets: {
                 title: 'Budgets',

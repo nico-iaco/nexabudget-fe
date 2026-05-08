@@ -6,6 +6,7 @@ import type {
     AuditEntityType,
     AuditLogEntry,
     AuthResponse,
+    BalanceTrendResponse,
     BinanceKeysRequest,
     BudgetAlert,
     BudgetAlertRequest,
@@ -30,7 +31,7 @@ import type {
     ManualHoldingsRequest,
     MonthComparisonResponse,
     MonthlyProjectionResponse,
-    MonthlyTrendItem,
+    MonthlyTrendResponse,
     MonthlySummaryResponse,
     Page,
     PortfolioValueResponse,
@@ -185,10 +186,12 @@ export const restoreTransaction = (id: string): Promise<AxiosResponse<void>> => 
 export const restoreAccount = (id: string): Promise<AxiosResponse<void>> => apiClient.post(`/trash/accounts/${id}/restore`);
 
 // Reports
-export const getMonthlyTrend = (months = 12): Promise<AxiosResponse<MonthlyTrendItem[]>> => apiClient.get(`/reports/monthly-trend?months=${months}`);
+export const getMonthlyTrend = (months = 12): Promise<AxiosResponse<MonthlyTrendResponse>> => apiClient.get(`/reports/monthly-trend?months=${months}`);
 export const getCategoryBreakdown = (startDate: string, endDate: string): Promise<AxiosResponse<CategoryBreakdownResponse>> => apiClient.get(`/reports/category-breakdown?startDate=${startDate}&endDate=${endDate}`);
 export const getMonthComparison = (year: number, month: number): Promise<AxiosResponse<MonthComparisonResponse>> => apiClient.get(`/reports/month-comparison?year=${year}&month=${month}`);
 export const getMonthlyProjection = (): Promise<AxiosResponse<MonthlyProjectionResponse>> => apiClient.get('/reports/monthly-projection');
+export const getBalanceTrend = (params: { startDate: string; endDate: string }): Promise<AxiosResponse<BalanceTrendResponse>> =>
+    apiClient.get(`/reports/balance-trend?startDate=${params.startDate}&endDate=${params.endDate}`);
 export const requestAiAnalysis = (data: import('../types/api').AiAnalysisRequest): Promise<AxiosResponse<import('../types/api').AiAnalysisJobResponse>> => apiClient.post('/reports/ai-analysis', data);
 export const getAiAnalysisStatus = (jobId: string): Promise<AxiosResponse<import('../types/api').AiAnalysisStatusResponse>> => apiClient.get(`/reports/ai-analysis/${jobId}`);
 export const downloadAiAnalysis = (jobId: string): Promise<AxiosResponse<Blob>> => apiClient.get(`/reports/ai-analysis/${jobId}/download`, { responseType: 'blob' });

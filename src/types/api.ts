@@ -177,6 +177,26 @@ export interface MonthlyTrendItem {
     net: number;
 }
 
+export interface MonthlyTrendResponse {
+    currency: string;
+    items: MonthlyTrendItem[];
+}
+
+export interface BalanceTrendItem {
+    year: number;
+    month: number;
+    monthlyNet: number;
+    closingBalance: number;
+}
+
+export interface BalanceTrendResponse {
+    startDate: string;
+    endDate: string;
+    currency: string;
+    openingBalance: number;
+    items: BalanceTrendItem[];
+}
+
 export interface CategoryBreakdownItem {
     categoryId: string;
     categoryName: string;
