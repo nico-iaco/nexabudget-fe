@@ -11,8 +11,11 @@ on:
       - 'yarn.lock'
       - 'package-lock.json'
       - 'index.html'
+      - 'vite.config.ts'
+      - 'tsconfig*.json'
       - 'nginx.conf.template'
       - 'Dockerfile'
+      - '.dockerignore'
       - '.github/workflows/docker-image.yml'
 env:
   REGISTRY: ghcr.io
