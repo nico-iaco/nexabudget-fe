@@ -39,7 +39,6 @@ import { useAuth } from '../../contexts/AuthContext';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 import { TransactionCard } from '../../components/TransactionCard';
 import { TransactionImportModal } from '../../components/modals/TransactionImportModal';
 import { PageHeader } from '../../components/PageHeader';
@@ -98,11 +97,6 @@ export const TransactionsPage = () => {
         ? accounts.find(a => a.id === accountId)?.name ?? t('nav.transactions')
         : t('nav.transactions')
     );
-
-    usePullToRefresh(() => {
-        setCurrentPage(1);
-        fetchTransactionsRef.current(1, filters, false);
-    }, isMobile);
 
     // State for sorting and filtering
     const [sortConfig, setSortConfig] = useState<SorterResult<Transaction>>({
