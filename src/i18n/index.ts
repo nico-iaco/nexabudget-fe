@@ -45,7 +45,8 @@ const resources = {
                 reports: 'Report',
                 budgets: 'Budget',
                 trash: 'Cestino',
-                auditLog: 'Registro Attività'
+                auditLog: 'Registro Attività',
+                chat: 'NexaBot'
             },
             auth: {
                 loginTitle: 'Login',
@@ -599,6 +600,23 @@ const resources = {
                     UPDATE_CATEGORY: 'Categoria Modificata',
                     DELETE_CATEGORY: 'Categoria Eliminata'
                 }
+            },
+            chat: {
+                title: 'NexaBot',
+                newChat: 'Nuova chat',
+                inputPlaceholder: 'Chiedimi qualcosa sui tuoi conti… (Invio per inviare, Shift+Invio per andare a capo)',
+                inputPlaceholderMobile: 'Chiedimi qualcosa…',
+                send: 'Invia',
+                noSessions: 'Nessuna chat precedente',
+                deleteSession: 'Elimina chat',
+                deleteConfirm: 'Sei sicuro di voler eliminare questa chat?',
+                deleteSuccess: 'Chat eliminata',
+                deleteError: 'Errore durante l\'eliminazione',
+                loadError: 'Errore nel caricamento',
+                sendError: 'Errore nell\'invio del messaggio',
+                toolsUsed: 'Dati recuperati',
+                sessionListTitle: 'Sessioni',
+                emptyState: 'Ciao! Sono NexaBot, il tuo assistente finanziario AI.\nChiedimi qualcosa sulle tue spese, entrate o budget!'
             }
         }
     },
@@ -634,7 +652,8 @@ const resources = {
                 reports: 'Reports',
                 budgets: 'Budgets',
                 trash: 'Trash',
-                auditLog: 'Activity Log'
+                auditLog: 'Activity Log',
+                chat: 'NexaBot'
             },
             auth: {
                 loginTitle: 'Login',
@@ -1188,6 +1207,23 @@ const resources = {
                     UPDATE_CATEGORY: 'Category Updated',
                     DELETE_CATEGORY: 'Category Deleted'
                 }
+            },
+            chat: {
+                title: 'NexaBot',
+                newChat: 'New chat',
+                inputPlaceholder: 'Ask me anything about your finances… (Enter to send, Shift+Enter for new line)',
+                inputPlaceholderMobile: 'Ask me anything…',
+                send: 'Send',
+                noSessions: 'No previous chats',
+                deleteSession: 'Delete chat',
+                deleteConfirm: 'Are you sure you want to delete this chat?',
+                deleteSuccess: 'Chat deleted',
+                deleteError: 'Error deleting chat',
+                loadError: 'Error loading chat',
+                sendError: 'Error sending message',
+                toolsUsed: 'Data retrieved',
+                sessionListTitle: 'Sessions',
+                emptyState: 'Hi! I\'m NexaBot, your AI financial assistant.\nAsk me anything about your spending, income, or budgets!'
             }
         }
     }

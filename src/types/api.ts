@@ -404,3 +404,29 @@ export interface ImportResultResponse {
     skipped: number;
     errors: number;
 }
+
+export interface ChatSession {
+    id: string;
+    title: string;
+    updatedAt: string;
+    messageCount: number;
+}
+
+export interface ChatMessage {
+    id: string;
+    role: 'USER' | 'ASSISTANT' | 'TOOL';
+    content: string | null;
+    createdAt: string;
+    toolName: string | null;
+}
+
+export interface ChatRequest {
+    sessionId: string | null;
+    message: string;
+}
+
+export interface ChatResponse {
+    sessionId: string;
+    reply: string;
+    toolsUsed: string[];
+}

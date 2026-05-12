@@ -18,6 +18,7 @@ const SettingsPage = lazy(() => import('./pages/settings/SettingsPage').then(m =
 const TrashPage = lazy(() => import('./pages/trash/TrashPage').then(m => ({ default: m.TrashPage })));
 const BudgetsPage = lazy(() => import('./pages/budgets/BudgetsPage').then(m => ({ default: m.BudgetsPage })));
 const AuditLogPage = lazy(() => import('./pages/audit/AuditLogPage').then(m => ({ default: m.AuditLogPage })));
+const ChatPage = lazy(() => import('./pages/chat/ChatPage').then(m => ({ default: m.ChatPage })));
 
 const LoadingSpinner = () => (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
@@ -83,6 +84,10 @@ const router = createBrowserRouter([
             {
                 path: 'audit-log',
                 element: <Suspense fallback={<LoadingSpinner />}><AuditLogPage /></Suspense>,
+            },
+            {
+                path: 'chat',
+                element: <Suspense fallback={<LoadingSpinner />}><ChatPage /></Suspense>,
             },
         ],
     },

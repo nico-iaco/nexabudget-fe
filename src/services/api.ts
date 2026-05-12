@@ -15,6 +15,10 @@ import type {
     Category,
     CategoryBreakdownResponse,
     CategoryRequest,
+    ChatMessage,
+    ChatRequest,
+    ChatResponse,
+    ChatSession,
     ConvertSingleToTransferRequest,
     CryptoHolding,
     DeletedAccount,
@@ -248,3 +252,9 @@ export const updateManualHolding = (id: string, data: UpdateCryptoAsset): Promis
 export const deleteManualHolding = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/crypto/holdings/${id}`);
 export const saveBinanceKeys = (data: BinanceKeysRequest): Promise<AxiosResponse<void>> => apiClient.post('/crypto/binance/keys', data);
 export const syncFromBinance = (): Promise<AxiosResponse<void>> => apiClient.post('/crypto/binance/sync');
+
+// Chat
+export const sendChatMessage = (data: ChatRequest): Promise<AxiosResponse<ChatResponse>> => apiClient.post('/chat', data);
+export const getChatSessions = (): Promise<AxiosResponse<ChatSession[]>> => apiClient.get('/chat/sessions');
+export const getChatSessionMessages = (sessionId: string): Promise<AxiosResponse<ChatMessage[]>> => apiClient.get(`/chat/sessions/${sessionId}/messages`);
+export const deleteChatSession = (sessionId: string): Promise<AxiosResponse<void>> => apiClient.delete(`/chat/sessions/${sessionId}`);

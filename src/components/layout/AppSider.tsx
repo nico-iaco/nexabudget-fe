@@ -14,6 +14,7 @@ import {
     PieChartOutlined,
     PlusOutlined,
     RestOutlined,
+    RobotOutlined,
     SafetyCertificateOutlined,
     SettingOutlined,
     SyncOutlined,
@@ -284,6 +285,15 @@ export const AppSider = ({
                         label: t('nav.auditLog'),
                         onClick: () => {
                             navigate('/audit-log');
+                            if (isMobile) setCollapsed(true);
+                        }
+                    },
+                    {
+                        key: '/chat',
+                        icon: <RobotOutlined />,
+                        label: t('nav.chat'),
+                        onClick: () => {
+                            navigate('/chat');
                             if (isMobile) setCollapsed(true);
                         }
                     },

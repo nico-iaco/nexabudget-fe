@@ -201,3 +201,48 @@ button:focus-visible {
     align-items: center !important;
 }
 
+/* Chat markdown rendering */
+.chat-markdown p {
+    margin: 0.4em 0;
+}
+.chat-markdown p:first-child {
+    margin-top: 0;
+}
+.chat-markdown p:last-child {
+    margin-bottom: 0;
+}
+.chat-markdown ul,
+.chat-markdown ol {
+    margin: 0.4em 0;
+    padding-left: 1.4em;
+}
+.chat-markdown li {
+    margin: 0.2em 0;
+}
+.chat-markdown strong {
+    font-weight: 600;
+}
+.chat-markdown code {
+    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    font-size: 0.85em;
+    background: rgba(128, 128, 128, 0.15);
+    padding: 2px 5px;
+    border-radius: 3px;
+}
+.chat-markdown pre {
+    background: rgba(128, 128, 128, 0.1);
+    border-radius: 6px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    margin: 0.5em 0;
+}
+.chat-markdown pre code {
+    background: none;
+    padding: 0;
+}
+.chat-markdown h1, .chat-markdown h2, .chat-markdown h3 {
+    margin: 0.5em 0 0.3em;
+    font-size: 1em;
+    font-weight: 600;
+}
+

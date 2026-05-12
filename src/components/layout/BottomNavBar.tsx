@@ -4,8 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { theme } from 'antd';
 import {
     ContainerOutlined,
-    FundOutlined,
     PieChartOutlined,
+    RobotOutlined,
     SettingOutlined,
     TransactionOutlined,
 } from '@ant-design/icons';
@@ -15,7 +15,7 @@ const NAV_ITEMS = (t: (k: string) => string) => [
     { path: '/dashboard', icon: <PieChartOutlined />, label: t('nav.dashboard') },
     { path: '/transactions', icon: <TransactionOutlined />, label: t('nav.transactions') },
     { path: '/budgets', icon: <ContainerOutlined />, label: t('nav.budgets') },
-    { path: '/crypto', icon: <FundOutlined />, label: t('nav.crypto') },
+    { path: '/chat', icon: <RobotOutlined />, label: t('nav.chat') },
     { path: '/settings', icon: <SettingOutlined />, label: t('nav.settings') },
 ];
 
