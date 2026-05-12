@@ -1,12 +1,13 @@
 // src/pages/gocardless/GoCardlessCallbackPage.tsx
 import {useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
-import {Alert, Button, Card, Flex, Form, InputNumber, List, message, notification, Spin, Typography} from 'antd';
+import {Alert, Button, Card, Flex, Form, InputNumber, List, message, notification, Spin, theme, Typography} from 'antd';
 import {BankOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import * as api from '../../services/api';
 import type {GoCardlessBankDetails} from '../../types/api';
 import {COLOR_ACCENT} from '../../theme/tokens';
+import {getCurrencySymbol} from '../../utils/currency';
 
 const {Title, Text} = Typography;
 
@@ -18,10 +19,12 @@ export const GoCardlessCallbackPage = () => {
     const [bankAccounts, setBankAccounts] = useState<GoCardlessBankDetails[]>([]);
     const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
     const [currentBalance, setCurrentBalance] = useState<number | null>(null);
+    const [accountCurrency, setAccountCurrency] = useState<string>('EUR');
 
     const [error, setError] = useState<string | null>(null);
 
     const [apiNotification, contextHolder] = notification.useNotification();
+    const {token} = theme.useToken();
 
     useEffect(() => {
         if (!accountId) {
@@ -32,10 +35,17 @@ export const GoCardlessCallbackPage = () => {
 
         const fetchBankAccounts = async () => {
             try {
-                const response = await api.getGoCardlessBankAccounts(accountId);
-                setBankAccounts(response.data);
+                const [bankAccountsRes, accountsRes] = await Promise.all([
+                    api.getGoCardlessBankAccounts(accountId),
+                    api.getAccounts(),
+                ]);
+                setBankAccounts(bankAccountsRes.data);
+                const localAccount = accountsRes.data.find((a) => a.id === accountId);
+                if (localAccount) {
+                    setAccountCurrency(localAccount.currency);
+                }
 
-                if (response.data.length === 0) {
+                if (bankAccountsRes.data.length === 0) {
                     setError(t('gocardlessCallback.noAccounts'));
                 }
             } catch (err) {
@@ -171,12 +181,12 @@ export const GoCardlessCallbackPage = () => {
                                     padding: '16px',
                                     border: selectedAccountId === account.account_id
                                         ? `2px solid ${COLOR_ACCENT}`
-                                        : '1px solid #d9d9d9',
+                                        : `1px solid ${token.colorBorder}`,
                                     borderRadius: '8px',
                                     marginBottom: '12px',
                                     backgroundColor: selectedAccountId === account.account_id
-                                        ? '#e6f7ff'
-                                        : 'white',
+                                        ? token.controlItemBgActive
+                                        : token.colorBgContainer,
                                     transition: 'all 0.3s'
                                 }}
                             >
@@ -222,7 +232,7 @@ export const GoCardlessCallbackPage = () => {
                                 value={currentBalance}
                                 onChange={(value) => setCurrentBalance(value)}
                                 placeholder={t('gocardlessCallback.currentBalancePlaceholder')}
-                                addonAfter="€"
+                                addonAfter={getCurrencySymbol(accountCurrency)}
                                 precision={2}
                             />
                         </Form.Item>
