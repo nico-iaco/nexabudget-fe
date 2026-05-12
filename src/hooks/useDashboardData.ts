@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
+import { useTranslation } from 'react-i18next';
 import * as api from '../services/api';
 import type {
     CategoryBreakdownItem,
@@ -9,6 +10,7 @@ import type {
     MonthlyTrendItem,
     MonthlyTrendResponse,
     MonthlySummaryResponse,
+    PeriodTotalsResponse,
     PortfolioValueResponse
 } from '../types/api';
 
@@ -43,6 +45,7 @@ interface DashboardQueryResult {
     trend: MonthlyTrendResponse;
     incomeBreakdown: CategoryBreakdownItem[];
     expenseBreakdown: CategoryBreakdownItem[];
+    periodTotals: PeriodTotalsResponse | null;
     proj: MonthlyProjectionResponse | null;
     crypto: PortfolioValueResponse | null;
     budgets: MonthlySummaryResponse[];
@@ -51,6 +54,7 @@ interface DashboardQueryResult {
 const EMPTY_TREND: MonthlyTrendResponse = { currency: 'EUR', items: [] };
 
 export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12) => {
+    const { t } = useTranslation();
     const [dateRange, setDateRange] = useState<DateRange>([dayjs().startOf('month'), dayjs().endOf('month')]);
 
     const startKey = dateRange?.[0]?.format('YYYY-MM-DD') ?? null;
@@ -66,10 +70,11 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
             const safe = <T,>(p: Promise<{ data: T }>, fallback: T): Promise<T> =>
                 p.then(r => r.data ?? fallback).catch(() => fallback);
 
-            const [comp, trend, breakdown, proj, crypto, budgets] = await Promise.all([
+            const [comp, trend, breakdown, periodTotals, proj, crypto, budgets] = await Promise.all([
                 safe(api.getMonthComparison(now.year(), now.month() + 1), null),
                 safe(api.getMonthlyTrend(trendMonths), EMPTY_TREND),
                 safe(api.getCategoryBreakdown(startDate, endDate), { startDate, endDate, grandTotal: 0, categories: [] }),
+                safe(api.getPeriodTotals(startDate, endDate), null),
                 safe(api.getMonthlyProjection(), null),
                 safe(api.getPortfolioValue('EUR'), null),
                 safe(api.getBudgetMonthlySummary(now.format('YYYY-MM-DD')), []),
@@ -80,6 +85,7 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
                 trend: trend ?? EMPTY_TREND,
                 incomeBreakdown: (breakdown?.categories ?? []).filter(c => c.inferredType === 'IN'),
                 expenseBreakdown: (breakdown?.categories ?? []).filter(c => c.inferredType === 'OUT'),
+                periodTotals,
                 proj,
                 crypto,
                 budgets: budgets ?? [],
@@ -92,8 +98,19 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
     const trendResponse = data?.trend ?? EMPTY_TREND;
     const monthlyTrendItems: MonthlyTrendItem[] = Array.isArray(trendResponse.items) ? trendResponse.items : [];
     const trendCurrency = trendResponse.currency ?? 'EUR';
-    const incomeBreakdown = data?.incomeBreakdown ?? [];
-    const expenseBreakdown = data?.expenseBreakdown ?? [];
+    const uncategorizedLabel = t('reports.uncategorized');
+    const relabelUncategorized = (items: CategoryBreakdownItem[]): CategoryBreakdownItem[] =>
+        items.map(c => (c.categoryId === null ? { ...c, categoryName: uncategorizedLabel } : c));
+    const incomeBreakdown = useMemo(
+        () => relabelUncategorized(data?.incomeBreakdown ?? []),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [data?.incomeBreakdown, uncategorizedLabel]
+    );
+    const expenseBreakdown = useMemo(
+        () => relabelUncategorized(data?.expenseBreakdown ?? []),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [data?.expenseBreakdown, uncategorizedLabel]
+    );
     const portfolioValue = data?.crypto ?? null;
     const projection = data?.proj ?? null;
     const budgetSummary = useMemo(
@@ -104,19 +121,10 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
         [data?.budgets]
     );
 
-    // Totals are derived from the category breakdown so they always reflect the
-    // selected date range, not the (monthly-granularity) trend series.
-    const totalIncome = useMemo(
-        () => incomeBreakdown.reduce((sum, c) => sum + c.net, 0),
-        [incomeBreakdown]
-    );
-
-    const totalExpenses = useMemo(
-        () => expenseBreakdown.reduce((sum, c) => sum + Math.abs(c.net), 0),
-        [expenseBreakdown]
-    );
-
-    const netBalance = totalIncome - totalExpenses;
+    const periodTotals = data?.periodTotals ?? null;
+    const totalIncome = periodTotals?.income ?? 0;
+    const totalExpenses = periodTotals?.expense ?? 0;
+    const netBalance = periodTotals?.net ?? 0;
 
     const expensesByCategory = useMemo((): PieData[] =>
         expenseBreakdown.map(i => ({ type: i.categoryName, value: Math.abs(i.net) })),

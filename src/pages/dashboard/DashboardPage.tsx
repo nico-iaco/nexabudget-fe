@@ -401,7 +401,7 @@ export const DashboardPage = () => {
                                                         <Table
                                                             columns={breakdownColumns}
                                                             dataSource={expenseBreakdown}
-                                                            rowKey="categoryId"
+                                                            rowKey={(record) => record.categoryId ?? 'uncategorized'}
                                                             size="small"
                                                             pagination={false}
                                                             locale={{ emptyText: <Empty description={t('charts.noData')} /> }}
@@ -424,7 +424,7 @@ export const DashboardPage = () => {
                                                         <Table
                                                             columns={breakdownColumns}
                                                             dataSource={incomeBreakdown}
-                                                            rowKey="categoryId"
+                                                            rowKey={(record) => record.categoryId ?? 'uncategorized'}
                                                             size="small"
                                                             pagination={false}
                                                             locale={{ emptyText: <Empty description={t('charts.noData')} /> }}

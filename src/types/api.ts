@@ -198,7 +198,7 @@ export interface BalanceTrendResponse {
 }
 
 export interface CategoryBreakdownItem {
-    categoryId: string;
+    categoryId: string | null;
     categoryName: string;
     net: number;
     inferredType: 'IN' | 'OUT';
@@ -211,6 +211,15 @@ export interface CategoryBreakdownResponse {
     endDate: string;
     grandTotal: number;
     categories: CategoryBreakdownItem[];
+}
+
+export interface PeriodTotalsResponse {
+    startDate: string;
+    endDate: string;
+    currency: string;
+    income: number;
+    expense: number;
+    net: number;
 }
 
 export interface MonthlyPeriodStats {
