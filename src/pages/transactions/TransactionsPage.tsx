@@ -212,6 +212,11 @@ export const TransactionsPage = () => {
     };
 
 
+    const scrollToTop = () => {
+        document.querySelector('.ant-layout-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
     const fetchTransactions = (page = currentPage, currentFilters = filters, append = false) => {
         if (!auth) return;
         setLoading(true);
@@ -417,6 +422,7 @@ export const TransactionsPage = () => {
             title: t('transactions.data'),
             dataIndex: 'date',
             key: 'date',
+            width: 120,
             render: (text: string) => dayjs(text).format('DD/MM/YYYY'),
             sorter: (a, b) => dayjs(a.date).unix() - dayjs(b.date).unix(),
             sortOrder: sortConfig.field === 'date' ? sortConfig.order : null,
@@ -428,11 +434,14 @@ export const TransactionsPage = () => {
             key: 'description',
             sorter: (a, b) => a.description.localeCompare(b.description),
             sortOrder: sortConfig.field === 'description' ? sortConfig.order : null,
+            ellipsis: { showTitle: true },
         },
         {
             title: t('transactions.account'),
             dataIndex: 'accountName',
             key: 'accountName',
+            width: 160,
+            ellipsis: { showTitle: true },
             sorter: (a, b) => a.accountName.localeCompare(b.accountName),
             sortOrder: sortConfig.field === 'accountName' ? sortConfig.order : null,
         },
@@ -440,6 +449,8 @@ export const TransactionsPage = () => {
             title: t('transactions.category'),
             dataIndex: 'categoryName',
             key: 'categoryName',
+            width: 160,
+            ellipsis: { showTitle: true },
             sorter: (a, b) => (a.categoryName || '').localeCompare(b.categoryName || ''),
             sortOrder: sortConfig.field === 'categoryName' ? sortConfig.order : null,
         },
@@ -447,6 +458,7 @@ export const TransactionsPage = () => {
             title: t('transactions.amount'),
             dataIndex: 'amount',
             key: 'amount',
+            width: 180,
             sorter: (a, b) => {
                 const amountA = a.type === 'OUT' ? -a.amount : a.amount;
                 const amountB = b.type === 'OUT' ? -b.amount : b.amount;
@@ -478,6 +490,7 @@ export const TransactionsPage = () => {
             title: t('transactions.type'),
             dataIndex: 'type',
             key: 'type',
+            width: 110,
             render: (type: 'IN' | 'OUT') => (
                 <Tag color={type === 'IN' ? 'success' : 'error'}>{typeLabel(type)}</Tag>
             ),
@@ -489,6 +502,7 @@ export const TransactionsPage = () => {
         {
             title: t('transactions.actions'),
             key: 'actions',
+            width: 140,
             render: (_: unknown, record: Transaction) => (
                 <Flex gap="small">
                     <Button icon={<EditOutlined />} onClick={() => handleOpenEditModal(record)} aria-label={t('common.edit')} />
@@ -503,10 +517,10 @@ export const TransactionsPage = () => {
 
     const handleTableChange: TableProps<Transaction>['onChange'] = (_, _tableFilters, sorter) => {
         const nextSorter = Array.isArray(sorter) ? sorter[0] : sorter;
-        setSortConfig({
-            field: nextSorter.field as string,
-            order: nextSorter.order,
-        });
+        const nextField = nextSorter.field as string | undefined;
+        const nextOrder = nextSorter.order;
+        if (nextField === sortConfig.field && nextOrder === sortConfig.order) return;
+        setSortConfig({ field: nextField, order: nextOrder });
     };
 
     const processedTransactions = useMemo(() => {
@@ -560,6 +574,7 @@ export const TransactionsPage = () => {
                         onChange={(page) => {
                             setCurrentPage(page);
                             fetchTransactions(page, filters, false);
+                            scrollToTop();
                         }}
                         showSizeChanger={false}
                         showTotal={(total) => t('transactions.totalLabel', { total })}
@@ -578,7 +593,7 @@ export const TransactionsPage = () => {
                     loading={loading}
                     onChange={handleTableChange}
                     size={'small'}
-                    scroll={{ x: 'max-content' }}
+                    tableLayout="fixed"
                     pagination={{
                         current: currentPage,
                         pageSize,
@@ -589,6 +604,7 @@ export const TransactionsPage = () => {
                         onChange: (page) => {
                             setCurrentPage(page);
                             fetchTransactions(page);
+                            scrollToTop();
                         },
                     }}
                 />
@@ -602,7 +618,7 @@ export const TransactionsPage = () => {
                 loading={loading}
                 onChange={handleTableChange}
                 size={'small'}
-                scroll={{ x: 'max-content' }}
+                tableLayout="fixed"
                 pagination={{
                     current: currentPage,
                     pageSize,
@@ -613,6 +629,7 @@ export const TransactionsPage = () => {
                     onChange: (page) => {
                         setCurrentPage(page);
                         fetchTransactions(page);
+                        scrollToTop();
                     }
                 }}
             />
