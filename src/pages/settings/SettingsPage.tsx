@@ -5,6 +5,7 @@ import {useAuth} from '../../contexts/AuthContext';
 import {updateUserProfile} from '../../services/api';
 import {useState} from 'react';
 import {ApiKeysCard} from './ApiKeysCard';
+import {CategoriesCard} from './CategoriesCard';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { PageHeader } from '../../components/PageHeader';
 import { SPACING } from '../../theme/tokens';
@@ -91,6 +92,8 @@ export const SettingsPage = () => {
             </Card>
 
             <ApiKeysCard />
+
+            <CategoriesCard />
 
             <Card title={t('settings.serverTitle')}>
                 <Text type="secondary">{t('settings.serverPlaceholder')}</Text>

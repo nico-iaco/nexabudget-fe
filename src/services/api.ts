@@ -228,9 +228,11 @@ export const getAuditLogForEntity = (entityType: AuditEntityType, entityId: stri
 
 // Categories
 export const getCategories = (): Promise<AxiosResponse<Category[]>> => apiClient.get('/categories');
-export const createCategory = (category: CategoryRequest): Promise<AxiosResponse<void>> => apiClient.post('/categories', category);
-export const updateCategory = (id: string, category: CategoryRequest): Promise<AxiosResponse<void>> => apiClient.put(`/categories/${id}`, category);
+export const createCategory = (category: CategoryRequest): Promise<AxiosResponse<Category>> => apiClient.post('/categories', category);
+export const updateCategory = (id: string, category: CategoryRequest): Promise<AxiosResponse<Category>> => apiClient.put(`/categories/${id}`, category);
 export const deleteCategory = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/categories/${id}`);
+export const mergeCategoryInto = (sourceId: string, targetId: string): Promise<AxiosResponse<void>> =>
+    apiClient.post(`/categories/${sourceId}/merge-into/${targetId}`);
 
 // GoCardless
 export const getGoCardlessBankList = (countryCode: string): Promise<AxiosResponse<GoCardlessBank[]>> => apiClient.get(`/gocardless/bank?countryCode=${countryCode}`);

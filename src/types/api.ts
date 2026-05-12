@@ -90,6 +90,7 @@ export interface ConvertSingleToTransferRequest {
 export interface Category {
     id: string;
     name: string;
+    isDefault: boolean;
 }
 
 export interface CategoryRequest {
