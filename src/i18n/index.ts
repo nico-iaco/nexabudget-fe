@@ -322,7 +322,25 @@ const resources = {
                 loadMore: 'Carica altri {{count}}',
                 filters: 'Filtri',
                 clearFilters: 'Azzera',
-                applyFilters: 'Applica'
+                applyFilters: 'Applica',
+                categorizeWithAi: 'Categorizza con AI',
+                categorizeAi: {
+                    noUncategorized: 'Nessuna transazione senza categoria da categorizzare.',
+                    modalTitle: 'Categorizzazione con AI',
+                    statusPending: 'In attesa...',
+                    statusInProgress: 'In corso...',
+                    statusCompleted: 'Completato',
+                    statusFailed: 'Errore',
+                    progress: '{{processed}} di {{total}} processate',
+                    categorized: '{{categorized}} transazioni categorizzate su {{processed}} processate',
+                    recap: '{{categorized}} transazioni categorizzate con successo.',
+                    errorMessage: 'Si è verificato un errore durante la categorizzazione. Riprova più tardi.',
+                    close: 'Chiudi',
+                    startError: 'Errore durante l\'avvio della categorizzazione.',
+                    sendToBackground: 'Metti in background',
+                    reopen: 'Riapri',
+                    total: '{{total}} transazioni totali'
+                }
             },
             crypto: {
                 title: 'Portafoglio Crypto',
@@ -929,7 +947,25 @@ const resources = {
                 loadMore: 'Load {{count}} more',
                 filters: 'Filters',
                 clearFilters: 'Clear',
-                applyFilters: 'Apply'
+                applyFilters: 'Apply',
+                categorizeWithAi: 'Categorize with AI',
+                categorizeAi: {
+                    noUncategorized: 'No uncategorized transactions to categorize.',
+                    modalTitle: 'AI Categorization',
+                    statusPending: 'Pending...',
+                    statusInProgress: 'In progress...',
+                    statusCompleted: 'Completed',
+                    statusFailed: 'Failed',
+                    progress: '{{processed}} of {{total}} processed',
+                    categorized: '{{categorized}} transactions categorized out of {{processed}} processed',
+                    recap: '{{categorized}} transactions categorized successfully.',
+                    errorMessage: 'An error occurred during categorization. Please try again later.',
+                    close: 'Close',
+                    startError: 'Error starting categorization.',
+                    sendToBackground: 'Send to background',
+                    reopen: 'Reopen',
+                    total: '{{total}} total transactions'
+                }
             },
             crypto: {
                 title: 'Crypto Portfolio',

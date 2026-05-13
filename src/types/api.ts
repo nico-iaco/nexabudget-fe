@@ -405,6 +405,16 @@ export interface ImportResultResponse {
     errors: number;
 }
 
+export type CategorizationJobStatus = 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
+
+export interface CategorizationJobResponse {
+    jobId: string;
+    status: CategorizationJobStatus;
+    total: number;
+    processed: number;
+    categorized: number;
+}
+
 export interface ChatSession {
     id: string;
     title: string;

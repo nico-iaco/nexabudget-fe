@@ -16,6 +16,7 @@ import {
     Modal,
     notification,
     Pagination,
+    Progress,
     Radio,
     Select,
     Space,
@@ -24,12 +25,13 @@ import {
     Tag,
     Typography
 } from 'antd';
-import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, FilterOutlined, PlusOutlined, RetweetOutlined, SearchOutlined, SwapOutlined, UploadOutlined } from '@ant-design/icons';
+import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, FilterOutlined, PlusOutlined, RetweetOutlined, RobotOutlined, SearchOutlined, SwapOutlined, UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import type { TransactionFilters } from '../../services/api';
 import type {
     Account,
+    CategorizationJobResponse,
     Category,
     LinkTransferRequest,
     Transaction,
@@ -125,6 +127,12 @@ export const TransactionsPage = () => {
 
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
+    const [isAiCategorizationModalOpen, setIsAiCategorizationModalOpen] = useState(false);
+    const [isAiCategorizationBackgrounded, setIsAiCategorizationBackgrounded] = useState(false);
+    const [aiCategorizationJob, setAiCategorizationJob] = useState<CategorizationJobResponse | null>(null);
+    const [aiCategorizationLoading, setAiCategorizationLoading] = useState(false);
+    const aiPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
     const [apiNotification, contextHolder] = notification.useNotification();
 
     const currentAccount = useMemo(() => {
@@ -211,6 +219,106 @@ export const TransactionsPage = () => {
         }
     };
 
+
+    const stopAiPolling = () => {
+        if (aiPollingRef.current !== null) {
+            clearInterval(aiPollingRef.current);
+            aiPollingRef.current = null;
+        }
+    };
+
+    const dismissAiCategorization = (job: CategorizationJobResponse | null) => {
+        stopAiPolling();
+        setIsAiCategorizationModalOpen(false);
+        setIsAiCategorizationBackgrounded(false);
+        if (job?.status === 'COMPLETED') {
+            setCurrentPage(1);
+            fetchTransactions(1);
+        }
+        setAiCategorizationJob(null);
+    };
+
+    const startAiPolling = (jobId: string) => {
+        stopAiPolling();
+        aiPollingRef.current = setInterval(async () => {
+            try {
+                const res = await api.getCategorizationJobStatus(jobId);
+                setAiCategorizationJob(res.data);
+                if (res.data.status === 'COMPLETED' || res.data.status === 'FAILED') {
+                    stopAiPolling();
+                    setIsAiCategorizationBackgrounded(prev => {
+                        if (prev) {
+                            if (res.data.status === 'COMPLETED') {
+                                setCurrentPage(1);
+                                fetchTransactionsRef.current(1);
+                                apiNotification.success({
+                                    message: t('transactions.categorizeAi.statusCompleted'),
+                                    description: t('transactions.categorizeAi.recap', { categorized: res.data.categorized }),
+                                    placement: 'topRight',
+                                    duration: 5,
+                                });
+                            } else {
+                                apiNotification.error({
+                                    message: t('transactions.categorizeAi.statusFailed'),
+                                    description: t('transactions.categorizeAi.errorMessage'),
+                                    placement: 'topRight',
+                                    duration: 5,
+                                });
+                            }
+                            setIsAiCategorizationBackgrounded(false);
+                            setAiCategorizationJob(null);
+                        }
+                        return false;
+                    });
+                }
+            } catch {
+                stopAiPolling();
+            }
+        }, 10000);
+    };
+
+    const handleStartAiCategorization = async () => {
+        if (aiCategorizationJob && (aiCategorizationJob.status === 'PENDING' || aiCategorizationJob.status === 'IN_PROGRESS')) {
+            handleReopenAiCategorizationModal();
+            return;
+        }
+        setAiCategorizationLoading(true);
+        setAiCategorizationJob(null);
+        try {
+            const res = await api.startCategorizationJob();
+            setAiCategorizationJob(res.data);
+            setIsAiCategorizationModalOpen(true);
+            setIsAiCategorizationBackgrounded(false);
+            if (res.data.status !== 'COMPLETED' && res.data.status !== 'FAILED') {
+                startAiPolling(res.data.jobId);
+            }
+        } catch (error: unknown) {
+            const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
+            const status = axiosError?.response?.status;
+            if (status === 422 || status === 400) {
+                const backendMessage = axiosError?.response?.data?.message;
+                message.info(backendMessage ?? t('transactions.categorizeAi.noUncategorized'));
+            } else {
+                message.error(t('transactions.categorizeAi.startError'));
+            }
+        } finally {
+            setAiCategorizationLoading(false);
+        }
+    };
+
+    const handleBackgroundAiCategorization = () => {
+        setIsAiCategorizationModalOpen(false);
+        setIsAiCategorizationBackgrounded(true);
+    };
+
+    const handleReopenAiCategorizationModal = () => {
+        setIsAiCategorizationBackgrounded(false);
+        setIsAiCategorizationModalOpen(true);
+    };
+
+    const handleCloseAiCategorizationModal = () => {
+        dismissAiCategorization(aiCategorizationJob);
+    };
 
     const scrollToTop = () => {
         document.querySelector('.ant-layout-content')?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -655,6 +763,14 @@ export const TransactionsPage = () => {
                             </Button>
                         )}
                         <Button
+                            icon={<RobotOutlined />}
+                            onClick={handleStartAiCategorization}
+                            loading={aiCategorizationLoading}
+                            size={isMobile ? 'middle' : 'large'}
+                        >
+                            {t('transactions.categorizeWithAi')}
+                        </Button>
+                        <Button
                             icon={<RetweetOutlined />}
                             onClick={handleOpenTransferModal}
                             size={isMobile ? 'middle' : 'large'}
@@ -1036,6 +1152,139 @@ export const TransactionsPage = () => {
                     </Form.Item>
                 </Form>
             </Modal>
+
+            <Modal
+                title={t('transactions.categorizeAi.modalTitle')}
+                open={isAiCategorizationModalOpen}
+                onCancel={() => {
+                    const isRunning = aiCategorizationJob?.status === 'PENDING' || aiCategorizationJob?.status === 'IN_PROGRESS';
+                    if (isRunning) {
+                        handleBackgroundAiCategorization();
+                    } else {
+                        handleCloseAiCategorizationModal();
+                    }
+                }}
+                footer={
+                    (aiCategorizationJob?.status === 'COMPLETED' || aiCategorizationJob?.status === 'FAILED')
+                        ? [
+                            <Button key="close" type="primary" onClick={handleCloseAiCategorizationModal}>
+                                {t('transactions.categorizeAi.close')}
+                            </Button>
+                        ]
+                        : [
+                            <Button key="background" onClick={handleBackgroundAiCategorization}>
+                                {t('transactions.categorizeAi.sendToBackground')}
+                            </Button>
+                        ]
+                }
+                closable={true}
+                maskClosable={false}
+            >
+                {aiCategorizationJob ? (
+                    <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                        {(aiCategorizationJob.status === 'PENDING' || aiCategorizationJob.status === 'IN_PROGRESS') && (
+                            <>
+                                <Flex justify="space-between" align="center">
+                                    <Text>
+                                        {aiCategorizationJob.status === 'PENDING'
+                                            ? t('transactions.categorizeAi.statusPending')
+                                            : t('transactions.categorizeAi.statusInProgress')}
+                                    </Text>
+                                    <Text type="secondary">
+                                        {t('transactions.categorizeAi.total', { total: aiCategorizationJob.total })}
+                                    </Text>
+                                </Flex>
+                                <Progress
+                                    percent={aiCategorizationJob.total > 0
+                                        ? Math.round((aiCategorizationJob.processed / aiCategorizationJob.total) * 100)
+                                        : 0}
+                                    status="active"
+                                />
+                                <Text type="secondary">
+                                    {t('transactions.categorizeAi.categorized', {
+                                        categorized: aiCategorizationJob.categorized,
+                                        processed: aiCategorizationJob.processed,
+                                    })}
+                                </Text>
+                            </>
+                        )}
+                        {aiCategorizationJob.status === 'COMPLETED' && (
+                            <>
+                                <Alert
+                                    type="success"
+                                    showIcon
+                                    message={t('transactions.categorizeAi.statusCompleted')}
+                                    description={t('transactions.categorizeAi.recap', {
+                                        categorized: aiCategorizationJob.categorized,
+                                    })}
+                                />
+                            </>
+                        )}
+                        {aiCategorizationJob.status === 'FAILED' && (
+                            <Alert
+                                type="error"
+                                showIcon
+                                message={t('transactions.categorizeAi.statusFailed')}
+                                description={t('transactions.categorizeAi.errorMessage')}
+                            />
+                        )}
+                    </Space>
+                ) : (
+                    <Flex justify="center" align="center" style={{ padding: '24px 0' }}>
+                        <Spin />
+                    </Flex>
+                )}
+            </Modal>
+
+            {isAiCategorizationBackgrounded && aiCategorizationJob && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: 24,
+                    right: 24,
+                    zIndex: 1000,
+                    width: 280,
+                    background: 'var(--ant-color-bg-elevated)',
+                    borderRadius: 8,
+                    boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
+                    padding: '12px 16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 8,
+                }}>
+                    <Flex justify="space-between" align="center">
+                        <Text strong style={{ fontSize: 13 }}>
+                            <RobotOutlined style={{ marginRight: 6 }} />
+                            {t('transactions.categorizeAi.modalTitle')}
+                        </Text>
+                        <Button
+                            type="link"
+                            size="small"
+                            style={{ padding: 0, height: 'auto' }}
+                            onClick={handleReopenAiCategorizationModal}
+                        >
+                            {t('transactions.categorizeAi.reopen')}
+                        </Button>
+                    </Flex>
+                    <Text type="secondary" style={{ fontSize: 12 }}>
+                        {aiCategorizationJob.status === 'PENDING'
+                            ? t('transactions.categorizeAi.statusPending')
+                            : t('transactions.categorizeAi.statusInProgress')}
+                    </Text>
+                    <Progress
+                        percent={aiCategorizationJob.total > 0
+                            ? Math.round((aiCategorizationJob.processed / aiCategorizationJob.total) * 100)
+                            : 0}
+                        status="active"
+                        size="small"
+                    />
+                    <Text type="secondary" style={{ fontSize: 11 }}>
+                        {t('transactions.categorizeAi.progress', {
+                            processed: aiCategorizationJob.processed,
+                            total: aiCategorizationJob.total,
+                        })}
+                    </Text>
+                </div>
+            )}
         </>
     );
 };

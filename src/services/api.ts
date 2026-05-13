@@ -253,6 +253,12 @@ export const deleteManualHolding = (id: string): Promise<AxiosResponse<void>> =>
 export const saveBinanceKeys = (data: BinanceKeysRequest): Promise<AxiosResponse<void>> => apiClient.post('/crypto/binance/keys', data);
 export const syncFromBinance = (): Promise<AxiosResponse<void>> => apiClient.post('/crypto/binance/sync');
 
+// AI Categorization
+export const startCategorizationJob = (): Promise<AxiosResponse<import('../types/api').CategorizationJobResponse>> =>
+    apiClient.post('/transactions/categorize-uncategorized');
+export const getCategorizationJobStatus = (jobId: string): Promise<AxiosResponse<import('../types/api').CategorizationJobResponse>> =>
+    apiClient.get(`/transactions/categorize-uncategorized/${jobId}`);
+
 // Chat
 export const sendChatMessage = (data: ChatRequest): Promise<AxiosResponse<ChatResponse>> => apiClient.post('/chat', data);
 export const getChatSessions = (): Promise<AxiosResponse<ChatSession[]>> => apiClient.get('/chat/sessions');
