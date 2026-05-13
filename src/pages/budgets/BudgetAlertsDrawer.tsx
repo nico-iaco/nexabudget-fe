@@ -130,7 +130,7 @@ export const BudgetAlertsDrawer = ({ open, onClose, budget }: Props) => {
                 style={{ marginBottom: 16 }}
             >
                 <Form.Item name="thresholdPercentage" rules={[{ required: true, message: t('budgets.alerts.thresholdRequired') }]}>
-                    <InputNumber min={1} max={100} addonAfter="%" placeholder="80" style={{ width: 120 }} />
+                    <InputNumber min={1} max={100} addonAfter="%" placeholder="80" style={{ width: 120 }} parser={(value) => value?.replace(',', '.') as any} />
                 </Form.Item>
                 <Form.Item name="active" valuePropName="checked">
                     <Switch checkedChildren={t('budgets.alerts.active')} unCheckedChildren={t('budgets.alerts.active')} />

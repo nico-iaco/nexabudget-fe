@@ -234,6 +234,7 @@ export const GoCardlessCallbackPage = () => {
                                 placeholder={t('gocardlessCallback.currentBalancePlaceholder')}
                                 addonAfter={getCurrencySymbol(accountCurrency)}
                                 precision={2}
+                                parser={(value) => value?.replace(',', '.') as any}
                             />
                         </Form.Item>
                     )}

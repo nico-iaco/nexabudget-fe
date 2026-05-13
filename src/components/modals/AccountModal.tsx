@@ -79,6 +79,7 @@ export const AccountModal = ({ open, onCancel, onFinish, editingAccount }: Accou
                         min={0}
                         addonAfter={getCurrencySymbol(currencyValue ?? 'EUR')}
                         disabled={!!editingAccount}
+                        parser={(value) => value?.replace(',', '.') as any}
                     />
                 </Form.Item>
                 <Form.Item

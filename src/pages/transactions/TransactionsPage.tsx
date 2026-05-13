@@ -988,7 +988,7 @@ export const TransactionsPage = () => {
                         </Select>
                     </Form.Item>
                     <Form.Item name="amount" label={t('transactions.amount')} rules={[{ required: true }]}>
-                        <InputNumber style={{ width: '100%' }} min={0} addonAfter={formSelectedCurrency} />
+                        <InputNumber style={{ width: '100%' }} min={0} addonAfter={formSelectedCurrency} parser={(value) => value?.replace(',', '.') as any} />
                     </Form.Item>
                     <Form.Item name="type" label={t('transactions.type')} rules={[{ required: true }]}>
                         <Select placeholder={t('transactions.selectType')} getPopupContainer={triggerNode => triggerNode.parentNode}>
@@ -1148,6 +1148,7 @@ export const TransactionsPage = () => {
                             addonAfter={getCurrencySymbol(currentAccount?.currency ?? 'EUR')}
                             precision={2}
                             autoFocus
+                            parser={(value) => value?.replace(',', '.') as any}
                         />
                     </Form.Item>
                 </Form>

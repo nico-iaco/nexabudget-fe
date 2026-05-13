@@ -47,7 +47,7 @@ export const BudgetTemplateModal = ({ open, onCancel, onFinish, editing, categor
                     </Select>
                 </Form.Item>
                 <Form.Item name="budgetLimit" label={t('budgets.limit')} rules={[{ required: true, message: t('budgets.limitRequired') }]}>
-                    <InputNumber style={{ width: '100%' }} min={0.01} precision={2} addonAfter="€" />
+                    <InputNumber style={{ width: '100%' }} min={0.01} precision={2} addonAfter="€" parser={(value) => value?.replace(',', '.') as any} />
                 </Form.Item>
                 <Form.Item name="recurrenceType" label={t('budgets.recurrence')} rules={[{ required: true, message: t('budgets.recurrenceRequired') }]}>
                     <Select>

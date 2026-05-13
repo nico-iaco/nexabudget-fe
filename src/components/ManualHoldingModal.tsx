@@ -79,6 +79,7 @@ export const ManualHoldingModal: React.FC<ManualHoldingModalProps> = ({ open, on
                         placeholder="0.00"
                         step="0.00000001"
                         stringMode
+                        parser={(value) => value?.replace(',', '.') ?? ''}
                     />
                 </Form.Item>
 

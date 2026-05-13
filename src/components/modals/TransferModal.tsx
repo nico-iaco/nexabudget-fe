@@ -95,7 +95,7 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts }: TransferMo
                     label={t('transfers.amount')}
                     rules={[{ required: true, message: t('transfers.amountRequired') }]}
                 >
-                    <InputNumber style={{ width: '100%' }} min={0.01} addonAfter={sourceAccount?.currency ?? '€'} />
+                    <InputNumber style={{ width: '100%' }} min={0.01} addonAfter={sourceAccount?.currency ?? '€'} parser={(value) => value?.replace(',', '.') as any} />
                 </Form.Item>
                 <Form.Item
                     name="transferDate"
