@@ -5,6 +5,7 @@ import { DeleteOutlined, MenuOutlined, PlusOutlined, RobotOutlined, SendOutlined
 import { Input } from 'antd';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import dayjs from 'dayjs';
 import * as api from '../../services/api';
 import type { ChatSession } from '../../types/api';
@@ -413,7 +414,9 @@ export const ChatPage = () => {
                                                 </Flex>
                                             ) : msg.role === 'ASSISTANT' ? (
                                                 <div className="chat-markdown">
-                                                    <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                                        {msg.content}
+                                                    </ReactMarkdown>
                                                 </div>
                                             ) : (
                                                 <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>

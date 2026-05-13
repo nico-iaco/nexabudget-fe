@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, Button, DatePicker, Typography, Spin, Space, message, Flex, Select } from 'antd';
 import { RobotOutlined, DownloadOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
@@ -248,7 +249,7 @@ export const AiAnalysisCard: React.FC = () => {
                                 {t('dashboard.aiAnalysis.downloadReport')}
                             </Button>
                         </Flex>
-                        <ReactMarkdown>
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {result}
                         </ReactMarkdown>
                     </div>
