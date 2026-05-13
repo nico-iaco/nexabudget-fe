@@ -70,8 +70,8 @@ export const GoCardlessCallbackPage = () => {
     };
 
     const handleConfirmSelection = async () => {
-        if (!selectedAccountId || !accountId || currentBalance === null) {
-            message.error(t('gocardlessCallback.selectAccountAndBalance'));
+        if (!selectedAccountId || !accountId) {
+            message.error(t('gocardlessCallback.selectAccount'));
             return;
         }
 
@@ -229,21 +229,29 @@ export const GoCardlessCallbackPage = () => {
                     />
 
                     {selectedAccountId && (
-                        <Form.Item
-                            label={t('gocardlessCallback.currentBalanceLabel')}
-                            style={{marginTop: 24}}
-                            help={t('gocardlessCallback.currentBalanceHelp')}
-                        >
-                            <InputNumber
-                                style={{width: '100%'}}
-                                value={currentBalance}
-                                onChange={(value) => setCurrentBalance(value)}
-                                placeholder={t('gocardlessCallback.currentBalancePlaceholder')}
-                                addonAfter={getCurrencySymbol(accountCurrency)}
-                                precision={2}
-                                parser={(value) => value?.replace(',', '.') as any}
+                        <>
+                            <Alert
+                                message={t('gocardlessCallback.balanceWarningTitle')}
+                                description={t('gocardlessCallback.balanceWarningDescription')}
+                                type="warning"
+                                showIcon
+                                style={{marginTop: 24, marginBottom: 16}}
                             />
-                        </Form.Item>
+                            <Form.Item
+                                label={t('gocardlessCallback.currentBalanceLabel')}
+                                help={t('gocardlessCallback.currentBalanceHelp')}
+                            >
+                                <InputNumber
+                                    style={{width: '100%'}}
+                                    value={currentBalance}
+                                    onChange={(value) => setCurrentBalance(value)}
+                                    placeholder={t('gocardlessCallback.currentBalancePlaceholder')}
+                                    addonAfter={getCurrencySymbol(accountCurrency)}
+                                    precision={2}
+                                    parser={(value) => value?.replace(',', '.') as any}
+                                />
+                            </Form.Item>
+                        </>
                     )}
 
                     <Flex gap="small" style={{marginTop: 24}}>
@@ -253,7 +261,7 @@ export const GoCardlessCallbackPage = () => {
                         <Button
                             type="primary"
                             onClick={handleConfirmSelection}
-                            disabled={!selectedAccountId || currentBalance === null}
+                            disabled={!selectedAccountId}
                             style={{flex: 1}}
                         >
                             {t('gocardlessCallback.confirmSelection')}
