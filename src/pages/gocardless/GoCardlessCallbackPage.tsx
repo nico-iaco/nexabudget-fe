@@ -1,13 +1,18 @@
 // src/pages/gocardless/GoCardlessCallbackPage.tsx
 import {useEffect, useState} from 'react';
-import {useNavigate, useParams} from 'react-router-dom';
+import {useNavigate, useOutletContext, useParams} from 'react-router-dom';
 import {Alert, Button, Card, Flex, Form, InputNumber, List, message, notification, Spin, theme, Typography} from 'antd';
 import {BankOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import * as api from '../../services/api';
-import type {GoCardlessBankDetails} from '../../types/api';
+import type {Account, GoCardlessBankDetails} from '../../types/api';
 import {COLOR_ACCENT} from '../../theme/tokens';
 import {getCurrencySymbol} from '../../utils/currency';
+
+interface OutletContextType {
+    accounts: Account[];
+    fetchAccounts: (background?: boolean) => Promise<Account[]>;
+}
 
 const {Title, Text} = Typography;
 
@@ -15,6 +20,7 @@ export const GoCardlessCallbackPage = () => {
     const { t } = useTranslation();
     const {accountId} = useParams<{ accountId: string }>();
     const navigate = useNavigate();
+    const { fetchAccounts } = useOutletContext<OutletContextType>();
     const [loading, setLoading] = useState(true);
     const [bankAccounts, setBankAccounts] = useState<GoCardlessBankDetails[]>([]);
     const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
@@ -87,6 +93,7 @@ export const GoCardlessCallbackPage = () => {
                 duration: 5,
             });
 
+            await fetchAccounts();
             navigate(`/accounts/${accountId}/transactions`);
         } catch (err) {
             console.error(err);
