@@ -21,7 +21,9 @@ export const CategoryMergeModal = ({ open, source, categories, onCancel, onConfi
     }, [open, source?.id]);
 
     const targets = useMemo(
-        () => categories.filter(c => !c.isDefault && c.id !== source?.id),
+        () => categories
+            .filter(c => !c.isDefault && c.id !== source?.id)
+            .sort((a, b) => a.name.localeCompare(b.name)),
         [categories, source?.id]
     );
 

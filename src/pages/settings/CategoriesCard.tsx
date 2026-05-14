@@ -27,10 +27,7 @@ export const CategoriesCard = () => {
     const [rowBusyId, setRowBusyId] = useState<string | null>(null);
 
     const sortedCategories = useMemo(
-        () => [...categories].sort((a, b) => {
-            if (a.isDefault !== b.isDefault) return a.isDefault ? 1 : -1;
-            return a.name.localeCompare(b.name);
-        }),
+        () => [...categories].sort((a, b) => a.name.localeCompare(b.name)),
         [categories]
     );
 

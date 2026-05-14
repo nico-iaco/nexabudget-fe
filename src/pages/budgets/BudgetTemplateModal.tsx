@@ -1,5 +1,5 @@
 import { Button, Form, InputNumber, Modal, Select, Switch } from 'antd';
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BudgetTemplate, BudgetTemplateRequest, Category } from '../../types/api';
 
@@ -11,9 +11,14 @@ interface Props {
     categories: Category[];
 }
 
-export const BudgetTemplateModal = ({ open, onCancel, onFinish, editing, categories }: Props) => {
+export const BudgetTemplateModal = ({ open, onCancel, onFinish, editing, categories: rawCategories }: Props) => {
     const { t } = useTranslation();
     const [form] = Form.useForm<BudgetTemplateRequest>();
+
+    const categories = useMemo(
+        () => [...rawCategories].sort((a, b) => a.name.localeCompare(b.name)),
+        [rawCategories]
+    );
 
     useEffect(() => {
         if (open) {

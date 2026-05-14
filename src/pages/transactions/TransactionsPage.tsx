@@ -80,9 +80,14 @@ export const TransactionsPage = () => {
         accounts,
         fetchAccounts: fetchLayoutAccounts,
         transactionRefreshKey,
-        categories,
+        categories: rawCategories,
         handleOpenTransferModal
     } = useOutletContext<OutletContextType>();
+
+    const categories = useMemo(
+        () => [...rawCategories].sort((a, b) => a.name.localeCompare(b.name)),
+        [rawCategories]
+    );
 
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [totalTransactions, setTotalTransactions] = useState(0);
