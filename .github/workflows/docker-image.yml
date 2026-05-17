@@ -2,7 +2,7 @@
 name: Docker - Build and Push Multi-Arch Image
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "**" ]
     paths:
       - 'src/**'
       - 'public/**'
@@ -61,6 +61,8 @@ jobs:
             type=sha,format=short
             # Abilita il tag 'latest' solo per il branch main
             type=raw,value=latest,enable={{is_default_branch}}
+            # Abilita il tag con il nome del branch
+            type=ref,event=branch
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -115,9 +117,17 @@ jobs:
         run: |
           # Retrieve SHA for tagging
           sha_short=$(echo ${{ github.sha }} | cut -c1-7)
+          branch_name=${{ github.ref_name }}
+          
+          # Costruisci l'elenco dei tag
+          tags="-t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${sha_short} -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${branch_name}"
+          
+          # Aggiungi il tag 'latest' se è il branch main
+          if [ "${branch_name}" = "main" ]; then
+            tags="$tags -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest"
+          fi
 
-          docker buildx imagetools create -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${sha_short} \
+          docker buildx imagetools create $tags \
             $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
 
       - name: Inspect image

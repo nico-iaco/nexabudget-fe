@@ -147,6 +147,11 @@ export interface BinanceKeysRequest {
     apiSecret: string;
 }
 
+export interface CoinbaseKeysRequest {
+    apiKeyName: string;
+    privateKey: string;
+}
+
 export interface ManualHoldingsRequest {
     symbol: string;
     amount: number;

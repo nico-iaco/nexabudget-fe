@@ -20,6 +20,7 @@ import type {
     ChatResponse,
     ChatSession,
     ConvertSingleToTransferRequest,
+    CoinbaseKeysRequest,
     CryptoHolding,
     DeletedAccount,
     GoCardlessBank,
@@ -252,6 +253,8 @@ export const updateManualHolding = (id: string, data: UpdateCryptoAsset): Promis
 export const deleteManualHolding = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/crypto/holdings/${id}`);
 export const saveBinanceKeys = (data: BinanceKeysRequest): Promise<AxiosResponse<void>> => apiClient.post('/crypto/binance/keys', data);
 export const syncFromBinance = (): Promise<AxiosResponse<void>> => apiClient.post('/crypto/binance/sync');
+export const saveCoinbaseKeys = (data: CoinbaseKeysRequest): Promise<AxiosResponse<void>> => apiClient.post('/crypto/coinbase/keys', data);
+export const syncFromCoinbase = (): Promise<AxiosResponse<void>> => apiClient.post('/crypto/coinbase/sync');
 
 // AI Categorization
 export const startCategorizationJob = (): Promise<AxiosResponse<import('../types/api').CategorizationJobResponse>> =>

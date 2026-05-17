@@ -2,12 +2,13 @@ import React, {useEffect, useState} from 'react';
 import {Button, message, Space} from 'antd';
 import {KeyOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
-import {deleteManualHolding, getPortfolioValue, syncFromBinance} from '../../services/api';
+import {deleteManualHolding, getPortfolioValue, syncFromBinance, syncFromCoinbase} from '../../services/api';
 import {useBreakpoints} from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import type {CryptoAsset, PortfolioValueResponse} from '../../types/api';
 import {PortfolioSummary} from '../../components/PortfolioSummary';
 import {BinanceKeysModal} from '../../components/BinanceKeysModal';
+import {CoinbaseKeysModal} from '../../components/CoinbaseKeysModal';
 import {ManualHoldingModal} from '../../components/ManualHoldingModal';
 import {PageHeader} from '../../components/PageHeader';
 
@@ -16,8 +17,10 @@ export const CryptoPage: React.FC = () => {
     usePageTitle(t('crypto.title'));
     const [portfolioData, setPortfolioData] = useState<PortfolioValueResponse | null>(null);
     const [loading, setLoading] = useState(false);
-    const [syncing, setSyncing] = useState(false);
+    const [syncingBinance, setSyncingBinance] = useState(false);
+    const [syncingCoinbase, setSyncingCoinbase] = useState(false);
     const [showBinanceModal, setShowBinanceModal] = useState(false);
+    const [showCoinbaseModal, setShowCoinbaseModal] = useState(false);
     const [showManualModal, setShowManualModal] = useState(false);
     const [editingAsset, setEditingAsset] = useState<CryptoAsset | null>(null);
 
@@ -40,7 +43,7 @@ export const CryptoPage: React.FC = () => {
     }, []);
 
     const handleSyncBinance = async () => {
-        setSyncing(true);
+        setSyncingBinance(true);
         try {
             await syncFromBinance();
             message.success(t('crypto.syncStarted'));
@@ -51,7 +54,21 @@ export const CryptoPage: React.FC = () => {
             console.error('Failed to sync Binance:', error);
             message.error(t('crypto.syncError'));
         } finally {
-            setSyncing(false);
+            setSyncingBinance(false);
+        }
+    };
+
+    const handleSyncCoinbase = async () => {
+        setSyncingCoinbase(true);
+        try {
+            await syncFromCoinbase();
+            message.success(t('crypto.syncStartedCoinbase'));
+            setTimeout(fetchPortfolio, 2000);
+        } catch (error) {
+            console.error('Failed to sync Coinbase:', error);
+            message.error(t('crypto.syncErrorCoinbase'));
+        } finally {
+            setSyncingCoinbase(false);
         }
     };
 
@@ -92,6 +109,13 @@ export const CryptoPage: React.FC = () => {
                             {t('crypto.connectBinance')}
                         </Button>
                         <Button
+                            icon={<KeyOutlined />}
+                            onClick={() => setShowCoinbaseModal(true)}
+                            block={isMobile}
+                        >
+                            {t('crypto.connectCoinbase')}
+                        </Button>
+                        <Button
                             icon={<PlusOutlined />}
                             onClick={() => setShowManualModal(true)}
                             block={isMobile}
@@ -101,11 +125,20 @@ export const CryptoPage: React.FC = () => {
                         <Button
                             type="primary"
                             icon={<ReloadOutlined />}
-                            loading={syncing}
+                            loading={syncingBinance}
                             onClick={handleSyncBinance}
                             block={isMobile}
                         >
                             {t('crypto.syncBinance')}
+                        </Button>
+                        <Button
+                            type="primary"
+                            icon={<ReloadOutlined />}
+                            loading={syncingCoinbase}
+                            onClick={handleSyncCoinbase}
+                            block={isMobile}
+                        >
+                            {t('crypto.syncCoinbase')}
                         </Button>
                     </Space>
                 }
@@ -121,6 +154,12 @@ export const CryptoPage: React.FC = () => {
             <BinanceKeysModal
                 open={showBinanceModal}
                 onClose={() => setShowBinanceModal(false)}
+                onSuccess={fetchPortfolio}
+            />
+
+            <CoinbaseKeysModal
+                open={showCoinbaseModal}
+                onClose={() => setShowCoinbaseModal(false)}
                 onSuccess={fetchPortfolio}
             />
 

@@ -348,11 +348,15 @@ const resources = {
             crypto: {
                 title: 'Portafoglio Crypto',
                 connectBinance: 'Collega Binance',
+                connectCoinbase: 'Collega Coinbase',
                 addHolding: 'Aggiungi Holding',
                 syncBinance: 'Sincronizza Binance',
+                syncCoinbase: 'Sincronizza Coinbase',
                 syncStarted: 'Sincronizzazione Binance avviata',
+                syncStartedCoinbase: 'Sincronizzazione Coinbase avviata',
                 loadError: 'Impossibile caricare i dati del portafoglio.',
                 syncError: 'Impossibile sincronizzare con Binance.',
+                syncErrorCoinbase: 'Impossibile sincronizzare con Coinbase.',
                 holdingDeleted: 'Holding eliminata con successo',
                 holdingDeleteError: 'Impossibile eliminare la holding.'
             },
@@ -378,6 +382,18 @@ const resources = {
                 cancel: 'Annulla',
                 saveSuccess: 'Chiavi Binance salvate con successo',
                 saveError: 'Impossibile salvare le chiavi Binance. Riprova.'
+            },
+            coinbaseKeys: {
+                title: 'Collega account Coinbase',
+                apiKeyName: 'API Key Name',
+                apiKeyNamePlaceholder: 'organizations/123/apiKeys/abc',
+                apiKeyNameRequired: 'Inserisci il nome della chiave API',
+                privateKey: 'Private Key',
+                privateKeyPlaceholder: '-----BEGIN ANY PRIVATE KEY-----\n...\n-----END ANY PRIVATE KEY-----',
+                privateKeyRequired: 'Inserisci la private key',
+                saveKeys: 'Salva Chiavi',
+                saveSuccess: 'Chiavi Coinbase salvate con successo',
+                saveError: 'Impossibile salvare le chiavi Coinbase. Riprova.'
             },
             manualHolding: {
                 titleAdd: 'Aggiungi Holding Manuale',
@@ -976,11 +992,15 @@ const resources = {
             crypto: {
                 title: 'Crypto Portfolio',
                 connectBinance: 'Connect Binance',
+                connectCoinbase: 'Connect Coinbase',
                 addHolding: 'Add Holding',
                 syncBinance: 'Sync Binance',
+                syncCoinbase: 'Sync Coinbase',
                 syncStarted: 'Binance sync started successfully',
+                syncStartedCoinbase: 'Coinbase sync started successfully',
                 loadError: 'Failed to load portfolio data.',
                 syncError: 'Failed to sync with Binance.',
+                syncErrorCoinbase: 'Failed to sync with Coinbase.',
                 holdingDeleted: 'Holding deleted successfully',
                 holdingDeleteError: 'Failed to delete holding.'
             },
@@ -1006,6 +1026,18 @@ const resources = {
                 cancel: 'Cancel',
                 saveSuccess: 'Binance keys saved successfully',
                 saveError: 'Failed to save Binance keys. Please try again.'
+            },
+            coinbaseKeys: {
+                title: 'Connect Coinbase Account',
+                apiKeyName: 'API Key Name',
+                apiKeyNamePlaceholder: 'organizations/123/apiKeys/abc',
+                apiKeyNameRequired: 'Please enter the API key name',
+                privateKey: 'Private Key',
+                privateKeyPlaceholder: '-----BEGIN ANY PRIVATE KEY-----\n...\n-----END ANY PRIVATE KEY-----',
+                privateKeyRequired: 'Please enter the private key',
+                saveKeys: 'Save Keys',
+                saveSuccess: 'Coinbase keys saved successfully',
+                saveError: 'Failed to save Coinbase keys. Please try again.'
             },
             manualHolding: {
                 titleAdd: 'Add Manual Holding',
