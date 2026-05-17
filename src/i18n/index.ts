@@ -385,10 +385,10 @@ const resources = {
             },
             coinbaseKeys: {
                 title: 'Collega account Coinbase',
-                apiKeyName: 'API Key Name',
+                apiKeyName: 'Nome chiave API',
                 apiKeyNamePlaceholder: 'organizations/123/apiKeys/abc',
                 apiKeyNameRequired: 'Inserisci il nome della chiave API',
-                privateKey: 'Private Key',
+                privateKey: 'Chiave privata',
                 privateKeyPlaceholder: '-----BEGIN ANY PRIVATE KEY-----\n...\n-----END ANY PRIVATE KEY-----',
                 privateKeyRequired: 'Inserisci la private key',
                 saveKeys: 'Salva Chiavi',
