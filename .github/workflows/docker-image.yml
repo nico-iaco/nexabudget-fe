@@ -17,6 +17,35 @@ on:
       - 'Dockerfile'
       - '.dockerignore'
       - '.github/workflows/docker-image.yml'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - 'package-lock.json'
+      - 'index.html'
+      - 'vite.config.ts'
+      - 'tsconfig*.json'
+      - 'nginx.conf.template'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/docker-image.yml'
+      - 'src/**'
+      - 'public/**'
+      - 'scripts/**'
+      - 'package.json'
+      - 'yarn.lock'
+      - 'package-lock.json'
+      - 'index.html'
+      - 'vite.config.ts'
+      - 'tsconfig*.json'
+      - 'nginx.conf.template'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - '.github/workflows/docker-image.yml'
 env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
@@ -61,6 +90,10 @@ jobs:
             type=sha,format=short
             # Abilita il tag 'latest' solo per il branch main
             type=raw,value=latest,enable={{is_default_branch}}
+            # Abilita il tag con il nome del branch
+            type=ref,event=branch
+            # Aggiunge il nome del branch della PR
+            type=raw,value=${{ github.head_ref }},enable=${{ github.event_name == 'pull_request' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
@@ -114,12 +147,31 @@ jobs:
         working-directory: /tmp/digests
         run: |
           # Retrieve SHA for tagging
-          sha_short=$(echo ${{ github.sha }} | cut -c1-7)
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            sha_short=$(echo ${{ github.event.pull_request.head.sha }} | cut -c1-7)
+            branch_name="${{ github.head_ref }}"
+          else
+            sha_short=$(echo ${{ github.sha }} | cut -c1-7)
+            branch_name="${{ github.ref_name }}"
+          fi
+          
+          # Sanitize branch_name for docker tag (replace / with -)
+          branch_name=$(echo $branch_name | tr '/' '-')
+          # Ensure repository name is lowercase
+          REPO_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          
+          # Costruisci l'elenco dei tag
+          tags="-t ${{ env.REGISTRY }}/${REPO_LOWER}:${sha_short} -t ${{ env.REGISTRY }}/${REPO_LOWER}:${branch_name}"
+          
+          # Aggiungi il tag 'latest' se è il branch main
+          if [ "${branch_name}" = "main" ] && [ "${{ github.event_name }}" = "push" ]; then
+            tags="$tags -t ${{ env.REGISTRY }}/${REPO_LOWER}:latest"
+          fi
 
-          docker buildx imagetools create -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
-            -t ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${sha_short} \
-            $(printf '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@sha256:%s ' *)
+          docker buildx imagetools create $tags \
+            $(printf "${{ env.REGISTRY }}/${REPO_LOWER}@sha256:%s " *)
 
       - name: Inspect image
         run: |
-          docker buildx imagetools inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          REPO_LOWER=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          docker buildx imagetools inspect ${{ env.REGISTRY }}/${REPO_LOWER}:latest || true
