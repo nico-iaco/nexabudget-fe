@@ -352,6 +352,7 @@ export interface CryptoHolding {
 export interface AiAnalysisRequest {
     startDate: string;
     endDate: string;
+    userLanguage?: string;
 }
 
 export interface AiAnalysisJobResponse {

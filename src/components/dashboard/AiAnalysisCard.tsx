@@ -7,6 +7,7 @@ import dayjs, { Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { usePreferences } from '../../contexts/PreferencesContext';
 import { COLOR_ACCENT } from '../../theme/tokens';
 
 const { RangePicker } = DatePicker;
@@ -21,6 +22,7 @@ const PRESETS = (t: (k: string) => string) => [
 
 export const AiAnalysisCard: React.FC = () => {
     const { t } = useTranslation();
+    const { preferences } = usePreferences();
     const isMobile = useMediaQuery('(max-width: 768px)');
     
     // By default, let's select "lastMonth" as a nice starting point, but user starts with null null originally.
@@ -58,7 +60,8 @@ export const AiAnalysisCard: React.FC = () => {
             setCompletedJobId(null);
             const res = await api.requestAiAnalysis({
                 startDate: start.format('YYYY-MM-DD'),
-                endDate: end.format('YYYY-MM-DD')
+                endDate: end.format('YYYY-MM-DD'),
+                userLanguage: preferences.language
             });
             setJobId(res.data.jobId);
         } catch (error: any) {
