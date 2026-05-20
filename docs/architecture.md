@@ -76,35 +76,36 @@ The layout adapts dynamically using custom breakpoints detected via `src/hooks/u
 
 ```mermaid
 graph TD
-    App[App.tsx] --> Auth[AuthProvider]
-    Auth --> Pref[PreferencesProvider]
-    Pref --> Router[RouterProvider]
-    Router -->|Public Route| PublicLayout[PublicLayout]
-    Router -->|Private Route| Layout[Layout Master Shell]
+    App["App.tsx"] --> Auth["AuthProvider"]
+    Auth --> Pref["PreferencesProvider"]
+    Pref --> Router["RouterProvider"]
+    Router -->|Public Route| PublicLayout["PublicLayout"]
+    Router -->|Private Route| Layout
     
-    subgraph Layout Components
-        Layout --> AppHeader[AppHeader]
-        Layout --> AppSider[AppSider / Drawer]
-        Layout --> BottomNavBar[BottomNavBar Mobile]
-        Layout --> Outlet[Outlet Page Canvas]
-        Layout --> GlobalModals[Global CRUD Modals]
+    subgraph LayoutComponents["Layout Components"]
+        Layout["Layout Master Shell"]
+        Layout --> AppHeader["AppHeader"]
+        Layout --> AppSider["AppSider / Drawer"]
+        Layout --> BottomNavBar["BottomNavBar Mobile"]
+        Layout --> Outlet["Outlet Page Canvas"]
+        Layout --> GlobalModals["Global CRUD Modals"]
     end
 
-    subgraph Pages Rendered in Outlet
-        Outlet --> DashboardPage[DashboardPage]
-        Outlet --> TransactionsPage[TransactionsPage]
-        Outlet --> BudgetsPage[BudgetsPage]
-        Outlet --> CryptoPage[CryptoPage]
-        Outlet --> ChatPage[ChatPage]
-        Outlet --> TrashPage[TrashPage]
-        Outlet --> AuditLogPage[AuditLogPage]
-        Outlet --> SettingsPage[SettingsPage]
+    subgraph PagesRendered["Pages Rendered in Outlet"]
+        Outlet --> DashboardPage["DashboardPage"]
+        Outlet --> TransactionsPage["TransactionsPage"]
+        Outlet --> BudgetsPage["BudgetsPage"]
+        Outlet --> CryptoPage["CryptoPage"]
+        Outlet --> ChatPage["ChatPage"]
+        Outlet --> TrashPage["TrashPage"]
+        Outlet --> AuditLogPage["AuditLogPage"]
+        Outlet --> SettingsPage["SettingsPage"]
     end
     
-    subgraph Global Modals Managed by Layout
-        GlobalModals --> AccountModal[AccountModal]
-        GlobalModals --> TransferModal[TransferModal]
-        GlobalModals --> GoCardlessModal[GoCardlessModal]
+    subgraph GlobalModalsManaged["Global Modals Managed by Layout"]
+        GlobalModals --> AccountModal["AccountModal"]
+        GlobalModals --> TransferModal["TransferModal"]
+        GlobalModals --> GoCardlessModal["GoCardlessModal"]
     end
 ```
 
