@@ -1,0 +1,72 @@
+name: Sync Docs to Wiki
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'docs/**'
+      - 'README.md'
+  workflow_dispatch: # Permette di avviare il workflow manualmente da GitHub Actions
+
+permissions:
+  contents: write # Richiesto per poter fare il push nella Wiki del repository
+
+jobs:
+  sync-wiki:
+    name: Sync Wiki
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Sync files to Wiki
+        env:
+          WIKI_URL: https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.wiki.git
+        run: |
+          WIKI_DIR="temp_wiki"
+          
+          # Clona la wiki esistente
+          if git clone "$WIKI_URL" "$WIKI_DIR"; then
+            echo "Wiki clonata con successo."
+            cd "$WIKI_DIR"
+            # Rimuove i file esistenti (tranne .git) per gestire anche eventuali eliminazioni di file
+            find . -maxdepth 1 ! -name '.git' ! -name '.' -exec rm -rf {} +
+          else
+            echo "Impossibile clonare la Wiki (potrebbe essere vuota o non inizializzata)."
+            mkdir "$WIKI_DIR"
+            cd "$WIKI_DIR"
+            git init
+            git checkout -b master
+            git remote add origin "$WIKI_URL"
+          fi
+          
+          # Copia i file di documentazione
+          if [ -d "../docs" ]; then
+            echo "Copia dei file da docs/..."
+            cp -r ../docs/* .
+          fi
+          
+          # Copia il README.md come Home.md (la pagina principale della Wiki di GitHub)
+          if [ -f "../README.md" ]; then
+            echo "Copia di README.md come Home.md..."
+            cp ../README.md ./Home.md
+          fi
+          
+          # Aggiunge e committa le modifiche
+          git add .
+          if git diff --quiet && git diff --staged --quiet; then
+            echo "Nessuna modifica da committare."
+          else
+            git commit -m "docs: sync wiki from main branch (${{ github.sha }}) [skip ci]"
+            # La Wiki di GitHub usa solitamente 'master' come branch predefinito.
+            # Eseguiamo il push sul branch corrente (master o main)
+            CURRENT_BRANCH=$(git branch --show-current)
+            echo "Pushing su $CURRENT_BRANCH..."
+            git push origin "$CURRENT_BRANCH"
+          fi

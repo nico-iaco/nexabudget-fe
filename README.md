@@ -120,3 +120,14 @@ NexaBudget can be installed as a Progressive Web App (PWA) on your device:
    docker-compose up -d --build
    ```
 3. Open your browser at http://localhost (or the port configured in `docker-compose.yaml`).
+
+## 📖 Technical Documentation
+
+For in-depth details about the application's structure, integrations, and deployment, refer to the following documentation files:
+
+- [Architecture & Tech Stack](docs/architecture.md): Overview of the framework, routing, state management, layouts, and component hierarchy.
+- [Integrations & AI Features](docs/integrations.md): Detailed information on GoCardless Open Banking, Crypto tracking (Binance/Coinbase), and AI-powered features (financial Chat assistant, transaction categorizer, AI reports).
+- [PWA Configuration](docs/pwa.md): Details on the Progressive Web App setup, Service Worker update prompts, offline capabilities, and asset caching.
+- [API Client Layer](docs/api_client.md): Deep-dive into Axios configuration, authentication token injection, response handling, and endpoints mapping.
+- [Development & Deployment Guide](docs/development_guide.md): Developer setup instructions, i18n structure, environment configuration, and Docker deployment.
+
