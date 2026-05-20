@@ -106,7 +106,7 @@ A dedicated assistant allows users to converse about their financial data.
 * **Agent Tools**: The assistant can execute financial actions or query database statistics dynamically on the user's behalf. When tools are utilized, the response contains a `toolsUsed` array, indicating which internal functions the model executed. The client displays these as tags (e.g., `get_transactions`, `get_accounts`) to maintain transparency.
 
 ```mermaid
-graph TD
+flowchart TD
     User[User Input] -->|Send message| Client[ChatPage.tsx]
     Client -->|POST /chat| BE[NexaBudget Backend]
     BE -->|Query LLM Agent| LLM[AI Model]

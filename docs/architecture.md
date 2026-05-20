@@ -38,7 +38,7 @@ Maintains display configurations across sessions:
 * **Server Settings**: Stores server URLs and timeout options.
 
 ```mermaid
-graph TD
+flowchart TD
     A[Browser LocalStorage] -->|Hydrates| B[PreferencesContext]
     A -->|Hydrates| C[AuthContext]
     B -->|Exposes preferences| D[ConfigProvider Theme]
@@ -75,7 +75,7 @@ The layout adapts dynamically using custom breakpoints detected via `src/hooks/u
 * **Mobile Layout**: Collapses the sidebar into a slide-out overlay drawer controlled by a toggle button in the header. Renders a fixed bottom navigation bar (`BottomNavBar`) optimized for touch controls.
 
 ```mermaid
-graph TD
+flowchart TD
     App["App.tsx"] --> Auth["AuthProvider"]
     Auth --> Pref["PreferencesProvider"]
     Pref --> Router["RouterProvider"]
