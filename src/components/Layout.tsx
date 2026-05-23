@@ -145,6 +145,21 @@ export const Layout = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isSyncing]);
 
+    // Rileva la fine della sincronizzazione (quando isSyncing passa da true a false)
+    const prevSyncingRef = useRef(isSyncing);
+    useEffect(() => {
+        if (prevSyncingRef.current && !isSyncing) {
+            triggerTransactionRefresh();
+            notification.success({
+                message: t('transactions.syncSuccessTitle'),
+                description: t('transactions.syncSuccessDescription'),
+                placement: 'topRight',
+                duration: 5,
+            });
+        }
+        prevSyncingRef.current = isSyncing;
+    }, [isSyncing, t, notification]);
+
     const handleLogout = () => {
         logout();
         navigate('/login');

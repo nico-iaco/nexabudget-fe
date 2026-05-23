@@ -204,12 +204,6 @@ export const TransactionsPage = () => {
                 });
 
             }, 500);
-
-            // Refresh automatico dopo 30 secondi per mostrare le nuove transazioni
-            setTimeout(() => {
-                fetchTransactions();
-                fetchLayoutAccounts(true);
-            }, 30000);
         } catch (error) {
             console.error('Error during sync:', error);
             setIsBalanceModalOpen(false);
