@@ -59,7 +59,7 @@ export default defineConfig(({ mode }) => {
                     maximumFileSizeToCacheInBytes: 6000000,
                     globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
                     navigateFallback: '/index.html',
-                    navigateFallbackDenylist: [/^\/api\//, /^\/offline\.html$/],
+                    navigateFallbackDenylist: [/^\/api\//, /^\/mcp/, /^\/offline\.html$/],
                     runtimeCaching: [
                         {
                             // API calls: try network first, fall back to cache (5 min TTL)
