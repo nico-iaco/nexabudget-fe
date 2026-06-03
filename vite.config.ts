@@ -105,7 +105,11 @@ export default defineConfig(({ mode }) => {
                     secure: false,      // Imposta a false se il tuo backend usa un certificato self-signed
                     //rewrite: (path) => path.replace(/^\/api/, ''), // Rimuove /api dal percorso prima di inviare la richiesta al backend
                 },
-
+                '/mcp': {
+                    target: env.VITE_BE_BASE_URL || 'http://localhost:8080',
+                    changeOrigin: true,
+                    secure: false,
+                },
             }
         },
         build: {
