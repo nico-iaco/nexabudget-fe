@@ -2,7 +2,7 @@ import { Empty, Flex, Progress, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { BarData } from '../../hooks/useDashboardData';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT } from '../../theme/tokens';
+import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT, SERIES_INCOME } from '../../theme/tokens';
 
 export { TrendDualChart } from './TrendDualChart';
 
@@ -67,8 +67,13 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
     const months = [...new Set(data.map(d => d.month))];
     const maxValue = Math.max(...data.map(d => d.value), 1);
 
+    // Colore basato sulla chiave stabile SERIES_INCOME/EXPENSE — non sulla stringa tradotta
     const colorFor = (type: string) =>
-        type === 'Entrate' ? COLOR_POSITIVE : COLOR_NEGATIVE;
+        type === SERIES_INCOME ? COLOR_POSITIVE : COLOR_NEGATIVE;
+
+    // Etichetta leggibile dall'utente nella lingua corrente
+    const labelFor = (type: string) =>
+        type === SERIES_INCOME ? t('charts.income') : t('charts.expense');
 
     const types = [...new Set(data.map(d => d.type))];
 
@@ -79,7 +84,7 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
                 {types.map(type => (
                     <Flex key={type} align="center" gap={4}>
                         <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: colorFor(type) }} />
-                        <Text style={{ fontSize: 11 }}>{type}</Text>
+                        <Text style={{ fontSize: 11 }}>{labelFor(type)}</Text>
                     </Flex>
                 ))}
             </Flex>
@@ -98,7 +103,7 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
                                     {monthData.map(d => (
                                         <div
                                             key={d.type}
-                                            title={`${d.type}: ${d.value.toFixed(2)} €`}
+                                            title={`${labelFor(d.type)}: ${d.value.toFixed(2)} €`}
                                             style={{
                                                 flex: 1,
                                                 height: `${Math.max((d.value / maxValue) * 100, 2)}%`,

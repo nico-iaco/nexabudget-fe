@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Table, Switch, Button, Popconfirm, message, Space, Typography, Tag } from 'antd';
+import { App, Card, Table, Switch, Button, Popconfirm, Space, Typography, Tag } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { getApiKeys, createApiKey, updateApiKey, deleteApiKey } from '../../services/api';
@@ -12,6 +12,7 @@ const { Text } = Typography;
 
 export const ApiKeysCard = () => {
     const { t } = useTranslation();
+    const { message } = App.useApp();
     const [keys, setKeys] = useState<ApiKeyResponse[]>([]);
     const [loading, setLoading] = useState(false);
     const [formModalVisible, setFormModalVisible] = useState(false);

@@ -103,6 +103,12 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
         legend: { position: 'top-left' as const },
         xAxis: { label: { style: { fill: isDark ? '#ffffff' : '#000000' } } },
         yAxis: { label: { style: { fill: isDark ? '#ffffff' : '#000000' } } },
+        // Traduce le chiavi stabili IN/OUT nelle label localizzate per legenda e tooltip
+        meta: {
+            type: {
+                formatter: (v: string) => v === 'IN' ? t('charts.income') : t('charts.expense'),
+            },
+        },
     };
 
     return (

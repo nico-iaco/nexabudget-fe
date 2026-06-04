@@ -390,3 +390,41 @@
         contain-intrinsic-size: 0 120px;
     }
 }
+
+/* ──────────────────────────────────────────────────────────────────────────
+   Accessibilità: focus visibile e movimento ridotto
+   ────────────────────────────────────────────────────────────────────────── */
+
+/* Focus-visible globale: ring coerente su tutti gli elementi interattivi */
+:focus-visible {
+    outline: 2px solid var(--ant-color-primary, #1677ff);
+    outline-offset: 2px;
+    border-radius: 2px;
+}
+
+/* Riduzione del movimento per chi lo ha richiesto nel sistema */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+
+    /* Disabilita le transizioni specifiche di Ant Design */
+    .ant-card,
+    .ant-btn,
+    .ant-input,
+    .ant-select-selector,
+    .ant-spin-container {
+        transition: none !important;
+    }
+
+    /* Ferma il layout shift del sider */
+    .ant-layout,
+    .site-layout {
+        transition: none !important;
+    }
+}

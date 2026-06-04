@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
-    Button, Card, Empty, Flex, List, Popconfirm, Switch, Table, Tag, Typography, message
+    App, Button, Card, Flex, List, Popconfirm, Switch, Table, Tag, Typography
 } from 'antd';
 import { BellOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { EmptyState } from '../../components/EmptyState';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import type { BudgetTemplate, BudgetTemplateRequest, Category } from '../../types/api';
@@ -20,6 +21,7 @@ interface OutletContextType {
 
 export const BudgetsPage = () => {
     const { t } = useTranslation();
+    const { message } = App.useApp();
     usePageTitle(t('budgets.title'));
     const { categories } = useOutletContext<OutletContextType>();
     const { isSmallMobile: isMobile } = useBreakpoints();
@@ -153,7 +155,10 @@ export const BudgetsPage = () => {
             />
 
             {!loading && budgets.length === 0 ? (
-                <Empty description={t('budgets.emptyList')} />
+                <EmptyState
+                    description={t('budgets.emptyList')}
+                    actions={[{ label: t('budgets.emptyListCta'), onClick: () => { setEditing(null); setIsModalOpen(true); } }]}
+                />
             ) : isMobile ? (
                 <List
                     dataSource={budgets}

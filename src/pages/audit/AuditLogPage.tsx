@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Card, Collapse, Flex, List, Table, Tag, Typography, message } from 'antd';
+import { App, Card, Collapse, Flex, List, Table, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import * as api from '../../services/api';
@@ -8,6 +8,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { PageHeader } from '../../components/PageHeader';
+import { EmptyState } from '../../components/EmptyState';
 
 const { Text } = Typography;
 
@@ -29,6 +30,7 @@ const ACTION_COLORS: Record<AuditAction, string> = {
 
 export const AuditLogPage = () => {
     const { t } = useTranslation();
+    const { message } = App.useApp();
     usePageTitle(t('audit.title'));
     const { isSmallMobile: isMobile } = useBreakpoints();
 
@@ -112,11 +114,14 @@ export const AuditLogPage = () => {
     return (
         <>
             <PageHeader title={t('audit.title')} />
+            {!loading && entries.length === 0 && (
+                <EmptyState description={t('audit.emptyState')} />
+            )}
             {isMobile ? (
                 <List
                     dataSource={entries}
                     loading={loading}
-                    pagination={{ ...paginationProps, position: 'bottom', align: 'center' }}
+                    pagination={entries.length > 0 ? { ...paginationProps, position: 'bottom', align: 'center' } : false}
                     renderItem={(record) => (
                         <Card size="small" style={{ marginBottom: 12 }}>
                             <Flex vertical gap={6}>
@@ -130,7 +135,7 @@ export const AuditLogPage = () => {
                                 </Flex>
                                 <Flex gap="small" wrap="wrap">
                                     <Text style={{ fontSize: 12 }}>{record.entityType}</Text>
-                                    <Text copyable={{ text: record.entityId }} style={{ fontSize: 12, fontFamily: 'monospace', color: 'rgba(0,0,0,0.45)' }}>
+                                    <Text copyable={{ text: record.entityId }} type="secondary" style={{ fontSize: 12, fontFamily: 'monospace' }}>
                                         {record.entityId.substring(0, 8)}…
                                     </Text>
                                 </Flex>

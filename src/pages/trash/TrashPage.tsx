@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Button, Empty, Table, Tabs, Tag, message } from 'antd';
+import { App, Button, Empty, Table, Tabs, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import dayjs from 'dayjs';
@@ -10,6 +10,7 @@ import { PageHeader } from '../../components/PageHeader';
 
 export const TrashPage = () => {
     const { t } = useTranslation();
+    const { message } = App.useApp();
     usePageTitle(t('trash.title'));
 
     const [deletedTransactions, setDeletedTransactions] = useState<Transaction[]>([]);

@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Button, Form, Input, InputNumber, message, Modal} from 'antd';
+import {App, Button, Form, Input, InputNumber, Modal} from 'antd';
 import {useTranslation} from 'react-i18next';
 import {addManualHolding, updateManualHolding} from '../services/api';
 import type {CryptoAsset, ManualHoldingsRequest, UpdateCryptoAsset} from '../types/api';
@@ -13,6 +13,7 @@ interface ManualHoldingModalProps {
 
 export const ManualHoldingModal: React.FC<ManualHoldingModalProps> = ({ open, onClose, onSuccess, editingAsset }) => {
     const { t } = useTranslation();
+    const { message } = App.useApp();
     const [loading, setLoading] = useState(false);
     const [form] = Form.useForm();
 

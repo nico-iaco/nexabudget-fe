@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import {Button, message, Space} from 'antd';
+import {App, Button, Space} from 'antd';
 import {KeyOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import {deleteManualHolding, getPortfolioValue, syncFromBinance, syncFromCoinbase} from '../../services/api';
@@ -14,6 +14,7 @@ import {PageHeader} from '../../components/PageHeader';
 
 export const CryptoPage: React.FC = () => {
     const { t } = useTranslation();
+    const { message } = App.useApp();
     usePageTitle(t('crypto.title'));
     const [portfolioData, setPortfolioData] = useState<PortfolioValueResponse | null>(null);
     const [loading, setLoading] = useState(false);

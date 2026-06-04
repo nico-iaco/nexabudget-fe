@@ -1,7 +1,7 @@
 // src/components/Layout.tsx
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
-import { App, Button, Layout as AntLayout, message, Modal, theme } from 'antd';
+import { App, Button, Layout as AntLayout, Modal, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../contexts/AuthContext';
 import * as api from '../services/api';
@@ -21,7 +21,7 @@ const { Content } = AntLayout;
 
 export const Layout = () => {
     const { t } = useTranslation();
-    const { notification } = App.useApp();
+    const { notification, message } = App.useApp();
     const [collapsed, setCollapsed] = useState(true);
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [totalBalance, setTotalBalance] = useState<number>(0);
@@ -51,8 +51,12 @@ export const Layout = () => {
     const location = useLocation();
 
     const {
-        token: { colorBgContainer, borderRadiusLG },
+        token: { colorBgContainer, borderRadiusLG, colorTextSecondary },
     } = theme.useToken();
+
+    // Focus management: restore focus to toggle when drawer closes
+    const menuToggleRef = useRef<HTMLButtonElement | null>(null);
+    const prevCollapsedRef = useRef(collapsed);
 
     const triggerTransactionRefresh = () => {
         setTransactionRefreshKey(prev => prev + 1);
@@ -128,6 +132,14 @@ export const Layout = () => {
         document.addEventListener('keydown', onKeyDown);
         return () => document.removeEventListener('keydown', onKeyDown);
     }, [isMobile, collapsed]);
+
+    // Ripristina il focus sul toggle quando il drawer si chiude
+    useEffect(() => {
+        if (isMobile && prevCollapsedRef.current === false && collapsed) {
+            menuToggleRef.current?.focus();
+        }
+        prevCollapsedRef.current = collapsed;
+    }, [collapsed, isMobile]);
 
     // Polling per aggiornare lo stato di sincronizzazione.
     // Dipende solo da isSyncing (boolean), non dall'intero array accounts,
@@ -366,6 +378,26 @@ export const Layout = () => {
 
     return (
         <>
+            {/* Skip-to-content link — visibile solo al focus da tastiera */}
+            <a
+                href="#main"
+                style={{
+                    position: 'absolute',
+                    top: -40,
+                    left: 0,
+                    padding: '8px 16px',
+                    background: colorBgContainer,
+                    zIndex: 9999,
+                    borderRadius: '0 0 4px 0',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    transition: 'top 0.1s',
+                }}
+                onFocus={(e) => { (e.currentTarget as HTMLElement).style.top = '0'; }}
+                onBlur={(e) => { (e.currentTarget as HTMLElement).style.top = '-40px'; }}
+            >
+                {t('common.skipToContent', { defaultValue: 'Salta al contenuto' })}
+            </a>
             <AntLayout style={{ minHeight: '100vh' }}>
                 <AppSider
                     collapsed={collapsed}
@@ -394,26 +426,35 @@ export const Layout = () => {
                         setCollapsed={setCollapsed}
                         isMobile={isMobile}
                         onLogout={handleLogout}
+                        toggleRef={menuToggleRef}
                     />
                     <Content
                         style={{
                             margin: isMobile ? '16px 8px' : '24px 16px',
-                            padding: isMobile ? 12 : 24,
-                            paddingBottom: isSmallMobile ? 'calc(72px + env(safe-area-inset-bottom, 0px))' : (isMobile ? 12 : 24),
                             minHeight: 280,
-                            background: colorBgContainer,
-                            borderRadius: borderRadiusLG,
-                            overflow: 'auto'
+                            overflow: 'auto',
                         }}
                     >
-                        <Outlet context={{
-                            accounts,
-                            fetchAccounts,
-                            transactionRefreshKey,
-                            categories,
-                            fetchCategories,
-                            handleOpenTransferModal
-                        }} />
+                        <main
+                            id="main"
+                            style={{
+                                padding: isMobile ? 12 : 24,
+                                paddingBottom: isSmallMobile ? 'calc(72px + env(safe-area-inset-bottom, 0px))' : (isMobile ? 12 : 24),
+                                minHeight: 280,
+                                background: colorBgContainer,
+                                borderRadius: borderRadiusLG,
+                            }}
+                        >
+                            <Outlet context={{
+                                accounts,
+                                fetchAccounts,
+                                transactionRefreshKey,
+                                categories,
+                                fetchCategories,
+                                handleOpenTransferModal,
+                                onOpenCreateAccount: handleOpenCreateAccountModal,
+                            }} />
+                        </main>
                     </Content>
                 </AntLayout>
             </AntLayout>
@@ -462,7 +503,7 @@ export const Layout = () => {
                     okButtonProps={{ danger: true }}
                 >
                     <p>{t('accounts.deleteConfirm', { name: deletingAccount?.name ?? '' })}</p>
-                    <p style={{ color: 'rgba(0,0,0,0.45)' }}>{t('accounts.deleteConfirmWarning')}</p>
+                    <p style={{ color: colorTextSecondary }}>{t('accounts.deleteConfirmWarning')}</p>
                 </Modal>
             )}
 

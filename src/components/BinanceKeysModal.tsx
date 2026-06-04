@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Button, Form, Input, message, Modal} from 'antd';
+import {App, Button, Form, Input, Modal} from 'antd';
 import {useTranslation} from 'react-i18next';
 import {saveBinanceKeys} from '../services/api';
 import type {BinanceKeysRequest} from '../types/api';
@@ -12,6 +12,7 @@ interface BinanceKeysModalProps {
 
 export const BinanceKeysModal: React.FC<BinanceKeysModalProps> = ({ open, onClose, onSuccess }) => {
     const { t } = useTranslation();
+    const { message } = App.useApp();
     const [loading, setLoading] = useState(false);
     const [form] = Form.useForm();
 

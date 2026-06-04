@@ -1,4 +1,4 @@
-import {Card, Divider, Form, Input, Radio, Select, Space, Typography, message} from 'antd';
+import {App, Card, Divider, Form, Input, Radio, Select, Space, Typography} from 'antd';
 import {useTranslation} from 'react-i18next';
 import {usePreferences} from '../../contexts/PreferencesContext';
 import {useAuth} from '../../contexts/AuthContext';
@@ -14,6 +14,7 @@ const { Text } = Typography;
 
 export const SettingsPage = () => {
     const { t } = useTranslation();
+    const { message } = App.useApp();
     usePageTitle(t('settings.title'));
     const { preferences, setLanguage, setTheme, setServerSettings } = usePreferences();
     const { auth, updateUser } = useAuth();

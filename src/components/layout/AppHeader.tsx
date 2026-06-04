@@ -1,3 +1,4 @@
+import { type RefObject } from 'react';
 import {Button, Layout, theme, Typography} from 'antd';
 import {LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
@@ -10,9 +11,10 @@ interface AppHeaderProps {
     setCollapsed: (collapsed: boolean) => void;
     isMobile: boolean;
     onLogout: () => void;
+    toggleRef?: RefObject<HTMLButtonElement | null>;
 }
 
-export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout }: AppHeaderProps) => {
+export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout, toggleRef }: AppHeaderProps) => {
     const { t } = useTranslation();
     const {
         token: { colorBgContainer, colorPrimary, colorPrimaryActive },
@@ -31,6 +33,7 @@ export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout }: AppHe
             boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
         }}>
             <Button
+                ref={toggleRef}
                 type="text"
                 icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
                 onClick={() => setCollapsed(!collapsed)}
@@ -39,11 +42,13 @@ export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout }: AppHe
                 aria-expanded={!collapsed}
             />
             <Title
-                level={3}
+                level={1}
                 style={{
                     margin: 0,
                     fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
                     fontWeight: 700,
+                    /* Gradient text with colorPrimary fallback for forced-colors/high-contrast */
+                    color: colorPrimary,
                     background: `linear-gradient(135deg, ${colorPrimary} 0%, ${colorPrimaryActive} 100%)`,
                     WebkitBackgroundClip: 'text',
                     WebkitTextFillColor: 'transparent',

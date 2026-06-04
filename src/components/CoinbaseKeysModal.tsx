@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {Button, Form, Input, message, Modal} from 'antd';
+import {App, Button, Form, Input, Modal} from 'antd';
 import {useTranslation} from 'react-i18next';
 import {saveCoinbaseKeys} from '../services/api';
 import type {CoinbaseKeysRequest} from '../types/api';
@@ -12,6 +12,7 @@ interface CoinbaseKeysModalProps {
 
 export const CoinbaseKeysModal: React.FC<CoinbaseKeysModalProps> = ({ open, onClose, onSuccess }) => {
     const { t } = useTranslation();
+    const { message } = App.useApp();
     const [loading, setLoading] = useState(false);
     const [form] = Form.useForm();
 

@@ -166,6 +166,10 @@ const resources = {
             dashboard: {
                 title: 'Dashboard',
                 empty: 'Nessuna transazione trovata per il periodo selezionato.',
+                emptyNoAccounts: 'Nessun conto trovato. Crea il tuo primo conto per iniziare.',
+                emptyCtaAccount: 'Crea un conto',
+                emptyCtaBankLink: 'Collega una banca',
+                emptyCtaTransaction: 'Aggiungi transazione',
                 netBalance: 'Saldo Netto',
                 totalIncome: 'Entrate Totali',
                 totalExpenses: 'Uscite Totali',
@@ -216,7 +220,24 @@ const resources = {
                 }
             },
             charts: {
-                noData: 'Nessun dato disponibile'
+                noData: 'Nessun dato disponibile',
+                income: 'Entrate',
+                expense: 'Uscite'
+            },
+            onboarding: {
+                title: 'Inizia con NexaBudget',
+                subtitle: 'Segui questi passi per configurare il tuo profilo finanziario',
+                step1Title: 'Crea o collega un conto',
+                step1Desc: 'Aggiungi un conto manualmente oppure collegalo alla tua banca tramite GoCardless.',
+                step1Cta: 'Crea un conto',
+                step2Title: 'Aggiungi la prima transazione',
+                step2Desc: 'Registra entrate e uscite per iniziare a monitorare le tue finanze.',
+                step2Cta: 'Aggiungi transazione',
+                step3Title: 'Imposta un budget',
+                step3Desc: 'Crea un budget per categoria per tenere sotto controllo le spese.',
+                step3Cta: 'Crea budget',
+                dismiss: 'Ho già familiarità con l\'app',
+                needAccountFirst: 'Prima crea un conto per aggiungere transazioni.'
             },
             transactions: {
                 titleAll: 'Tutte le Transazioni',
@@ -597,6 +618,7 @@ const resources = {
                 deleteError: "Errore durante l'eliminazione del budget",
                 deleteConfirm: 'Sei sicuro di voler eliminare questo budget?',
                 emptyList: 'Nessun budget configurato',
+                emptyListCta: 'Crea il tuo primo budget',
                 alerts: {
                     title: 'Alert per "{{name}}"',
                     newAlert: 'Nuovo Alert',
@@ -624,6 +646,7 @@ const resources = {
                 expandRow: 'Dettagli',
                 newValue: 'Valore',
                 loadError: 'Errore nel caricamento del registro',
+                emptyState: 'Nessuna attività registrata.',
                 actions: {
                     CREATE_TRANSACTION: 'Transazione Creata',
                     UPDATE_TRANSACTION: 'Transazione Modificata',
@@ -812,6 +835,10 @@ const resources = {
             dashboard: {
                 title: 'Dashboard',
                 empty: 'No transactions found for the selected period.',
+                emptyNoAccounts: 'No accounts found. Create your first account to get started.',
+                emptyCtaAccount: 'Create an account',
+                emptyCtaBankLink: 'Link a bank',
+                emptyCtaTransaction: 'Add transaction',
                 netBalance: 'Net Balance',
                 totalIncome: 'Total Income',
                 totalExpenses: 'Total Expenses',
@@ -862,7 +889,24 @@ const resources = {
                 }
             },
             charts: {
-                noData: 'No data available'
+                noData: 'No data available',
+                income: 'Income',
+                expense: 'Expenses'
+            },
+            onboarding: {
+                title: 'Get started with NexaBudget',
+                subtitle: 'Follow these steps to set up your financial profile',
+                step1Title: 'Create or link an account',
+                step1Desc: 'Add an account manually or connect it to your bank via GoCardless.',
+                step1Cta: 'Create an account',
+                step2Title: 'Add your first transaction',
+                step2Desc: 'Record income and expenses to start tracking your finances.',
+                step2Cta: 'Add transaction',
+                step3Title: 'Set up a budget',
+                step3Desc: 'Create a budget by category to keep track of spending.',
+                step3Cta: 'Create budget',
+                dismiss: 'I\'m already familiar with the app',
+                needAccountFirst: 'Create an account first to add transactions.'
             },
             transactions: {
                 titleAll: 'All Transactions',
@@ -1243,6 +1287,7 @@ const resources = {
                 deleteError: 'Error deleting budget',
                 deleteConfirm: 'Are you sure you want to delete this budget?',
                 emptyList: 'No budgets configured',
+                emptyListCta: 'Create your first budget',
                 alerts: {
                     title: 'Alerts for "{{name}}"',
                     newAlert: 'New Alert',
@@ -1270,6 +1315,7 @@ const resources = {
                 expandRow: 'Details',
                 newValue: 'Value',
                 loadError: 'Error loading activity log',
+                emptyState: 'No activity recorded yet.',
                 actions: {
                     CREATE_TRANSACTION: 'Transaction Created',
                     UPDATE_TRANSACTION: 'Transaction Updated',

@@ -1,3 +1,4 @@
+import type React from 'react';
 import { memo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
@@ -10,14 +11,18 @@ import {
     TransactionOutlined,
 } from '@ant-design/icons';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
+import { NAV_ITEMS as ALL_NAV_ITEMS } from './navItems';
 
-const NAV_ITEMS = (t: (k: string) => string) => [
-    { path: '/dashboard', icon: <PieChartOutlined />, label: t('nav.dashboard') },
-    { path: '/transactions', icon: <TransactionOutlined />, label: t('nav.transactions') },
-    { path: '/budgets', icon: <ContainerOutlined />, label: t('nav.budgets') },
-    { path: '/chat', icon: <RobotOutlined />, label: t('nav.chat') },
-    { path: '/settings', icon: <SettingOutlined />, label: t('nav.settings') },
-];
+/** Icone per la bottom-bar — stesso mapping di AppSider, solo subset mobile */
+const BOTTOM_BAR_ICON_MAP: Record<string, React.ReactNode> = {
+    '/dashboard':    <PieChartOutlined />,
+    '/transactions': <TransactionOutlined />,
+    '/budgets':      <ContainerOutlined />,
+    '/chat':         <RobotOutlined />,
+    '/settings':     <SettingOutlined />,
+};
+
+const BOTTOM_BAR_ITEMS = ALL_NAV_ITEMS.filter(item => item.showInBottomBar);
 
 const BottomNavBarInner = () => {
     const { t } = useTranslation();
@@ -28,10 +33,9 @@ const BottomNavBarInner = () => {
 
     if (!isSmallMobile) return null;
 
-    const items = NAV_ITEMS(t);
-
     return (
         <nav
+            aria-label={t('common.menu')}
             style={{
                 position: 'fixed',
                 bottom: 0,
@@ -48,13 +52,15 @@ const BottomNavBarInner = () => {
                 willChange: 'transform',
             }}
         >
-            {items.map(({ path, icon, label }) => {
-                const isActive = location.pathname === path ||
-                    (path === '/transactions' && location.pathname.startsWith('/accounts/'));
+            {BOTTOM_BAR_ITEMS.map(({ key, labelKey }) => {
+                const label = t(labelKey);
+                const icon = BOTTOM_BAR_ICON_MAP[key];
+                const isActive = location.pathname === key ||
+                    (key === '/transactions' && location.pathname.startsWith('/accounts/'));
                 return (
                     <button
-                        key={path}
-                        onClick={() => navigate(path)}
+                        key={key}
+                        onClick={() => navigate(key)}
                         style={{
                             flex: 1,
                             display: 'flex',

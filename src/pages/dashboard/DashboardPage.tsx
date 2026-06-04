@@ -1,6 +1,6 @@
 // src/pages/dashboard/DashboardPage.tsx
 import { useState, lazy, Suspense } from 'react';
-import { useOutletContext } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
     Button, Card, Col, DatePicker, Empty, Flex, Progress, Row,
     Select, Skeleton, Statistic, Table, Tabs, Typography
@@ -32,12 +32,17 @@ import type { ColumnsType } from 'antd/es/table';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT, SPACING } from '../../theme/tokens';
 import { PageHeader } from '../../components/PageHeader';
+import { EmptyState } from '../../components/EmptyState';
+import { OnboardingChecklist } from '../../components/onboarding/OnboardingChecklist';
+import type { Account } from '../../types/api';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
 interface OutletContextType {
     transactionRefreshKey: number;
+    accounts: Account[];
+    onOpenCreateAccount: () => void;
 }
 
 const PRESETS = (t: (k: string) => string) => [
@@ -49,7 +54,8 @@ const PRESETS = (t: (k: string) => string) => [
 
 export const DashboardPage = () => {
     const { t } = useTranslation();
-    const { transactionRefreshKey } = useOutletContext<OutletContextType>();
+    const navigate = useNavigate();
+    const { transactionRefreshKey, accounts, onOpenCreateAccount } = useOutletContext<OutletContextType>();
     const isMobile = useMediaQuery('(max-width: 768px)');
 
     usePageTitle(t('dashboard.title'));
@@ -227,8 +233,33 @@ export const DashboardPage = () => {
         <>
             <PageHeader title={t('dashboard.title')} actions={filterControls} />
 
+            <OnboardingChecklist
+                hasAccounts={accounts.length > 0}
+                hasTransactions={hasData}
+                hasBudgets={budgetSummary.length > 0}
+                onCreateAccount={onOpenCreateAccount}
+                onAddTransaction={() => navigate('/transactions')}
+                onCreateBudget={() => navigate('/budgets')}
+            />
+
             {!hasData ? (
-                <Empty description={t('dashboard.empty')} style={{ marginTop: 48 }} />
+                <EmptyState
+                    description={
+                        accounts.length === 0
+                            ? t('dashboard.emptyNoAccounts')
+                            : t('dashboard.empty')
+                    }
+                    actions={
+                        accounts.length === 0
+                            ? [
+                                { label: t('dashboard.emptyCtaAccount'), onClick: onOpenCreateAccount },
+                                { label: t('dashboard.emptyCtaBankLink'), onClick: onOpenCreateAccount, type: 'default' },
+                              ]
+                            : [
+                                { label: t('dashboard.emptyCtaTransaction'), onClick: () => navigate('/transactions') },
+                              ]
+                    }
+                />
             ) : (
                 <>
                     {/* Statistiche mese corrente */}

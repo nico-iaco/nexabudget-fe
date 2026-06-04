@@ -1,4 +1,4 @@
-import { Modal, Typography, Button, Alert, message } from 'antd';
+import { App, Modal, Typography, Button, Alert } from 'antd';
 import { CopyOutlined, CheckOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
@@ -13,6 +13,7 @@ interface ApiKeySecretModalProps {
 
 export const ApiKeySecretModal = ({ open, onClose, plaintextKey }: ApiKeySecretModalProps) => {
     const { t } = useTranslation();
+    const { message } = App.useApp();
     const [copied, setCopied] = useState(false);
 
     const handleCopy = () => {

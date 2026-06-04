@@ -1,7 +1,7 @@
 // src/pages/gocardless/GoCardlessCallbackPage.tsx
 import {useEffect, useState} from 'react';
 import {useNavigate, useOutletContext, useParams} from 'react-router-dom';
-import {Alert, Button, Card, Flex, Form, InputNumber, List, message, notification, Spin, theme, Typography} from 'antd';
+import {App, Alert, Button, Card, Flex, Form, InputNumber, List, Spin, theme, Typography} from 'antd';
 import {BankOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import * as api from '../../services/api';
@@ -18,6 +18,7 @@ const {Title, Text} = Typography;
 
 export const GoCardlessCallbackPage = () => {
     const { t } = useTranslation();
+    const { message, notification } = App.useApp();
     const {accountId} = useParams<{ accountId: string }>();
     const navigate = useNavigate();
     const { fetchAccounts } = useOutletContext<OutletContextType>();
@@ -29,7 +30,7 @@ export const GoCardlessCallbackPage = () => {
 
     const [error, setError] = useState<string | null>(null);
 
-    const [apiNotification, contextHolder] = notification.useNotification();
+    const apiNotification = notification;
     const {token} = theme.useToken();
 
     useEffect(() => {
@@ -156,9 +157,7 @@ export const GoCardlessCallbackPage = () => {
     }
 
     return (
-        <>
-            {contextHolder}
-            <Flex justify="center" align="center" style={{minHeight: '100vh', padding: '24px'}}>
+        <Flex justify="center" align="center" style={{minHeight: '100vh', padding: '24px'}}>
                 <Card
                     style={{maxWidth: 800, width: '100%'}}
                     title={
@@ -268,6 +267,6 @@ export const GoCardlessCallbackPage = () => {
                         </Button>
                     </Flex>
                 </Card>
-            </Flex></>
+        </Flex>
     );
 };

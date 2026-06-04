@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Button, DatePicker, Typography, Spin, Space, message, Flex, Select } from 'antd';
+import { App, Card, Button, DatePicker, Typography, Spin, Space, Flex, Select } from 'antd';
 import { RobotOutlined, DownloadOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -22,6 +22,7 @@ const PRESETS = (t: (k: string) => string) => [
 
 export const AiAnalysisCard: React.FC = () => {
     const { t } = useTranslation();
+    const { message } = App.useApp();
     const { preferences } = usePreferences();
     const isMobile = useMediaQuery('(max-width: 768px)');
     

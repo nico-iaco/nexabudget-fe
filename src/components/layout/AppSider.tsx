@@ -1,4 +1,5 @@
-import { Button, Dropdown, Flex, Layout, Menu, Spin, Statistic, Typography } from 'antd';
+import type React from 'react';
+import { Button, Dropdown, Flex, Layout, Menu, Spin, Statistic, Typography, theme } from 'antd';
 import {
     BankOutlined,
     ContainerOutlined,
@@ -27,10 +28,24 @@ import { useTranslation } from 'react-i18next';
 import type { Account } from '../../types/api';
 import { getCurrencySymbol } from '../../utils/currency';
 import { useAuth } from '../../contexts/AuthContext';
+import { usePreferences } from '../../contexts/PreferencesContext';
 import { SIDER_BG, SIDER_TEXT_PRIMARY, SIDER_TEXT_SECONDARY } from '../../theme/tokens';
+import { NAV_ITEMS } from './navItems';
 
 const { Sider } = Layout;
 const { Title, Text } = Typography;
+
+/** Mappa chiave-route → icona per il menu di navigazione principale */
+const NAV_ICON_MAP: Record<string, React.ReactNode> = {
+    '/dashboard':    <PieChartOutlined />,
+    '/transactions': <TransactionOutlined />,
+    '/budgets':      <ContainerOutlined />,
+    '/crypto':       <FundOutlined />,
+    '/trash':        <RestOutlined />,
+    '/audit-log':    <HistoryOutlined />,
+    '/chat':         <RobotOutlined />,
+    '/settings':     <SettingOutlined />,
+};
 
 // Definisce l'ordine di priorità per i tipi di account
 const ACCOUNT_TYPE_ORDER: Record<Account['type'], number> = {
@@ -87,6 +102,15 @@ export const AppSider = ({
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { auth } = useAuth();
+    const { preferences } = usePreferences();
+    const { token } = theme.useToken();
+
+    // In light mode il sider usa il colore di sfondo del layout (chiaro); in dark rimane scuro.
+    const isDark = preferences.theme === 'dark';
+    const siderMenuTheme = isDark ? 'dark' : 'light';
+    const siderBg = isDark ? SIDER_BG : token.colorBgContainer;
+    const siderTextPrimary = isDark ? SIDER_TEXT_PRIMARY : token.colorText;
+    const siderTextSecondary = isDark ? SIDER_TEXT_SECONDARY : token.colorTextSecondary;
 
     const handleMenuClick = useCallback((path: string) => {
         const targetPath = selectedKeys.includes(path) ? '/transactions' : path;
@@ -147,7 +171,7 @@ export const AppSider = ({
                     <Flex justify="space-between" align="center" gap="small">
                         <Flex vertical style={{ flex: 1, minWidth: 0 }}>
                             <Text style={{
-                                color: SIDER_TEXT_PRIMARY,
+                                color: siderTextPrimary,
                                 fontWeight: 500,
                                 overflow: 'hidden',
                                 textOverflow: 'ellipsis',
@@ -157,7 +181,7 @@ export const AppSider = ({
                             </Text>
                             <Text style={{
                                 fontSize: '0.85em',
-                                color: SIDER_TEXT_SECONDARY
+                                color: siderTextSecondary
                             }}>
                                 {acc.actualBalance.toFixed(2)} {getCurrencySymbol(acc.currency)}
                             </Text>
@@ -170,7 +194,7 @@ export const AppSider = ({
                             <Button
                                 type="text"
                                 size="small"
-                                icon={<EllipsisOutlined style={{ color: SIDER_TEXT_SECONDARY }} />}
+                                icon={<EllipsisOutlined style={{ color: siderTextSecondary }} />}
                                 onClick={(e) => e.stopPropagation()}
                                 aria-label={t('common.actions')}
                             />
@@ -213,11 +237,11 @@ export const AppSider = ({
             }}
         >
             {isMobile && !collapsed && (
-                <Flex justify="space-between" align="center" style={{ padding: '16px', background: SIDER_BG }}>
-                    <Title level={4} style={{ color: '#fff', margin: 0 }}>{t('common.menu')}</Title>
+                <Flex justify="space-between" align="center" style={{ padding: '16px', background: siderBg }}>
+                    <Title level={4} style={{ color: siderTextPrimary, margin: 0 }}>{t('common.menu')}</Title>
                     <Button
                         type="text"
-                        icon={<MenuFoldOutlined style={{ color: '#fff', fontSize: '20px' }} />}
+                        icon={<MenuFoldOutlined style={{ color: siderTextPrimary, fontSize: '20px' }} />}
                         onClick={() => setCollapsed(true)}
                         size="large"
                     />
@@ -226,91 +250,26 @@ export const AppSider = ({
             {!isMobile && (
                 <div style={{ height: '32px', margin: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <img src="/pwa-192x192.png" alt={t('app.name')} width="32" height="32" style={{ height: '32px', width: '32px' }} />
-                    <Title level={4} style={{ color: 'white', margin: '0 0 0 10px', fontSize: '18px' }}>{t('app.name')}</Title>
+                    <Title level={4} style={{ color: siderTextPrimary, margin: '0 0 0 10px', fontSize: '18px' }}>{t('app.name')}</Title>
                 </div>
             )}
             <Menu
-                theme="dark"
+                theme={siderMenuTheme}
                 mode="inline"
                 selectedKeys={selectedKeys}
-                items={[
-                    {
-                        key: '/dashboard',
-                        icon: <PieChartOutlined />,
-                        label: t('nav.dashboard'),
-                        onClick: () => {
-                            navigate('/dashboard');
-                            if (isMobile) setCollapsed(true);
-                        }
-                    },
-                    {
-                        key: '/transactions',
-                        icon: <TransactionOutlined />,
-                        label: t('nav.allTransactions'),
-                        onClick: () => {
-                            navigate('/transactions');
-                            if (isMobile) setCollapsed(true);
-                        }
-                    },
-                    {
-                        key: '/budgets',
-                        icon: <ContainerOutlined />,
-                        label: t('nav.budgets'),
-                        onClick: () => {
-                            navigate('/budgets');
-                            if (isMobile) setCollapsed(true);
-                        }
-                    },
-                    {
-                        key: '/crypto',
-                        icon: <FundOutlined />,
-                        label: t('nav.crypto'),
-                        onClick: () => {
-                            navigate('/crypto');
-                            if (isMobile) setCollapsed(true);
-                        }
-                    },
-                    {
-                        key: '/trash',
-                        icon: <RestOutlined />,
-                        label: t('nav.trash'),
-                        onClick: () => {
-                            navigate('/trash');
-                            if (isMobile) setCollapsed(true);
-                        }
-                    },
-                    {
-                        key: '/audit-log',
-                        icon: <HistoryOutlined />,
-                        label: t('nav.auditLog'),
-                        onClick: () => {
-                            navigate('/audit-log');
-                            if (isMobile) setCollapsed(true);
-                        }
-                    },
-                    {
-                        key: '/chat',
-                        icon: <RobotOutlined />,
-                        label: t('nav.chat'),
-                        onClick: () => {
-                            navigate('/chat');
-                            if (isMobile) setCollapsed(true);
-                        }
-                    },
-                    {
-                        key: '/settings',
-                        icon: <SettingOutlined />,
-                        label: t('nav.settings'),
-                        onClick: () => {
-                            navigate('/settings');
-                            if (isMobile) setCollapsed(true);
-                        }
-                    },
-                ]}
+                items={NAV_ITEMS.map(item => ({
+                    key: item.key,
+                    icon: NAV_ICON_MAP[item.key],
+                    label: t(item.labelKey),
+                    onClick: () => {
+                        navigate(item.key);
+                        if (isMobile) setCollapsed(true);
+                    }
+                }))}
             />
             <Flex vertical style={{ padding: '0 8px' }}>
                 <Flex justify="space-between" align="center" style={{ padding: '16px 16px 8px' }}>
-                    <Title level={5} style={{ color: SIDER_TEXT_SECONDARY, margin: 0 }}>{t('nav.accounts')}</Title>
+                    <Title level={5} style={{ color: siderTextSecondary, margin: 0 }}>{t('nav.accounts')}</Title>
                     <Flex gap="small">
                         {hasSyncableAccounts && (
                             <Button
@@ -326,16 +285,16 @@ export const AppSider = ({
                 </Flex>
                 <div style={{ padding: '0 16px 16px' }}>
                     <Statistic
-                        title={<Text style={{ color: SIDER_TEXT_SECONDARY }}>{t('accounts.totalBalance')}</Text>}
+                        title={<Text style={{ color: siderTextSecondary }}>{t('accounts.totalBalance')}</Text>}
                         value={totalBalance}
                         precision={2}
-                        valueStyle={{ color: '#fff' }}
+                        valueStyle={{ color: siderTextPrimary }}
                         suffix={getCurrencySymbol(auth?.defaultCurrency || 'EUR')}
                     />
                 </div>
             </Flex>
             {loading ? <Spin style={{ padding: '20px' }} /> :
-                <Menu theme="dark" mode="inline" selectedKeys={selectedKeys} items={accountMenuItems} />}
+                <Menu theme={siderMenuTheme} mode="inline" selectedKeys={selectedKeys} items={accountMenuItems} />}
         </Sider>
     );
 };

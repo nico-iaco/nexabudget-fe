@@ -3,6 +3,7 @@ import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
 import * as api from '../services/api';
+import { SERIES_INCOME, SERIES_EXPENSE } from '../theme/tokens';
 import type {
     CategoryBreakdownItem,
     MonthComparisonResponse,
@@ -140,8 +141,10 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
         const result: BarData[] = [];
         monthlyTrendItems.forEach(item => {
             const label = dayjs(`${item.year}-${String(item.month).padStart(2, '0')}-01`).format('MMM YY');
-            result.push({ month: label, type: 'Entrate', value: item.income });
-            result.push({ month: label, type: 'Uscite', value: item.expense });
+            // Usiamo le costanti SERIES_* come chiave stabile (non la stringa tradotta)
+            // così il color-mapping nei grafici non dipende dalla lingua attiva.
+            result.push({ month: label, type: SERIES_INCOME, value: item.income });
+            result.push({ month: label, type: SERIES_EXPENSE, value: item.expense });
         });
         return result;
     }, [monthlyTrendItems]);

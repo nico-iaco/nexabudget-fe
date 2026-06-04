@@ -1,11 +1,12 @@
 // src/App.tsx
 import {createBrowserRouter, Navigate, Outlet, RouterProvider} from 'react-router-dom';
-import {App as AntApp, ConfigProvider, theme as antTheme} from 'antd';
+import {App as AntApp, ConfigProvider, Spin, theme as antTheme} from 'antd';
 import {useAuth} from './contexts/AuthContext';
 import {Layout} from './components/Layout';
 import { Suspense, lazy } from 'react';
 import type {JSX} from "react";
 import {usePreferences} from './contexts/PreferencesContext';
+import { BRAND_PRIMARY } from './theme/tokens';
 
 // Dynamic imports (Code Splitting)
 const LoginPage = lazy(() => import('./pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -19,10 +20,11 @@ const TrashPage = lazy(() => import('./pages/trash/TrashPage').then(m => ({ defa
 const BudgetsPage = lazy(() => import('./pages/budgets/BudgetsPage').then(m => ({ default: m.BudgetsPage })));
 const AuditLogPage = lazy(() => import('./pages/audit/AuditLogPage').then(m => ({ default: m.AuditLogPage })));
 const ChatPage = lazy(() => import('./pages/chat/ChatPage').then(m => ({ default: m.ChatPage })));
+const NotFoundPage = lazy(() => import('./pages/NotFoundPage').then(m => ({ default: m.NotFoundPage })));
 
 const LoadingSpinner = () => (
     <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-        <div className="ant-spin ant-spin-spinning ant-spin-lg"><span className="ant-spin-dot ant-spin-dot-spin"><i className="ant-spin-dot-item"></i><i className="ant-spin-dot-item"></i><i className="ant-spin-dot-item"></i><i className="ant-spin-dot-item"></i></span></div>
+        <Spin size="large" />
     </div>
 );
 
@@ -89,6 +91,10 @@ const router = createBrowserRouter([
                 path: 'chat',
                 element: <Suspense fallback={<LoadingSpinner />}><ChatPage /></Suspense>,
             },
+            {
+                path: '*',
+                element: <Suspense fallback={<LoadingSpinner />}><NotFoundPage /></Suspense>,
+            },
         ],
     },
     {
@@ -98,7 +104,11 @@ const router = createBrowserRouter([
             { path: 'login', element: <Suspense fallback={<LoadingSpinner />}><LoginPage /></Suspense> },
             { path: 'register', element: <Suspense fallback={<LoadingSpinner />}><RegisterPage /></Suspense> },
         ]
-    }
+    },
+    {
+        path: '*',
+        element: <Suspense fallback={<LoadingSpinner />}><NotFoundPage /></Suspense>,
+    },
 ]);
 
 function App() {
@@ -107,7 +117,13 @@ function App() {
 
     return (
         <ConfigProvider
-            theme={{ algorithm }}
+            theme={{
+                algorithm,
+                token: {
+                    colorPrimary: BRAND_PRIMARY,
+                    borderRadius: 8,
+                },
+            }}
             getPopupContainer={(triggerNode) => {
                 const drawer = triggerNode?.closest?.('.ant-drawer-body');
                 if (drawer) return drawer as HTMLElement;

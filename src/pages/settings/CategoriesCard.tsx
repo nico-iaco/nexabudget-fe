@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Button, Card, Popconfirm, Space, Table, Tag, Tooltip, message } from 'antd';
+import { App, Button, Card, Popconfirm, Space, Table, Tag, Tooltip } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { BranchesOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +17,7 @@ interface OutletContextType {
 
 export const CategoriesCard = () => {
     const { t } = useTranslation();
+    const { message } = App.useApp();
     const { categories, fetchCategories } = useOutletContext<OutletContextType>();
 
     const [formModalOpen, setFormModalOpen] = useState(false);
