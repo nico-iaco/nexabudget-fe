@@ -1,23 +1,33 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
-    App, Button, Card, Flex, List, Popconfirm, Switch, Table, Tag, Typography
+    App, Button, Card, Flex, List, Popconfirm, Progress, Switch, Table, Tag, Typography
 } from 'antd';
 import { BellOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import dayjs from 'dayjs';
 import { EmptyState } from '../../components/EmptyState';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
-import type { BudgetTemplate, BudgetTemplateRequest, Category } from '../../types/api';
+import type { BudgetTemplate, BudgetTemplateRequest, Category, MonthlySummaryResponse } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { BudgetTemplateModal } from './BudgetTemplateModal';
 import { BudgetAlertsDrawer } from './BudgetAlertsDrawer';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { PageHeader } from '../../components/PageHeader';
+import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_WARNING } from '../../theme/tokens';
+
+const { Text } = Typography;
 
 interface OutletContextType {
     categories: Category[];
 }
+
+const progressColor = (pct: number): string => {
+    if (pct >= 100) return COLOR_NEGATIVE;
+    if (pct >= 75) return COLOR_WARNING;
+    return COLOR_POSITIVE;
+};
 
 export const BudgetsPage = () => {
     const { t } = useTranslation();
@@ -27,16 +37,28 @@ export const BudgetsPage = () => {
     const { isSmallMobile: isMobile } = useBreakpoints();
 
     const [budgets, setBudgets] = useState<BudgetTemplate[]>([]);
+    const [summaries, setSummaries] = useState<MonthlySummaryResponse[]>([]);
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editing, setEditing] = useState<BudgetTemplate | null>(null);
     const [alertsBudget, setAlertsBudget] = useState<BudgetTemplate | null>(null);
 
+    // Mappa budgetId → riepilogo mensile per lookup O(1)
+    const summaryMap = useMemo(
+        () => new Map(summaries.map(s => [s.budgetId, s])),
+        [summaries]
+    );
+
     const fetchBudgets = async () => {
         setLoading(true);
         try {
-            const resp = await api.getBudgetTemplates();
-            setBudgets(resp.data);
+            const today = dayjs().format('YYYY-MM-DD');
+            const [templatesResp, summaryResp] = await Promise.all([
+                api.getBudgetTemplates(),
+                api.getBudgetMonthlySummary(today).catch(() => ({ data: [] as MonthlySummaryResponse[] })),
+            ]);
+            setBudgets(templatesResp.data);
+            setSummaries(summaryResp.data);
         } catch {
             message.error(t('budgets.loadError', { defaultValue: 'Failed to load budgets' }));
         } finally {
@@ -82,6 +104,34 @@ export const BudgetsPage = () => {
         return map[r];
     };
 
+    const renderProgress = (budgetId: string) => {
+        const s = summaryMap.get(budgetId);
+        if (!s) return <Text type="secondary">{t('budgets.noMonthlyData')}</Text>;
+        const pct = Math.min(s.percentageUsed, 100);
+        return (
+            <div style={{ minWidth: 160 }}>
+                <Flex justify="space-between" style={{ marginBottom: 2 }}>
+                    <Text style={{ fontSize: 12 }}>
+                        {s.spent.toFixed(2)} / {s.limit.toFixed(2)} €
+                    </Text>
+                    <Text style={{ fontSize: 12, color: progressColor(s.percentageUsed) }}>
+                        {s.percentageUsed.toFixed(0)}%
+                    </Text>
+                </Flex>
+                <Progress
+                    percent={pct}
+                    size="small"
+                    showInfo={false}
+                    strokeColor={progressColor(s.percentageUsed)}
+                    aria-label={`${t('budgets.spent')}: ${s.percentageUsed.toFixed(0)}%`}
+                />
+                <Text type="secondary" style={{ fontSize: 11 }}>
+                    {t('budgets.remaining')}: {s.remaining.toFixed(2)} €
+                </Text>
+            </div>
+        );
+    };
+
     const columns: ColumnsType<BudgetTemplate> = [
         {
             title: t('budgets.category'),
@@ -94,6 +144,11 @@ export const BudgetsPage = () => {
             key: 'budgetLimit',
             render: (v: number) => `${v.toFixed(2)} €`,
             sorter: (a, b) => a.budgetLimit - b.budgetLimit,
+        },
+        {
+            title: t('budgets.monthlyProgress'),
+            key: 'monthlyProgress',
+            render: (_: unknown, record: BudgetTemplate) => renderProgress(record.id),
         },
         {
             title: t('budgets.recurrence'),
@@ -194,15 +249,16 @@ export const BudgetsPage = () => {
                                 </Popconfirm>,
                             ]}
                         >
-                            <Flex justify="space-between" align="flex-start">
-                                <Flex vertical gap={4}>
+                            <Flex justify="space-between" align="flex-start" style={{ marginBottom: 8 }}>
+                                <Flex vertical gap={4} style={{ flex: 1, minWidth: 0 }}>
                                     <Typography.Text strong>{record.categoryName}</Typography.Text>
                                     <Typography.Text type="secondary">
                                         {record.budgetLimit.toFixed(2)} € · <Tag style={{ margin: 0 }}>{recurrenceLabel(record.recurrenceType)}</Tag>
                                     </Typography.Text>
                                 </Flex>
-                                <Switch checked={record.active} size="small" disabled />
+                                <Switch checked={record.active} size="small" disabled style={{ marginLeft: 8, flexShrink: 0 }} />
                             </Flex>
+                            {renderProgress(record.id)}
                         </Card>
                     )}
                 />

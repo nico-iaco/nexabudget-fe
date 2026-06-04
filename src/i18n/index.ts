@@ -619,6 +619,10 @@ const resources = {
                 deleteConfirm: 'Sei sicuro di voler eliminare questo budget?',
                 emptyList: 'Nessun budget configurato',
                 emptyListCta: 'Crea il tuo primo budget',
+                monthlyProgress: 'Spesa mese corrente',
+                spent: 'Speso',
+                remaining: 'Rimanente',
+                noMonthlyData: '—',
                 alerts: {
                     title: 'Alert per "{{name}}"',
                     newAlert: 'Nuovo Alert',
@@ -1288,6 +1292,10 @@ const resources = {
                 deleteConfirm: 'Are you sure you want to delete this budget?',
                 emptyList: 'No budgets configured',
                 emptyListCta: 'Create your first budget',
+                monthlyProgress: 'Current month spending',
+                spent: 'Spent',
+                remaining: 'Remaining',
+                noMonthlyData: '—',
                 alerts: {
                     title: 'Alerts for "{{name}}"',
                     newAlert: 'New Alert',
