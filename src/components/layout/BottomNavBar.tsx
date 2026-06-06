@@ -22,8 +22,6 @@ const BOTTOM_BAR_ICON_MAP: Record<string, React.ReactNode> = {
     '/settings':     <SettingOutlined />,
 };
 
-const BOTTOM_BAR_ITEMS = ALL_NAV_ITEMS.filter(item => item.showInBottomBar);
-
 const BottomNavBarInner = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
@@ -32,6 +30,11 @@ const BottomNavBarInner = () => {
     const { token } = theme.useToken();
 
     if (!isSmallMobile) return null;
+
+    // Filtro dentro il componente (non a livello modulo) per evitare problemi
+    // di inizializzazione nel bundle di produzione Rollup/Vite
+    const bottomBarItems = (Array.isArray(ALL_NAV_ITEMS) ? ALL_NAV_ITEMS : [])
+        .filter(item => item.showInBottomBar);
 
     return (
         <nav
@@ -52,7 +55,7 @@ const BottomNavBarInner = () => {
                 willChange: 'transform',
             }}
         >
-            {BOTTOM_BAR_ITEMS.map(({ key, labelKey }) => {
+            {bottomBarItems.map(({ key, labelKey }) => {
                 const label = t(labelKey);
                 const icon = BOTTOM_BAR_ICON_MAP[key];
                 const isActive = location.pathname === key ||

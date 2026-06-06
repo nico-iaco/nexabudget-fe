@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { App, Card, Collapse, Flex, List, Table, Tag, Typography } from 'antd';
+import { App, Card, Collapse, Flex, List, Table, Tag, Typography, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import * as api from '../../services/api';
@@ -31,6 +31,7 @@ const ACTION_COLORS: Record<AuditAction, string> = {
 export const AuditLogPage = () => {
     const { t } = useTranslation();
     const { message } = App.useApp();
+    const { token } = theme.useToken();
     usePageTitle(t('audit.title'));
     const { isSmallMobile: isMobile } = useBreakpoints();
 
@@ -44,8 +45,8 @@ export const AuditLogPage = () => {
         setLoading(true);
         try {
             const resp = await api.getAuditLog(p - 1, pageSize);
-            setEntries(resp.data.content);
-            setTotal(resp.data.page.totalElements);
+            setEntries(Array.isArray(resp.data.content) ? resp.data.content : []);
+            setTotal(resp.data.page?.totalElements ?? 0);
         } catch {
             message.error(t('audit.loadError'));
         } finally {
@@ -147,7 +148,7 @@ export const AuditLogPage = () => {
                                             key: '1',
                                             label: <Text type="secondary" style={{ fontSize: 12 }}>{t('audit.newValue')}</Text>,
                                             children: (
-                                                <pre style={{ fontSize: 11, maxHeight: 200, overflow: 'auto', margin: 0, background: 'rgba(0,0,0,0.03)', padding: 8, borderRadius: 4 }}>
+                                                <pre style={{ fontSize: 11, maxHeight: 200, overflow: 'auto', margin: 0, background: token.colorFillTertiary, padding: 8, borderRadius: 4 }}>
                                                     {formatValue(record.newValue)}
                                                 </pre>
                                             ),
@@ -168,7 +169,7 @@ export const AuditLogPage = () => {
                     scroll={{ x: 'max-content' }}
                     expandable={{
                         expandedRowRender: (record) => (
-                            <pre style={{ fontSize: 12, maxHeight: 300, overflow: 'auto', margin: 0 }}>
+                            <pre style={{ fontSize: 12, maxHeight: 300, overflow: 'auto', margin: 0, background: token.colorFillTertiary, padding: 8, borderRadius: 4 }}>
                                 {formatValue(record.newValue)}
                             </pre>
                         ),

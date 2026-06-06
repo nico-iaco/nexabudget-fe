@@ -92,7 +92,7 @@ export const Layout = () => {
     const fetchCategories = () => {
         if (auth) {
             api.getCategories()
-                .then(response => setCategories(response.data))
+                .then(response => setCategories(Array.isArray(response.data) ? response.data : []))
                 .catch(console.error);
         } else {
             setCategories([]);
@@ -369,10 +369,13 @@ export const Layout = () => {
 
     if (!auth) {
         return <Outlet context={{
-            accounts: [], fetchAccounts: () => {
-            }, transactionRefreshKey: 0, categories: [], fetchCategories: () => {
-            }, handleOpenTransferModal: () => {
-            }
+            accounts: [],
+            fetchAccounts: () => Promise.resolve([]),
+            transactionRefreshKey: 0,
+            categories: [],
+            fetchCategories: () => {},
+            handleOpenTransferModal: () => {},
+            onOpenCreateAccount: () => {},
         }} />;
     }
 

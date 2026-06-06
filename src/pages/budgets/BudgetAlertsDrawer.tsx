@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
-    Button, Drawer, Empty, Flex, Form, InputNumber,
-    Popconfirm, Switch, Table, message
+    App, Button, Drawer, Empty, Flex, Form, InputNumber,
+    Popconfirm, Switch, Table
 } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +23,7 @@ interface AlertFormValues {
 
 export const BudgetAlertsDrawer = ({ open, onClose, budget }: Props) => {
     const { t } = useTranslation();
+    const { message } = App.useApp();
     const [alerts, setAlerts] = useState<BudgetAlert[]>([]);
     const [loading, setLoading] = useState(false);
     const [form] = Form.useForm<AlertFormValues>();
@@ -32,7 +33,7 @@ export const BudgetAlertsDrawer = ({ open, onClose, budget }: Props) => {
         setLoading(true);
         try {
             const resp = await api.getBudgetAlerts(budget.id);
-            setAlerts(resp.data);
+            setAlerts(Array.isArray(resp.data) ? resp.data : []);
         } catch {
             message.error(t('budgets.alerts.loadError', { defaultValue: 'Failed to load alerts' }));
         } finally {

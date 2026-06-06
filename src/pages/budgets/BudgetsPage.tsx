@@ -45,7 +45,7 @@ export const BudgetsPage = () => {
 
     // Mappa budgetId → riepilogo mensile per lookup O(1)
     const summaryMap = useMemo(
-        () => new Map(summaries.map(s => [s.budgetId, s])),
+        () => new Map((Array.isArray(summaries) ? summaries : []).map(s => [s.budgetId, s])),
         [summaries]
     );
 
@@ -57,8 +57,8 @@ export const BudgetsPage = () => {
                 api.getBudgetTemplates(),
                 api.getBudgetMonthlySummary(today).catch(() => ({ data: [] as MonthlySummaryResponse[] })),
             ]);
-            setBudgets(templatesResp.data);
-            setSummaries(summaryResp.data);
+            setBudgets(Array.isArray(templatesResp.data) ? templatesResp.data : []);
+            setSummaries(Array.isArray(summaryResp.data) ? summaryResp.data : []);
         } catch {
             message.error(t('budgets.loadError', { defaultValue: 'Failed to load budgets' }));
         } finally {

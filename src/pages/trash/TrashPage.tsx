@@ -23,7 +23,7 @@ export const TrashPage = () => {
         setLoadingTx(true);
         try {
             const resp = await api.getDeletedTransactions();
-            setDeletedTransactions(resp.data);
+            setDeletedTransactions(Array.isArray(resp.data) ? resp.data : []);
         } catch {
             message.error(t('trash.restoreError'));
         } finally {
@@ -35,7 +35,7 @@ export const TrashPage = () => {
         setLoadingAcc(true);
         try {
             const resp = await api.getDeletedAccounts();
-            setDeletedAccounts(resp.data);
+            setDeletedAccounts(Array.isArray(resp.data) ? resp.data : []);
         } catch {
             message.error(t('trash.restoreError'));
         } finally {

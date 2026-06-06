@@ -582,13 +582,13 @@ export const TransactionsPage = () => {
                         {' '}{amount.toFixed(2)} {sym}
                     </span>
                     {record.originalCurrency && record.originalAmount != null && record.exchangeRate != null && (
-                        <div style={{ fontSize: '11px', color: 'rgba(0,0,0,0.45)' }}>
+                        <Text type="secondary" style={{ fontSize: '11px', display: 'block' }}>
                             {t('transactions.exchangeRateHint', {
                                 originalAmount: record.originalAmount.toFixed(2),
                                 originalCurrency: record.originalCurrency,
                                 exchangeRate: record.exchangeRate
                             })}
-                        </div>
+                        </Text>
                     )}
                 </span>);
             }
