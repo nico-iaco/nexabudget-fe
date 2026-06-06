@@ -36,10 +36,8 @@ export const AiAnalysisCard: React.FC = () => {
     const [completedJobId, setCompletedJobId] = useState<string | null>(null);
     const [result, setResult] = useState<string | null>(null);
 
-    const disabledDate = (current: Dayjs) => {
-        if (!current) return false;
-        return current.isAfter(dayjs().endOf('month'), 'day');
-    };
+    // Data massima selezionabile: fine del mese corrente
+    const maxDate = dayjs().endOf('month');
 
     const handleGenerate = async () => {
         if (!dateRange[0] || !dateRange[1]) {
@@ -171,7 +169,7 @@ export const AiAnalysisCard: React.FC = () => {
                             startPlaceholder={t('dashboard.aiAnalysis.startDate')}
                             endPlaceholder={t('dashboard.aiAnalysis.endDate')}
                             disabled={loading}
-                            disabledDate={disabledDate}
+                            maxDate={maxDate}
                         />
                         <Button
                             type="primary"
@@ -189,7 +187,7 @@ export const AiAnalysisCard: React.FC = () => {
                         <RangePicker
                             value={dateRange as any}
                             onChange={(dates) => setDateRange(dates as [Dayjs | null, Dayjs | null])}
-                            disabledDate={disabledDate}
+                            disabledDate={(current: Dayjs) => current.isAfter(dayjs().endOf('month'), 'day')}
                             disabled={loading}
                             style={{ flex: 1 }}
                             presets={PRESETS(t)}

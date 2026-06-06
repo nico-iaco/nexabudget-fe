@@ -1,9 +1,10 @@
 // src/components/DatePresetPicker.tsx
-// Selettore di range date mobile-first: chip a pillola in scroll orizzontale
-// + due DatePicker per range personalizzato.
-// Evita dropdown popup (che su iOS PWA standalone hanno problemi di coordinate touch).
+// Chip preset a pillola + selettore range date con AntD DatePicker.
+// L'unico problema iOS PWA risolto qui è il Select dropdown (sostituito con
+// bottoni); il DatePicker AntD funziona correttamente su iOS.
 import { useEffect, useState } from 'react';
 import { DatePicker, Flex, theme } from 'antd';
+import { CalendarOutlined, CloseCircleFilled, SwapRightOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
 
 export interface DatePreset {
@@ -15,15 +16,121 @@ interface DatePresetPickerProps {
     presets: DatePreset[];
     value: [Dayjs | null, Dayjs | null];
     onChange: (range: [Dayjs | null, Dayjs | null]) => void;
-    /** Label del chip "Personalizzato" */
     customLabel?: string;
-    /** Placeholder input data inizio */
     startPlaceholder?: string;
-    /** Placeholder input data fine */
     endPlaceholder?: string;
     disabled?: boolean;
-    disabledDate?: (d: Dayjs) => boolean;
+    maxDate?: Dayjs;
 }
+
+// ─── Selettore range date ────────────────────────────────────────────────────
+// Due DatePicker AntD borderless dentro un contenitore con bordo condiviso.
+// getPopupContainer → document.body così il popup non viene clippato da
+// eventuali antenati con overflow:hidden.
+
+interface RangePickerProps {
+    start: Dayjs | null;
+    end: Dayjs | null;
+    onChangeStart: (d: Dayjs | null) => void;
+    onChangeEnd: (d: Dayjs | null) => void;
+    onClear: () => void;
+    startPlaceholder?: string;
+    endPlaceholder?: string;
+    disabled?: boolean;
+    maxDate?: Dayjs;
+}
+
+const RangeDatePicker = ({
+    start, end, onChangeStart, onChangeEnd, onClear,
+    startPlaceholder = 'Inizio', endPlaceholder = 'Fine',
+    disabled = false, maxDate,
+}: RangePickerProps) => {
+    const { token } = theme.useToken();
+    const [anyFocused, setAnyFocused] = useState(false);
+
+    const pickerStyle: React.CSSProperties = {
+        flex: 1,
+        border: 'none',
+        boxShadow: 'none',
+        background: 'transparent',
+        paddingLeft: 8,
+        paddingRight: 0,
+    };
+
+    return (
+        <div
+            style={{
+                display: 'flex',
+                alignItems: 'center',
+                height: 40,
+                borderRadius: token.borderRadiusLG,
+                border: `1.5px solid ${anyFocused ? token.colorPrimary : token.colorBorder}`,
+                boxShadow: anyFocused
+                    ? `0 0 0 2px ${token.colorPrimaryBorder}`
+                    : '0 1px 3px rgba(0,0,0,0.06)',
+                background: disabled ? token.colorBgContainerDisabled : token.colorBgContainer,
+                transition: 'border-color 0.2s, box-shadow 0.2s',
+                overflow: 'visible',
+                animation: 'datePickerSlideIn 0.18s ease',
+            }}
+        >
+            <DatePicker
+                value={start}
+                onChange={onChangeStart}
+                format="D MMM YYYY"
+                placeholder={startPlaceholder}
+                disabled={disabled}
+                disabledDate={d =>
+                    !!(maxDate && d.isAfter(maxDate, 'day')) ||
+                    !!(end && d.isAfter(end, 'day'))
+                }
+                style={pickerStyle}
+                variant="borderless"
+                suffixIcon={<CalendarOutlined style={{ color: token.colorTextTertiary }} />}
+                onFocus={() => setAnyFocused(true)}
+                onBlur={() => setAnyFocused(false)}
+                getPopupContainer={() => document.body}
+            />
+
+            <SwapRightOutlined
+                style={{
+                    fontSize: 14,
+                    flexShrink: 0,
+                    color: anyFocused ? token.colorPrimary : token.colorTextQuaternary,
+                    transition: 'color 0.2s',
+                    pointerEvents: 'none',
+                }}
+            />
+
+            <DatePicker
+                value={end}
+                onChange={onChangeEnd}
+                format="D MMM YYYY"
+                placeholder={endPlaceholder}
+                disabled={disabled}
+                disabledDate={d =>
+                    !!(maxDate && d.isAfter(maxDate, 'day')) ||
+                    !!(start && d.isBefore(start, 'day'))
+                }
+                style={{ ...pickerStyle, paddingLeft: 4 }}
+                variant="borderless"
+                suffixIcon={
+                    (start || end) && !disabled ? (
+                        <CloseCircleFilled
+                            style={{ color: token.colorTextQuaternary, cursor: 'pointer', fontSize: 13 }}
+                            onClick={e => { e.stopPropagation(); onClear(); }}
+                        />
+                    ) : null
+                }
+                onFocus={() => setAnyFocused(true)}
+                onBlur={() => setAnyFocused(false)}
+                getPopupContainer={() => document.body}
+            />
+        </div>
+    );
+};
+
+// ─── Componente principale ────────────────────────────────────────────────────
 
 export const DatePresetPicker = ({
     presets,
@@ -33,12 +140,11 @@ export const DatePresetPicker = ({
     startPlaceholder = 'Inizio',
     endPlaceholder = 'Fine',
     disabled = false,
-    disabledDate,
+    maxDate,
 }: DatePresetPickerProps) => {
     const { token } = theme.useToken();
-
-    // Stato interno: l'utente ha esplicitamente cliccato "Personalizzato"
     const [customMode, setCustomMode] = useState(false);
+    const [hoveredIdx, setHoveredIdx] = useState<number | 'custom' | null>(null);
 
     const activePresetIdx = presets.findIndex(
         p =>
@@ -46,49 +152,46 @@ export const DatePresetPicker = ({
             value[1]?.isSame(p.value[1], 'day')
     );
 
-    // Quando viene selezionato un preset dall'esterno, esci dalla modalità custom
     useEffect(() => {
         if (activePresetIdx !== -1) setCustomMode(false);
     }, [activePresetIdx]);
 
-    // I DatePicker appaiono quando:
-    // 1. L'utente ha cliccato "Personalizzato" (customMode), oppure
-    // 2. Il valore esterno contiene date che non corrispondono ad alcun preset
-    const showCustomPickers = customMode || (activePresetIdx === -1 && (!!value[0] || !!value[1]));
-    const isCustomActive = showCustomPickers;
+    const showRange = customMode || (activePresetIdx === -1 && (!!value[0] || !!value[1]));
 
-    const chipBase: React.CSSProperties = {
-        display: 'inline-flex',
-        alignItems: 'center',
-        height: 30,
-        padding: '0 14px',
-        borderRadius: 100,
-        fontSize: 13,
-        fontWeight: 500,
-        whiteSpace: 'nowrap',
-        flexShrink: 0,
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        border: 'none',
-        outline: 'none',
-        transition: 'background 0.18s, color 0.18s',
-        WebkitTapHighlightColor: 'transparent',
-        userSelect: 'none',
-    };
-
-    const getChipStyle = (active: boolean): React.CSSProperties => {
-        if (disabled) return { ...chipBase, background: token.colorFillTertiary, color: token.colorTextDisabled, cursor: 'not-allowed' };
-        if (active) return { ...chipBase, background: token.colorPrimary, color: '#fff' };
-        return { ...chipBase, background: token.colorFillSecondary, color: token.colorText };
+    const chipStyle = (active: boolean, hovered: boolean): React.CSSProperties => {
+        const base: React.CSSProperties = {
+            display: 'inline-flex',
+            alignItems: 'center',
+            height: 30,
+            padding: '0 13px',
+            borderRadius: 100,
+            fontSize: 13,
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+            flexShrink: 0,
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            border: '1.5px solid transparent',
+            outline: 'none',
+            transition: 'background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s',
+            WebkitTapHighlightColor: 'transparent',
+            userSelect: 'none',
+        };
+        if (disabled)
+            return { ...base, background: token.colorFillTertiary, color: token.colorTextDisabled, cursor: 'not-allowed' };
+        if (active)
+            return { ...base, background: token.colorPrimary, color: '#fff', boxShadow: `0 2px 8px ${token.colorPrimaryBorder}` };
+        if (hovered)
+            return { ...base, background: token.colorFillSecondary, color: token.colorText, borderColor: token.colorBorderSecondary };
+        return { ...base, background: 'transparent', color: token.colorTextSecondary, borderColor: token.colorBorderSecondary };
     };
 
     return (
         <Flex vertical gap={10}>
-            {/* Strip scorrevole — overflowX: auto è sul wrapper, width: max-content sul contenuto interno */}
+            {/* Strip chip — scorrevole orizzontalmente, scrollbar nascosta */}
             <div
                 style={{
                     overflowX: 'auto',
                     overflowY: 'visible',
-                    // Nasconde la scrollbar visivamente su tutti i browser
                     scrollbarWidth: 'none',
                     msOverflowStyle: 'none',
                     WebkitOverflowScrolling: 'touch',
@@ -100,11 +203,10 @@ export const DatePresetPicker = ({
                             key={i}
                             type="button"
                             disabled={disabled}
-                            style={getChipStyle(activePresetIdx === i && !customMode)}
-                            onClick={() => {
-                                setCustomMode(false);
-                                onChange(p.value);
-                            }}
+                            style={chipStyle(activePresetIdx === i && !customMode, hoveredIdx === i)}
+                            onMouseEnter={() => setHoveredIdx(i)}
+                            onMouseLeave={() => setHoveredIdx(null)}
+                            onClick={() => { setCustomMode(false); onChange(p.value); }}
                         >
                             {p.label}
                         </button>
@@ -112,11 +214,11 @@ export const DatePresetPicker = ({
                     <button
                         type="button"
                         disabled={disabled}
-                        style={getChipStyle(isCustomActive)}
+                        style={chipStyle(showRange, hoveredIdx === 'custom')}
+                        onMouseEnter={() => setHoveredIdx('custom')}
+                        onMouseLeave={() => setHoveredIdx(null)}
                         onClick={() => {
                             setCustomMode(true);
-                            // Se c'era un preset attivo, azzera le date così
-                            // l'utente può inserirne di nuove
                             if (activePresetIdx !== -1) onChange([null, null]);
                         }}
                     >
@@ -125,28 +227,19 @@ export const DatePresetPicker = ({
                 </Flex>
             </div>
 
-            {/* DatePicker — compaiono solo in modalità custom */}
-            {showCustomPickers && (
-                <Flex gap={8}>
-                    <DatePicker
-                        value={value[0] ?? null}
-                        onChange={d => onChange([d, value[1] ?? null])}
-                        placeholder={startPlaceholder}
-                        disabledDate={disabledDate}
-                        disabled={disabled}
-                        style={{ flex: 1 }}
-                        getPopupContainer={trigger => trigger.parentElement ?? document.body}
-                    />
-                    <DatePicker
-                        value={value[1] ?? null}
-                        onChange={d => onChange([value[0] ?? null, d])}
-                        placeholder={endPlaceholder}
-                        disabledDate={disabledDate}
-                        disabled={disabled}
-                        style={{ flex: 1 }}
-                        getPopupContainer={trigger => trigger.parentElement ?? document.body}
-                    />
-                </Flex>
+            {/* Range date — AntD su tutti i device */}
+            {showRange && (
+                <RangeDatePicker
+                    start={value[0]}
+                    end={value[1]}
+                    onChangeStart={d => onChange([d, value[1]])}
+                    onChangeEnd={d => onChange([value[0], d])}
+                    onClear={() => { setCustomMode(false); onChange([null, null]); }}
+                    startPlaceholder={startPlaceholder}
+                    endPlaceholder={endPlaceholder}
+                    disabled={disabled}
+                    maxDate={maxDate}
+                />
             )}
         </Flex>
     );
