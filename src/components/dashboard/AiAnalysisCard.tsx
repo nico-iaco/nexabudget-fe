@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { App, Card, Button, DatePicker, Typography, Spin, Space, Flex, Select } from 'antd';
+import { App, Card, Button, DatePicker, Typography, Spin, Space, Flex } from 'antd';
 import { RobotOutlined, DownloadOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -9,6 +9,7 @@ import * as api from '../../services/api';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { COLOR_ACCENT } from '../../theme/tokens';
+import { DatePresetPicker } from '../DatePresetPicker';
 
 const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
@@ -29,7 +30,6 @@ export const AiAnalysisCard: React.FC = () => {
     // By default, let's select "lastMonth" as a nice starting point, but user starts with null null originally.
     // Let's keep it null null to avoid triggering generation accidentally on mount.
     const [dateRange, setDateRange] = useState<[Dayjs | null, Dayjs | null]>([null, null]);
-    const [showCustomPicker, setShowCustomPicker] = useState(false);
     
     const [loading, setLoading] = useState(false);
     const [jobId, setJobId] = useState<string | null>(null);
@@ -160,61 +160,32 @@ export const AiAnalysisCard: React.FC = () => {
                     {t('dashboard.aiAnalysis.description')}
                 </Text>
                 
-                <Flex gap={8} vertical={isMobile} align={isMobile ? 'stretch' : 'center'} wrap="wrap">
-                    {isMobile ? (
-                        <Flex vertical gap={8} style={{ flex: 1 }}>
-                            <Select
-                                value={showCustomPicker ? 'custom' : (PRESETS(t).findIndex(p =>
-                                    dateRange?.[0]?.isSame(p.value[0], 'day') &&
-                                    dateRange?.[1]?.isSame(p.value[1], 'day')
-                                ) === -1 && (!dateRange[0] && !dateRange[1]) ? undefined : (
-                                    PRESETS(t).findIndex(p =>
-                                        dateRange?.[0]?.isSame(p.value[0], 'day') &&
-                                        dateRange?.[1]?.isSame(p.value[1], 'day')
-                                    ) !== -1 ? PRESETS(t).findIndex(p =>
-                                        dateRange?.[0]?.isSame(p.value[0], 'day') &&
-                                        dateRange?.[1]?.isSame(p.value[1], 'day')
-                                    ) : 'custom'
-                                ))}
-                                onChange={(idx: number | 'custom') => {
-                                    if (idx === 'custom') {
-                                        setShowCustomPicker(true);
-                                        setDateRange([null, null]);
-                                    } else {
-                                        setShowCustomPicker(false);
-                                        setDateRange(PRESETS(t)[idx].value);
-                                    }
-                                }}
-                                placeholder={t('dashboard.presets.custom')}
-                                style={{ width: '100%' }}
-                                disabled={loading}
-                                options={[
-                                    ...PRESETS(t).map((p, i) => ({ value: i, label: p.label })),
-                                    { value: 'custom', label: t('dashboard.presets.custom') },
-                                ]}
-                            />
-                            {showCustomPicker && (
-                                <Flex gap={8}>
-                                    <DatePicker
-                                        value={dateRange?.[0] ?? null}
-                                        onChange={d => setDateRange([d, dateRange?.[1] ?? null])}
-                                        disabledDate={disabledDate}
-                                        disabled={loading}
-                                        placeholder={t('dashboard.aiAnalysis.startDate')}
-                                        style={{ flex: 1 }}
-                                    />
-                                    <DatePicker
-                                        value={dateRange?.[1] ?? null}
-                                        onChange={d => setDateRange([dateRange?.[0] ?? null, d])}
-                                        disabledDate={disabledDate}
-                                        disabled={loading}
-                                        placeholder={t('dashboard.aiAnalysis.endDate')}
-                                        style={{ flex: 1 }}
-                                    />
-                                </Flex>
-                            )}
-                        </Flex>
-                    ) : (
+                {isMobile ? (
+                    // Su mobile: chip + bottone in colonna separata, nessun overflow condiviso
+                    <Flex vertical gap={10}>
+                        <DatePresetPicker
+                            presets={PRESETS(t)}
+                            value={dateRange}
+                            onChange={setDateRange}
+                            customLabel={t('dashboard.presets.custom')}
+                            startPlaceholder={t('dashboard.aiAnalysis.startDate')}
+                            endPlaceholder={t('dashboard.aiAnalysis.endDate')}
+                            disabled={loading}
+                            disabledDate={disabledDate}
+                        />
+                        <Button
+                            type="primary"
+                            icon={<RobotOutlined />}
+                            onClick={handleGenerate}
+                            loading={loading}
+                            disabled={!dateRange[0] || !dateRange[1]}
+                            block
+                        >
+                            {t('dashboard.aiAnalysis.button')}
+                        </Button>
+                    </Flex>
+                ) : (
+                    <Flex gap={8} align="center" wrap="wrap">
                         <RangePicker
                             value={dateRange as any}
                             onChange={(dates) => setDateRange(dates as [Dayjs | null, Dayjs | null])}
@@ -223,18 +194,17 @@ export const AiAnalysisCard: React.FC = () => {
                             style={{ flex: 1 }}
                             presets={PRESETS(t)}
                         />
-                    )}
-                    <Button 
-                        type="primary" 
-                        icon={<RobotOutlined />} 
-                        onClick={handleGenerate} 
-                        loading={loading}
-                        disabled={!dateRange[0] || !dateRange[1]}
-                        style={isMobile ? { width: '100%' } : {}}
-                    >
-                        {t('dashboard.aiAnalysis.button')}
-                    </Button>
-                </Flex>
+                        <Button
+                            type="primary"
+                            icon={<RobotOutlined />}
+                            onClick={handleGenerate}
+                            loading={loading}
+                            disabled={!dateRange[0] || !dateRange[1]}
+                        >
+                            {t('dashboard.aiAnalysis.button')}
+                        </Button>
+                    </Flex>
+                )}
 
                 {loading && (
                     <div style={{ textAlign: 'center', margin: '24px 0' }}>

@@ -35,6 +35,7 @@ import { PageHeader } from '../../components/PageHeader';
 import { EmptyState } from '../../components/EmptyState';
 import { OnboardingChecklist } from '../../components/onboarding/OnboardingChecklist';
 import type { AppOutletContext } from '../../types/outletContext';
+import { DatePresetPicker } from '../../components/DatePresetPicker';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -55,7 +56,6 @@ export const DashboardPage = () => {
     usePageTitle(t('dashboard.title'));
 
     const [trendMonths, setTrendMonths] = useState(12);
-    const [showCustomPicker, setShowCustomPicker] = useState(false);
 
     const {
         loading,
@@ -160,46 +160,14 @@ export const DashboardPage = () => {
     const filterControls = (
         <div style={{ width: isMobile ? '100%' : 'auto' }}>
             {isMobile ? (
-                        <Flex vertical gap={8}>
-                            <Select
-                                value={showCustomPicker ? 'custom' : (PRESETS(t).findIndex(p => {
-                                    const v = p.value();
-                                    return dateRange?.[0]?.isSame(v[0], 'day') && dateRange?.[1]?.isSame(v[1], 'day');
-                                }))}
-                                onChange={(idx: number | 'custom') => {
-                                    if (idx === 'custom') {
-                                        setShowCustomPicker(true);
-                                    } else {
-                                        setShowCustomPicker(false);
-                                        setDateRange(PRESETS(t)[idx].value());
-                                    }
-                                }}
-                                style={{ width: '100%' }}
-                                options={[
-                                    ...PRESETS(t).map((p, i) => ({ value: i, label: p.label })),
-                                    { value: 'custom', label: t('dashboard.presets.custom') },
-                                ]}
-                                getPopupContainer={trigger => trigger.parentElement ?? document.body}
-                            />
-                            {showCustomPicker && (
-                                <Flex gap={8}>
-                                    <DatePicker
-                                        value={dateRange?.[0] ?? null}
-                                        onChange={d => setDateRange([d, dateRange?.[1] ?? null])}
-                                        placeholder={t('dashboard.presets.startDate')}
-                                        style={{ flex: 1 }}
-                                        getPopupContainer={trigger => trigger.parentElement ?? document.body}
-                                    />
-                                    <DatePicker
-                                        value={dateRange?.[1] ?? null}
-                                        onChange={d => setDateRange([dateRange?.[0] ?? null, d])}
-                                        placeholder={t('dashboard.presets.endDate')}
-                                        style={{ flex: 1 }}
-                                        getPopupContainer={trigger => trigger.parentElement ?? document.body}
-                                    />
-                                </Flex>
-                            )}
-                        </Flex>
+                        <DatePresetPicker
+                            presets={PRESETS(t).map(p => ({ label: p.label, value: p.value() }))}
+                            value={[dateRange?.[0] ?? null, dateRange?.[1] ?? null]}
+                            onChange={(range) => setDateRange(range)}
+                            customLabel={t('dashboard.presets.custom')}
+                            startPlaceholder={t('dashboard.presets.startDate')}
+                            endPlaceholder={t('dashboard.presets.endDate')}
+                        />
                     ) : (
                         <Flex gap={6} align="center" justify="flex-end" wrap>
                             {PRESETS(t).map((p, i) => {
@@ -501,18 +469,17 @@ export const DashboardPage = () => {
                                 })}
                             >
                                 {isMobile && (
-                                    <Flex justify="flex-end" style={{ marginBottom: 8 }}>
-                                        <Select
-                                            value={trendMonths}
-                                            onChange={setTrendMonths}
-                                            size="small"
-                                            style={{ width: 110 }}
-                                            options={[
-                                                { value: 6, label: t('reports.months6') },
-                                                { value: 12, label: t('reports.months12') },
-                                                { value: 24, label: t('reports.months24') },
-                                            ]}
-                                        />
+                                    <Flex justify="flex-end" gap={6} style={{ marginBottom: 8 }}>
+                                        {[6, 12, 24].map(m => (
+                                            <Button
+                                                key={m}
+                                                size="small"
+                                                type={trendMonths === m ? 'primary' : 'default'}
+                                                onClick={() => setTrendMonths(m)}
+                                            >
+                                                {t(`reports.months${m}`)}
+                                            </Button>
+                                        ))}
                                     </Flex>
                                 )}
                                 <Suspense fallback={<Skeleton active paragraph={{ rows: 8 }} />}>

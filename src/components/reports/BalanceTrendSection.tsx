@@ -23,6 +23,7 @@ import * as api from '../../services/api';
 import type { BalanceTrendItem, BalanceTrendResponse } from '../../types/api';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { COLOR_ACCENT, COLOR_NEGATIVE, COLOR_POSITIVE, SPACING } from '../../theme/tokens';
+import { DatePresetPicker } from '../DatePresetPicker';
 
 const BalanceTrendChart = lazy(() =>
     import('./BalanceTrendChart').then(m => ({ default: m.BalanceTrendChart })),
@@ -36,6 +37,25 @@ const DEBOUNCE_MS = 300;
 const defaultRange = (): [Dayjs, Dayjs] => [
     dayjs().subtract(11, 'month').startOf('month'),
     dayjs().endOf('month'),
+];
+
+const TREND_PRESETS = (t: (k: string) => string) => [
+    {
+        label: t('reports.months3'),
+        value: [dayjs().subtract(2, 'month').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs],
+    },
+    {
+        label: t('reports.months6'),
+        value: [dayjs().subtract(5, 'month').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs],
+    },
+    {
+        label: t('reports.months12'),
+        value: [dayjs().subtract(11, 'month').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs],
+    },
+    {
+        label: t('reports.months24'),
+        value: [dayjs().subtract(23, 'month').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs],
+    },
 ];
 
 const useDebounced = <T,>(value: T, delay = DEBOUNCE_MS): T => {
@@ -147,16 +167,13 @@ export const BalanceTrendSection = () => {
         },
     ];
 
-    const datePicker = (
+    const desktopDatePicker = (
         <RangePicker
             value={range}
             allowClear={false}
             onChange={(dates) => {
-                if (dates && dates[0] && dates[1]) {
-                    setRange([dates[0], dates[1]]);
-                }
+                if (dates && dates[0] && dates[1]) setRange([dates[0], dates[1]]);
             }}
-            style={isSmallMobile ? { width: '100%' } : undefined}
         />
     );
 
@@ -167,14 +184,21 @@ export const BalanceTrendSection = () => {
             <Typography.Text strong style={{ fontSize: 16 }}>
                 {t('reports.balanceTrend.title')}
             </Typography.Text>
-            {datePicker}
+            <DatePresetPicker
+                presets={TREND_PRESETS(t)}
+                value={range}
+                onChange={(r) => { if (r[0] && r[1]) setRange([r[0], r[1]]); }}
+                customLabel={t('dashboard.presets.custom')}
+                startPlaceholder={t('dashboard.presets.startDate')}
+                endPlaceholder={t('dashboard.presets.endDate')}
+            />
         </Flex>
     ) : (
         t('reports.balanceTrend.title')
     );
 
     return (
-        <Card title={cardTitle} extra={isSmallMobile ? undefined : datePicker}>
+        <Card title={cardTitle} extra={isSmallMobile ? undefined : desktopDatePicker}>
             {!isValidRange && (
                 <Empty description={t('reports.balanceTrend.invalidRange')} />
             )}

@@ -268,3 +268,8 @@ button:focus-visible {
     background: rgba(128, 128, 128, 0.06);
 }
 
+/* Nasconde la scrollbar nel DatePresetPicker mantenendo lo scroll touch */
+.date-preset-strip::-webkit-scrollbar {
+    display: none;
+}
+
