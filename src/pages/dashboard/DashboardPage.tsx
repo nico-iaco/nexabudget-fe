@@ -179,6 +179,7 @@ export const DashboardPage = () => {
                                     ...PRESETS(t).map((p, i) => ({ value: i, label: p.label })),
                                     { value: 'custom', label: t('dashboard.presets.custom') },
                                 ]}
+                                getPopupContainer={trigger => trigger.parentElement ?? document.body}
                             />
                             {showCustomPicker && (
                                 <Flex gap={8}>
@@ -187,12 +188,14 @@ export const DashboardPage = () => {
                                         onChange={d => setDateRange([d, dateRange?.[1] ?? null])}
                                         placeholder={t('dashboard.presets.startDate')}
                                         style={{ flex: 1 }}
+                                        getPopupContainer={trigger => trigger.parentElement ?? document.body}
                                     />
                                     <DatePicker
                                         value={dateRange?.[1] ?? null}
                                         onChange={d => setDateRange([dateRange?.[0] ?? null, d])}
                                         placeholder={t('dashboard.presets.endDate')}
                                         style={{ flex: 1 }}
+                                        getPopupContainer={trigger => trigger.parentElement ?? document.body}
                                     />
                                 </Flex>
                             )}
@@ -385,6 +388,7 @@ export const DashboardPage = () => {
                                     <DatePicker.MonthPicker
                                         value={comparisonMonth}
                                         onChange={m => { if (m) setComparisonMonth(m); }}
+                                        getPopupContainer={trigger => trigger.parentElement ?? document.body}
                                     />
                                 }
                             >
@@ -490,6 +494,7 @@ export const DashboardPage = () => {
                                                     { value: 12, label: t('reports.months12') },
                                                     { value: 24, label: t('reports.months24') },
                                                 ]}
+                                                getPopupContainer={trigger => trigger.parentElement ?? document.body}
                                             />
                                         </Flex>
                                     )
