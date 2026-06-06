@@ -20,9 +20,11 @@ interface TransferModalProps {
     onCancel: () => void;
     onFinish: (values: TransferFormValues) => void;
     accounts: Account[];
+    /** true durante il salvataggio — disabilita il bottone submit per evitare doppio invio */
+    loading?: boolean;
 }
 
-export const TransferModal = ({ open, onCancel, onFinish, accounts }: TransferModalProps) => {
+export const TransferModal = ({ open, onCancel, onFinish, accounts, loading = false }: TransferModalProps) => {
     const { t } = useTranslation();
     const [form] = Form.useForm<TransferFormValues>();
     const sourceId = Form.useWatch('sourceAccountId', form);
@@ -115,7 +117,9 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts }: TransferMo
                     <Input.TextArea placeholder={t('transfers.notesPlaceholder')} />
                 </Form.Item>
                 <Form.Item>
-                    <Button type="primary" htmlType="submit" block>{t('transfers.executeTransfer')}</Button>
+                    <Button type="primary" htmlType="submit" block loading={loading} disabled={loading}>
+                        {t('transfers.executeTransfer')}
+                    </Button>
                 </Form.Item>
             </Form>
         </Modal>

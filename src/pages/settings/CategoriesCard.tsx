@@ -9,16 +9,12 @@ import type { Category, CategoryRequest } from '../../types/api';
 import { createCategory, deleteCategory, mergeCategoryInto, updateCategory } from '../../services/api';
 import { CategoryFormModal } from '../../components/modals/CategoryFormModal';
 import { CategoryMergeModal } from '../../components/modals/CategoryMergeModal';
-
-interface OutletContextType {
-    categories: Category[];
-    fetchCategories: () => void;
-}
+import type { AppOutletContext } from '../../types/outletContext';
 
 export const CategoriesCard = () => {
     const { t } = useTranslation();
     const { message } = App.useApp();
-    const { categories, fetchCategories } = useOutletContext<OutletContextType>();
+    const { categories, fetchCategories } = useOutletContext<AppOutletContext>();
 
     const [formModalOpen, setFormModalOpen] = useState(false);
     const [editingCategory, setEditingCategory] = useState<Category | null>(null);

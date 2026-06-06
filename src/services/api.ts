@@ -86,7 +86,7 @@ apiClient.interceptors.response.use(
     (error) => {
         if (error.response?.status === 403 && !(error.request?.responseURL.includes('/auth/login') || error.request?.responseURL.includes('/auth/register'))) {
             // Rimuovi il token e reindirizza al login
-            localStorage.removeItem('auth_token');
+            localStorage.removeItem('authToken');
             localStorage.removeItem('auth');
             window.location.href = '/login';
         }

@@ -30,9 +30,7 @@ import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import type { TransactionFilters } from '../../services/api';
 import type {
-    Account,
     CategorizationJobResponse,
-    Category,
     LinkTransferRequest,
     Transaction,
     TransactionRequest
@@ -48,17 +46,10 @@ import { getCurrencySymbol } from '../../utils/currency';
 import { COLOR_POSITIVE, COLOR_NEGATIVE } from '../../theme/tokens';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
+import type { AppOutletContext } from '../../types/outletContext';
 
 const { Text } = Typography;
 const { Option } = Select;
-
-interface OutletContextType {
-    accounts: Account[];
-    fetchAccounts: (background?: boolean) => Promise<Account[]>;
-    transactionRefreshKey: number;
-    categories: Category[];
-    handleOpenTransferModal: () => void;
-}
 
 interface FormValues extends Omit<TransactionRequest, 'date'> {
     date?: dayjs.Dayjs | null;
@@ -82,7 +73,7 @@ export const TransactionsPage = () => {
         transactionRefreshKey,
         categories: rawCategories,
         handleOpenTransferModal
-    } = useOutletContext<OutletContextType>();
+    } = useOutletContext<AppOutletContext>();
 
     const categories = useMemo(
         () => [...rawCategories].sort((a, b) => a.name.localeCompare(b.name)),

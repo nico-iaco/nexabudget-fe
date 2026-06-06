@@ -11,9 +11,11 @@ interface AccountModalProps {
     onCancel: () => void;
     onFinish: (values: AccountRequest) => void;
     editingAccount: Account | null;
+    /** true durante il salvataggio — disabilita il bottone submit per evitare doppio invio */
+    loading?: boolean;
 }
 
-export const AccountModal = ({ open, onCancel, onFinish, editingAccount }: AccountModalProps) => {
+export const AccountModal = ({ open, onCancel, onFinish, editingAccount, loading = false }: AccountModalProps) => {
     const { t } = useTranslation();
     const [form] = Form.useForm<AccountRequest>();
     const currencyValue = Form.useWatch('currency', form);
@@ -90,7 +92,9 @@ export const AccountModal = ({ open, onCancel, onFinish, editingAccount }: Accou
                     <Input placeholder="EUR" />
                 </Form.Item>
                 <Form.Item>
-                    <Button type="primary" htmlType="submit" block>{t('accounts.saveAccount')}</Button>
+                    <Button type="primary" htmlType="submit" block loading={loading} disabled={loading}>
+                        {t('accounts.saveAccount')}
+                    </Button>
                 </Form.Item>
             </Form>
         </Modal>

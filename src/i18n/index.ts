@@ -682,7 +682,11 @@ const resources = {
                 sendError: 'Errore nell\'invio del messaggio',
                 toolsUsed: 'Dati recuperati',
                 sessionListTitle: 'Sessioni',
-                emptyState: 'Ciao! Sono NexaBot, il tuo assistente finanziario AI.\nChiedimi qualcosa sulle tue spese, entrate o budget!'
+                emptyState: 'Ciao! Sono NexaBot, il tuo assistente finanziario AI.\nChiedimi qualcosa sulle tue spese, entrate o budget!',
+                suggestion1: 'Quanto ho speso questo mese?',
+                suggestion2: 'Mostrami le spese per categoria',
+                suggestion3: 'Come vanno i miei budget?',
+                suggestion4: 'Qual è il mio saldo totale?'
             }
         }
     },
@@ -1355,7 +1359,11 @@ const resources = {
                 sendError: 'Error sending message',
                 toolsUsed: 'Data retrieved',
                 sessionListTitle: 'Sessions',
-                emptyState: 'Hi! I\'m NexaBot, your AI financial assistant.\nAsk me anything about your spending, income, or budgets!'
+                emptyState: 'Hi! I\'m NexaBot, your AI financial assistant.\nAsk me anything about your spending, income, or budgets!',
+                suggestion1: 'How much did I spend this month?',
+                suggestion2: 'Show me spending by category',
+                suggestion3: 'How are my budgets doing?',
+                suggestion4: 'What is my total balance?'
             }
         }
     }

@@ -8,7 +8,7 @@ import dayjs from 'dayjs';
 import { EmptyState } from '../../components/EmptyState';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
-import type { BudgetTemplate, BudgetTemplateRequest, Category, MonthlySummaryResponse } from '../../types/api';
+import type { BudgetTemplate, BudgetTemplateRequest, MonthlySummaryResponse } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { BudgetTemplateModal } from './BudgetTemplateModal';
 import { BudgetAlertsDrawer } from './BudgetAlertsDrawer';
@@ -16,12 +16,9 @@ import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { PageHeader } from '../../components/PageHeader';
 import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_WARNING } from '../../theme/tokens';
+import type { AppOutletContext } from '../../types/outletContext';
 
 const { Text } = Typography;
-
-interface OutletContextType {
-    categories: Category[];
-}
 
 const progressColor = (pct: number): string => {
     if (pct >= 100) return COLOR_NEGATIVE;
@@ -33,7 +30,7 @@ export const BudgetsPage = () => {
     const { t } = useTranslation();
     const { message } = App.useApp();
     usePageTitle(t('budgets.title'));
-    const { categories } = useOutletContext<OutletContextType>();
+    const { categories } = useOutletContext<AppOutletContext>();
     const { isSmallMobile: isMobile } = useBreakpoints();
 
     const [budgets, setBudgets] = useState<BudgetTemplate[]>([]);
@@ -43,9 +40,11 @@ export const BudgetsPage = () => {
     const [editing, setEditing] = useState<BudgetTemplate | null>(null);
     const [alertsBudget, setAlertsBudget] = useState<BudgetTemplate | null>(null);
 
-    // Mappa budgetId → riepilogo mensile per lookup O(1)
+    // Mappa categoryId → riepilogo mensile per lookup O(1).
+    // Il join corretto è per categoryId: BudgetTemplate.categoryId = MonthlySummaryResponse.categoryId.
+    // budgetId nella risposta si riferisce all'istanza mensile, non al template.
     const summaryMap = useMemo(
-        () => new Map((Array.isArray(summaries) ? summaries : []).map(s => [s.budgetId, s])),
+        () => new Map((Array.isArray(summaries) ? summaries : []).map(s => [s.categoryId, s])),
         [summaries]
     );
 
@@ -104,8 +103,8 @@ export const BudgetsPage = () => {
         return map[r];
     };
 
-    const renderProgress = (budgetId: string) => {
-        const s = summaryMap.get(budgetId);
+    const renderProgress = (categoryId: string) => {
+        const s = summaryMap.get(categoryId);
         if (!s) return <Text type="secondary">{t('budgets.noMonthlyData')}</Text>;
         const pct = Math.min(s.percentageUsed, 100);
         return (
@@ -148,7 +147,7 @@ export const BudgetsPage = () => {
         {
             title: t('budgets.monthlyProgress'),
             key: 'monthlyProgress',
-            render: (_: unknown, record: BudgetTemplate) => renderProgress(record.id),
+            render: (_: unknown, record: BudgetTemplate) => renderProgress(record.categoryId),
         },
         {
             title: t('budgets.recurrence'),
@@ -258,7 +257,7 @@ export const BudgetsPage = () => {
                                 </Flex>
                                 <Switch checked={record.active} size="small" disabled style={{ marginLeft: 8, flexShrink: 0 }} />
                             </Flex>
-                            {renderProgress(record.id)}
+                            {renderProgress(record.categoryId)}
                         </Card>
                     )}
                 />

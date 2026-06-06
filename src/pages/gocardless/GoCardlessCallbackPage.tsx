@@ -5,14 +5,10 @@ import {App, Alert, Button, Card, Flex, Form, InputNumber, List, Spin, theme, Ty
 import {BankOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import * as api from '../../services/api';
-import type {Account, GoCardlessBankDetails} from '../../types/api';
+import type {GoCardlessBankDetails} from '../../types/api';
 import {COLOR_ACCENT} from '../../theme/tokens';
 import {getCurrencySymbol} from '../../utils/currency';
-
-interface OutletContextType {
-    accounts: Account[];
-    fetchAccounts: (background?: boolean) => Promise<Account[]>;
-}
+import type { AppOutletContext } from '../../types/outletContext';
 
 const {Title, Text} = Typography;
 
@@ -21,7 +17,7 @@ export const GoCardlessCallbackPage = () => {
     const { message, notification } = App.useApp();
     const {accountId} = useParams<{ accountId: string }>();
     const navigate = useNavigate();
-    const { fetchAccounts } = useOutletContext<OutletContextType>();
+    const { fetchAccounts } = useOutletContext<AppOutletContext>();
     const [loading, setLoading] = useState(true);
     const [bankAccounts, setBankAccounts] = useState<GoCardlessBankDetails[]>([]);
     const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);

@@ -233,6 +233,7 @@ export const AppSider = ({
                 // On mobile it acts as an overlay drawer and needs a higher stacking context.
                 zIndex: isMobile ? 1001 : 900,
                 overflowY: 'auto',
+                background: siderBg,
                 ...(isMobile ? { width: '100%' } : {})
             }}
         >

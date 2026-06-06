@@ -41,23 +41,22 @@ export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout, toggleR
                 aria-label={t('common.menu')}
                 aria-expanded={!collapsed}
             />
-            <Title
-                level={1}
-                style={{
-                    margin: 0,
-                    fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
-                    fontWeight: 700,
-                    /* Gradient text with colorPrimary fallback for forced-colors/high-contrast */
-                    color: colorPrimary,
-                    background: `linear-gradient(135deg, ${colorPrimary} 0%, ${colorPrimaryActive} 100%)`,
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                    fontSize: isMobile ? '20px' : '24px',
-                    letterSpacing: '-0.5px'
-                }}
-            >
-                {t('app.name')}
+            <Title level={1} style={{ margin: 0, fontSize: isMobile ? '20px' : '24px' }}>
+                {/* Gradient applicato allo span interno per evitare conflitti con gli stili AntD di Typography.Title */}
+                <span
+                    style={{
+                        fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
+                        fontWeight: 700,
+                        color: colorPrimary,
+                        background: `linear-gradient(135deg, ${colorPrimary} 0%, ${colorPrimaryActive} 100%)`,
+                        WebkitBackgroundClip: 'text',
+                        WebkitTextFillColor: 'transparent',
+                        backgroundClip: 'text',
+                        letterSpacing: '-0.5px',
+                    }}
+                >
+                    {t('app.name')}
+                </span>
             </Title>
             <Button type="primary" icon={<LogoutOutlined />} onClick={onLogout} aria-label={t('common.logout')}>
                 {!isMobile && t('common.logout')}

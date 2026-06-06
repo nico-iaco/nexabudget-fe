@@ -1,12 +1,14 @@
 // src/App.tsx
-import {createBrowserRouter, Navigate, Outlet, RouterProvider} from 'react-router-dom';
-import {App as AntApp, ConfigProvider, Spin, theme as antTheme} from 'antd';
-import {useAuth} from './contexts/AuthContext';
-import {Layout} from './components/Layout';
-import { Suspense, lazy } from 'react';
-import type {JSX} from "react";
-import {usePreferences} from './contexts/PreferencesContext';
+import { createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation } from 'react-router-dom';
+import { App as AntApp, ConfigProvider, Spin, theme as antTheme } from 'antd';
+import { useAuth } from './contexts/AuthContext';
+import { Layout } from './components/Layout';
+import { Suspense, lazy, type ReactNode } from 'react';
+import type { JSX } from 'react';
+import { usePreferences } from './contexts/PreferencesContext';
 import { BRAND_PRIMARY } from './theme/tokens';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { RouteErrorFallback } from './components/RouteErrorFallback';
 
 // Dynamic imports (Code Splitting)
 const LoginPage = lazy(() => import('./pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -44,6 +46,24 @@ const RedirectIfAuth = ({ children }: { children: JSX.Element }) => {
     return auth ? <Navigate to="/" /> : children;
 };
 
+/**
+ * Helper che wrappa ogni pagina lazy con Suspense + ErrorBoundary.
+ * Il boundary usa resetKeys con il pathname corrente: navigando su un'altra route
+ * lo stato di errore si resetta automaticamente (sider/header rimangono vivi).
+ */
+const LazyRoute = ({ children }: { children: ReactNode }) => {
+    const location = useLocation();
+    return (
+        <ErrorBoundary
+            resetKeys={[location.pathname]}
+            fallback={(error, reset) => <RouteErrorFallback error={error} onReset={reset} />}
+        >
+            <Suspense fallback={<LoadingSpinner />}>
+                {children}
+            </Suspense>
+        </ErrorBoundary>
+    );
+};
 
 const router = createBrowserRouter([
     {
@@ -53,47 +73,47 @@ const router = createBrowserRouter([
             { index: true, element: <Navigate to="/dashboard" /> },
             {
                 path: 'dashboard',
-                element: <Suspense fallback={<LoadingSpinner />}><DashboardPage /></Suspense>,
+                element: <LazyRoute><DashboardPage /></LazyRoute>,
             },
             {
                 path: 'transactions',
-                element: <Suspense fallback={<LoadingSpinner />}><TransactionsPage /></Suspense>,
+                element: <LazyRoute><TransactionsPage /></LazyRoute>,
             },
             {
                 path: 'accounts/:accountId/transactions',
-                element: <Suspense fallback={<LoadingSpinner />}><TransactionsPage /></Suspense>,
+                element: <LazyRoute><TransactionsPage /></LazyRoute>,
             },
             {
                 path: 'gocardless/callback/:accountId',
-                element: <Suspense fallback={<LoadingSpinner />}><GoCardlessCallbackPage /></Suspense>,
+                element: <LazyRoute><GoCardlessCallbackPage /></LazyRoute>,
             },
             {
                 path: 'crypto',
-                element: <Suspense fallback={<LoadingSpinner />}><CryptoPage /></Suspense>,
+                element: <LazyRoute><CryptoPage /></LazyRoute>,
             },
             {
                 path: 'settings',
-                element: <Suspense fallback={<LoadingSpinner />}><SettingsPage /></Suspense>,
+                element: <LazyRoute><SettingsPage /></LazyRoute>,
             },
             {
                 path: 'trash',
-                element: <Suspense fallback={<LoadingSpinner />}><TrashPage /></Suspense>,
+                element: <LazyRoute><TrashPage /></LazyRoute>,
             },
             {
                 path: 'budgets',
-                element: <Suspense fallback={<LoadingSpinner />}><BudgetsPage /></Suspense>,
+                element: <LazyRoute><BudgetsPage /></LazyRoute>,
             },
             {
                 path: 'audit-log',
-                element: <Suspense fallback={<LoadingSpinner />}><AuditLogPage /></Suspense>,
+                element: <LazyRoute><AuditLogPage /></LazyRoute>,
             },
             {
                 path: 'chat',
-                element: <Suspense fallback={<LoadingSpinner />}><ChatPage /></Suspense>,
+                element: <LazyRoute><ChatPage /></LazyRoute>,
             },
             {
                 path: '*',
-                element: <Suspense fallback={<LoadingSpinner />}><NotFoundPage /></Suspense>,
+                element: <LazyRoute><NotFoundPage /></LazyRoute>,
             },
         ],
     },
@@ -101,13 +121,13 @@ const router = createBrowserRouter([
         path: '/',
         element: <RedirectIfAuth><PublicLayout /></RedirectIfAuth>,
         children: [
-            { path: 'login', element: <Suspense fallback={<LoadingSpinner />}><LoginPage /></Suspense> },
-            { path: 'register', element: <Suspense fallback={<LoadingSpinner />}><RegisterPage /></Suspense> },
+            { path: 'login', element: <LazyRoute><LoginPage /></LazyRoute> },
+            { path: 'register', element: <LazyRoute><RegisterPage /></LazyRoute> },
         ]
     },
     {
         path: '*',
-        element: <Suspense fallback={<LoadingSpinner />}><NotFoundPage /></Suspense>,
+        element: <LazyRoute><NotFoundPage /></LazyRoute>,
     },
 ]);
 

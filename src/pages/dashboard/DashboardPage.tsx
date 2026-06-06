@@ -34,16 +34,10 @@ import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT, SPACING } from '../../the
 import { PageHeader } from '../../components/PageHeader';
 import { EmptyState } from '../../components/EmptyState';
 import { OnboardingChecklist } from '../../components/onboarding/OnboardingChecklist';
-import type { Account } from '../../types/api';
+import type { AppOutletContext } from '../../types/outletContext';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
-
-interface OutletContextType {
-    transactionRefreshKey: number;
-    accounts: Account[];
-    onOpenCreateAccount: () => void;
-}
 
 const PRESETS = (t: (k: string) => string) => [
     { label: t('dashboard.presets.lastWeek'), value: () => [dayjs().subtract(1, 'week').startOf('day'), dayjs().endOf('day')] as [Dayjs, Dayjs] },
@@ -55,7 +49,7 @@ const PRESETS = (t: (k: string) => string) => [
 export const DashboardPage = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
-    const { transactionRefreshKey, accounts, onOpenCreateAccount } = useOutletContext<OutletContextType>();
+    const { transactionRefreshKey, accounts, onOpenCreateAccount } = useOutletContext<AppOutletContext>();
     const isMobile = useMediaQuery('(max-width: 768px)');
 
     usePageTitle(t('dashboard.title'));
