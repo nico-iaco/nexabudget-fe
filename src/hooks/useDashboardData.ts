@@ -11,7 +11,6 @@ import type {
     MonthlyTrendItem,
     MonthlyTrendResponse,
     MonthlySummaryResponse,
-    PeriodTotalsResponse,
     PortfolioValueResponse
 } from '../types/api';
 
@@ -46,7 +45,8 @@ interface DashboardQueryResult {
     trend: MonthlyTrendResponse;
     incomeBreakdown: CategoryBreakdownItem[];
     expenseBreakdown: CategoryBreakdownItem[];
-    periodTotals: PeriodTotalsResponse | null;
+    totalIncome: number;
+    totalExpenses: number;
     proj: MonthlyProjectionResponse | null;
     crypto: PortfolioValueResponse | null;
     budgets: MonthlySummaryResponse[];
@@ -71,25 +71,29 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
             const safe = <T,>(p: Promise<{ data: T }>, fallback: T): Promise<T> =>
                 p.then(r => r.data ?? fallback).catch(() => fallback);
 
-            const [comp, trend, breakdown, periodTotals, proj, crypto, budgets] = await Promise.all([
+            const EMPTY_BREAKDOWN = { startDate, endDate, currency: 'EUR', totalIncome: 0, totalExpense: 0, grandTotal: 0, categories: [] };
+
+            const [comp, trend, breakdown, proj, crypto, budgets] = await Promise.all([
                 safe(api.getMonthComparison(now.year(), now.month() + 1), null),
                 safe(api.getMonthlyTrend(trendMonths), EMPTY_TREND),
-                safe(api.getCategoryBreakdown(startDate, endDate), { startDate, endDate, grandTotal: 0, categories: [] }),
-                safe(api.getPeriodTotals(startDate, endDate), null),
+                safe(api.getCategoryBreakdown(startDate, endDate), EMPTY_BREAKDOWN),
                 safe(api.getMonthlyProjection(), null),
                 safe(api.getPortfolioValue('EUR'), null),
                 safe(api.getBudgetMonthlySummary(now.format('YYYY-MM-DD')), []),
             ]);
 
+            const categories = Array.isArray(breakdown?.categories) ? breakdown.categories : [];
+
             return {
                 comp,
                 trend: trend ?? EMPTY_TREND,
-                incomeBreakdown: (breakdown?.categories ?? []).filter(c => c.inferredType === 'IN'),
-                expenseBreakdown: (breakdown?.categories ?? []).filter(c => c.inferredType === 'OUT'),
-                periodTotals,
+                incomeBreakdown: categories.filter(c => c.inferredType === 'IN'),
+                expenseBreakdown: categories.filter(c => c.inferredType === 'OUT'),
+                totalIncome: breakdown?.totalIncome ?? 0,
+                totalExpenses: breakdown?.totalExpense ?? 0,
                 proj,
                 crypto,
-                budgets: budgets ?? [],
+                budgets: Array.isArray(budgets) ? budgets : [],
             };
         },
         placeholderData: keepPreviousData,
@@ -122,10 +126,9 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
         [data?.budgets]
     );
 
-    const periodTotals = data?.periodTotals ?? null;
-    const totalIncome = periodTotals?.income ?? 0;
-    const totalExpenses = periodTotals?.expense ?? 0;
-    const netBalance = periodTotals?.net ?? 0;
+    const totalIncome = data?.totalIncome ?? 0;
+    const totalExpenses = data?.totalExpenses ?? 0;
+    const netBalance = totalIncome - totalExpenses;
 
     const expensesByCategory = useMemo((): PieData[] =>
         expenseBreakdown.map(i => ({ type: i.categoryName, value: Math.abs(i.net) })),

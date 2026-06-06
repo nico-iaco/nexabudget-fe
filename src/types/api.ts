@@ -215,6 +215,9 @@ export interface CategoryBreakdownItem {
 export interface CategoryBreakdownResponse {
     startDate: string;
     endDate: string;
+    currency: string;
+    totalIncome: number;
+    totalExpense: number;
     grandTotal: number;
     categories: CategoryBreakdownItem[];
 }
