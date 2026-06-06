@@ -89,7 +89,6 @@ const RangeDatePicker = ({
                 suffixIcon={<CalendarOutlined style={{ color: token.colorTextTertiary }} />}
                 onFocus={() => setAnyFocused(true)}
                 onBlur={() => setAnyFocused(false)}
-                getPopupContainer={() => document.body}
             />
 
             <SwapRightOutlined
@@ -124,7 +123,6 @@ const RangeDatePicker = ({
                 }
                 onFocus={() => setAnyFocused(true)}
                 onBlur={() => setAnyFocused(false)}
-                getPopupContainer={() => document.body}
             />
         </div>
     );
