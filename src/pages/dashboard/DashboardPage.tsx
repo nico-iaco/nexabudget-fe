@@ -188,7 +188,7 @@ export const DashboardPage = () => {
                                 value={dateRange}
                                 onChange={(dates) => setDateRange(dates)}
                                 style={{ maxWidth: 280 }}
-                                inputReadOnly
+                               
                             />
                         </Flex>
                     )}
@@ -358,7 +358,7 @@ export const DashboardPage = () => {
                                         value={comparisonMonth}
                                         onChange={m => { if (m) setComparisonMonth(m); }}
                                         getPopupContainer={trigger => trigger.parentElement ?? document.body}
-                                        inputReadOnly
+                                       
                                     />
                                 }
                             >

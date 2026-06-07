@@ -102,7 +102,7 @@ export const ApiKeyFormModal = ({ open, onCancel, onOk, editingKey, loading }: A
                         style={{ width: '100%' }}
                         format="YYYY-MM-DD HH:mm"
                         showTime
-                        inputReadOnly
+                       
                     />
                 </Form.Item>
             </Form>

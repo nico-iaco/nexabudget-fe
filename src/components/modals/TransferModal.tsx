@@ -104,7 +104,7 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts, loading = fa
                     label={t('transfers.transferDate')}
                     rules={[{ required: true, message: t('transfers.transferDateRequired') }]}
                 >
-                    <DatePicker style={{ width: '100%' }} inputReadOnly />
+                    <DatePicker style={{ width: '100%' }} />
                 </Form.Item>
                 <Form.Item
                     name="description"

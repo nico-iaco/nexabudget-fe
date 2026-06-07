@@ -174,7 +174,7 @@ export const BalanceTrendSection = () => {
             onChange={(dates) => {
                 if (dates && dates[0] && dates[1]) setRange([dates[0], dates[1]]);
             }}
-            inputReadOnly
+           
         />
     );
 

@@ -37,7 +37,7 @@ export const AiAnalysisCard: React.FC = () => {
     const [result, setResult] = useState<string | null>(null);
 
     // Data massima selezionabile: fine del mese corrente
-    const maxDate = dayjs().endOf('month');
+    const maxDate = dayjs().endOf('month').format('YYYY-MM-DD');
 
     const handleGenerate = async () => {
         if (!dateRange[0] || !dateRange[1]) {
@@ -190,7 +190,7 @@ export const AiAnalysisCard: React.FC = () => {
                             disabledDate={(current: Dayjs) => current.isAfter(dayjs().endOf('month'), 'day')}
                             disabled={loading}
                             style={{ flex: 1 }}
-                            inputReadOnly
+                           
                             presets={PRESETS(t)}
                         />
                         <Button
