@@ -42,6 +42,7 @@ const { RangePicker } = DatePicker;
 
 const PRESETS = (t: (k: string) => string) => [
     { label: t('dashboard.presets.lastWeek'), value: () => [dayjs().subtract(1, 'week').startOf('day'), dayjs().endOf('day')] as [Dayjs, Dayjs] },
+    { label: t('dashboard.presets.previousMonth'), value: () => [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] as [Dayjs, Dayjs] },
     { label: t('dashboard.presets.lastMonth'), value: () => [dayjs().startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
     { label: t('dashboard.presets.last6Months'), value: () => [dayjs().subtract(6, 'month').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
     { label: t('dashboard.presets.lastYear'), value: () => [dayjs().subtract(1, 'year').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },

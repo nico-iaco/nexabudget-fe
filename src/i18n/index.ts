@@ -186,6 +186,7 @@ const resources = {
                 projectionDay: 'Giorno {{elapsed}} di {{total}}',
                 presets: {
                     lastWeek: 'Ultima settimana',
+                    previousMonth: 'Mese scorso',
                     lastMonth: 'Mese corrente',
                     last6Months: 'Ultimi 6 mesi',
                     lastYear: 'Ultimo anno',
@@ -864,6 +865,7 @@ const resources = {
                 projectionDay: 'Day {{elapsed}} of {{total}}',
                 presets: {
                     lastWeek: 'Last week',
+                    previousMonth: 'Last month',
                     lastMonth: 'Current month',
                     last6Months: 'Last 6 months',
                     lastYear: 'Last year',
