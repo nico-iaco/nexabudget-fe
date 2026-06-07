@@ -22,4 +22,6 @@ export interface AppOutletContext {
     handleOpenTransferModal: () => void;
     /** Apre il modale di creazione conto */
     onOpenCreateAccount: () => void;
+    /** Apre il wizard GoCardless per collegare/rinnovare la connessione bancaria di un account */
+    onOpenGoCardless: (account: Account) => void;
 }

@@ -24,7 +24,7 @@ import type {
     CryptoHolding,
     DeletedAccount,
     GoCardlessBank,
-    GoCardlessBankDetails,
+    GoCardlessBankAccountsResponse,
     GoCardlessBankLinkRequest,
     GoCardlessCompleteBankLinkRequest,
     ImportConfirmRequest,
@@ -242,7 +242,7 @@ export const mergeCategoryInto = (sourceId: string, targetId: string): Promise<A
 // GoCardless
 export const getGoCardlessBankList = (countryCode: string): Promise<AxiosResponse<GoCardlessBank[]>> => apiClient.get(`/gocardless/bank?countryCode=${countryCode}`);
 export const getGoCardlessBankLink = (data: GoCardlessBankLinkRequest): Promise<AxiosResponse<string>> => apiClient.post(`/gocardless/bank/link`, data);
-export const getGoCardlessBankAccounts = (localAccountId: string): Promise<AxiosResponse<GoCardlessBankDetails[]>> => apiClient.get(`/gocardless/bank/${localAccountId}/account`);
+export const getGoCardlessBankAccounts = (localAccountId: string): Promise<AxiosResponse<GoCardlessBankAccountsResponse>> => apiClient.get(`/gocardless/bank/${localAccountId}/account`);
 export const linkGoCardlessBankAccount = (localAccountId: string, data: GoCardlessCompleteBankLinkRequest): Promise<AxiosResponse<void>> => apiClient.post(`/gocardless/bank/${localAccountId}/link`, data);
 export const syncGoCardlessBankAccount = (localAccountId: string, data: SyncBankTransactionsRequest): Promise<AxiosResponse<void>> => apiClient.post(`/gocardless/bank/${localAccountId}/sync`, data);
 

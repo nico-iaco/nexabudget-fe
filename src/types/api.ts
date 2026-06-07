@@ -115,6 +115,22 @@ export interface GoCardlessBankDetails {
     name: string;
 }
 
+export type GoCardlessLinkedStatus = 'linked' | 'expired' | 'rejected' | 'suspended' | 'pending' | 'unknown';
+
+export interface GoCardlessBankAccountsResponse {
+    linkedStatus: GoCardlessLinkedStatus;
+    requisitionStatus?: string;
+    renewable: boolean;
+    /** Alias semantico di renewable — usare questo nella UI */
+    requiresReauth: boolean;
+    /** Valorizzato solo quando linkedStatus === 'pending' */
+    link?: string;
+    errorCode?: string;
+    reason?: string;
+    /** Valorizzato solo quando linkedStatus === 'linked' */
+    accounts: GoCardlessBankDetails[];
+}
+
 export interface GoCardlessCompleteBankLinkRequest {
     accountId: string;
 }

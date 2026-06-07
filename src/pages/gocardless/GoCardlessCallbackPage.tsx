@@ -2,10 +2,10 @@
 import {useEffect, useState} from 'react';
 import {useNavigate, useOutletContext, useParams} from 'react-router-dom';
 import {App, Alert, Button, Card, Flex, Form, InputNumber, List, Spin, theme, Typography} from 'antd';
-import {BankOutlined} from '@ant-design/icons';
+import {BankOutlined, ReloadOutlined, ArrowRightOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import * as api from '../../services/api';
-import type {GoCardlessBankDetails} from '../../types/api';
+import type {Account, GoCardlessBankDetails, GoCardlessLinkedStatus} from '../../types/api';
 import {COLOR_ACCENT} from '../../theme/tokens';
 import {getCurrencySymbol} from '../../utils/currency';
 import type { AppOutletContext } from '../../types/outletContext';
@@ -17,9 +17,13 @@ export const GoCardlessCallbackPage = () => {
     const { message, notification } = App.useApp();
     const {accountId} = useParams<{ accountId: string }>();
     const navigate = useNavigate();
-    const { fetchAccounts } = useOutletContext<AppOutletContext>();
+    const { fetchAccounts, onOpenGoCardless } = useOutletContext<AppOutletContext>();
     const [loading, setLoading] = useState(true);
+    const [linkedStatus, setLinkedStatus] = useState<GoCardlessLinkedStatus | null>(null);
     const [bankAccounts, setBankAccounts] = useState<GoCardlessBankDetails[]>([]);
+    const [pendingLink, setPendingLink] = useState<string | undefined>(undefined);
+    const [statusReason, setStatusReason] = useState<string | undefined>(undefined);
+    const [localAccount, setLocalAccount] = useState<Account | null>(null);
     const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
     const [currentBalance, setCurrentBalance] = useState<number | null>(null);
     const [accountCurrency, setAccountCurrency] = useState<string>('EUR');
@@ -42,14 +46,23 @@ export const GoCardlessCallbackPage = () => {
                     api.getGoCardlessBankAccounts(accountId),
                     api.getAccounts(),
                 ]);
-                setBankAccounts(bankAccountsRes.data);
-                const localAccount = accountsRes.data.find((a) => a.id === accountId);
-                if (localAccount) {
-                    setAccountCurrency(localAccount.currency);
+                const res = bankAccountsRes.data;
+                setLinkedStatus(res.linkedStatus);
+                setPendingLink(res.link);
+                setStatusReason(res.reason);
+
+                const found = accountsRes.data.find((a) => a.id === accountId) ?? null;
+                if (found) {
+                    setLocalAccount(found);
+                    setAccountCurrency(found.currency);
                 }
 
-                if (bankAccountsRes.data.length === 0) {
-                    setError(t('gocardlessCallback.noAccounts'));
+                if (res.linkedStatus === 'linked') {
+                    const accounts = res.accounts ?? [];
+                    setBankAccounts(accounts);
+                    if (accounts.length === 0) {
+                        setError(t('gocardlessCallback.noAccounts'));
+                    }
                 }
             } catch (err) {
                 console.error(err);
@@ -104,6 +117,19 @@ export const GoCardlessCallbackPage = () => {
         }
     };
 
+    const handleReconnect = () => {
+        if (localAccount) {
+            onOpenGoCardless(localAccount);
+        }
+    };
+
+    const handleContinuePending = () => {
+        if (pendingLink) {
+            window.location.href = pendingLink;
+        } else {
+            setError(t('gocardlessCallback.loadError'));
+        }
+    };
 
     if (loading) {
         return (
@@ -123,7 +149,6 @@ export const GoCardlessCallbackPage = () => {
             </Flex>
         );
     }
-
 
     if (error) {
         return (
@@ -152,6 +177,99 @@ export const GoCardlessCallbackPage = () => {
         );
     }
 
+    // --- Stati che richiedono ri-autenticazione ---
+    if (linkedStatus === 'expired' || linkedStatus === 'rejected' || linkedStatus === 'suspended') {
+        const titleKey = `gocardlessCallback.${linkedStatus}Title` as const;
+        const descKey = `gocardlessCallback.${linkedStatus}Description` as const;
+        return (
+            <Flex justify="center" align="center" style={{minHeight: '100vh', padding: '24px'}}>
+                <Card style={{maxWidth: 600, width: '100%'}}>
+                    <Alert
+                        message={t(titleKey)}
+                        description={t(descKey)}
+                        type="warning"
+                        showIcon
+                        style={{marginBottom: 16}}
+                    />
+                    {statusReason && (
+                        <Text type="secondary" style={{display: 'block', marginBottom: 16}}>
+                            {statusReason}
+                        </Text>
+                    )}
+                    <Flex gap="small">
+                        <Button onClick={() => navigate('/transactions')} style={{flex: 1}}>
+                            {t('common.cancel')}
+                        </Button>
+                        <Button
+                            type="primary"
+                            icon={<ReloadOutlined />}
+                            onClick={handleReconnect}
+                            disabled={!localAccount}
+                            style={{flex: 1}}
+                        >
+                            {t('gocardlessCallback.reconnectButton')}
+                        </Button>
+                    </Flex>
+                </Card>
+            </Flex>
+        );
+    }
+
+    // --- Stato pending: autenticazione avviata ma non completata ---
+    if (linkedStatus === 'pending') {
+        return (
+            <Flex justify="center" align="center" style={{minHeight: '100vh', padding: '24px'}}>
+                <Card style={{maxWidth: 600, width: '100%'}}>
+                    <Alert
+                        message={t('gocardlessCallback.pendingTitle')}
+                        description={t('gocardlessCallback.pendingDescription')}
+                        type="info"
+                        showIcon
+                        style={{marginBottom: 16}}
+                    />
+                    <Flex gap="small">
+                        <Button onClick={() => navigate('/transactions')} style={{flex: 1}}>
+                            {t('common.cancel')}
+                        </Button>
+                        <Button
+                            type="primary"
+                            icon={<ArrowRightOutlined />}
+                            onClick={handleContinuePending}
+                            style={{flex: 1}}
+                        >
+                            {t('gocardlessCallback.continueAuthButton')}
+                        </Button>
+                    </Flex>
+                </Card>
+            </Flex>
+        );
+    }
+
+    // --- Stato unknown / non riconosciuto ---
+    if (linkedStatus === 'unknown' || (linkedStatus !== 'linked' && linkedStatus !== null)) {
+        return (
+            <Flex justify="center" align="center" style={{minHeight: '100vh', padding: '24px'}}>
+                <Card style={{maxWidth: 600, width: '100%'}}>
+                    <Alert
+                        message={t('gocardlessCallback.unknownTitle')}
+                        description={statusReason ?? t('gocardlessCallback.unknownDescription')}
+                        type="error"
+                        showIcon
+                    />
+                    <Button
+                        type="primary"
+                        onClick={() => navigate('/transactions')}
+                        style={{marginTop: 16}}
+                        block
+                    >
+                        {t('gocardlessCallback.backToTransactions')}
+                    </Button>
+                </Card>
+            </Flex>
+        );
+    }
+
+    // --- Stato linked: selezione conto ---
     return (
         <Flex justify="center" align="center" style={{minHeight: '100vh', padding: '24px'}}>
                 <Card
@@ -218,8 +336,6 @@ export const GoCardlessCallbackPage = () => {
                                     <BankOutlined style={{fontSize: '24px', color: COLOR_ACCENT}}/>
                                 </Flex>
                             </List.Item>
-
-
                         )}
                     />
 
