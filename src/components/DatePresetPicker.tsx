@@ -4,7 +4,6 @@
 // bottoni); il DatePicker AntD funziona correttamente su iOS.
 import { useEffect, useState } from 'react';
 import { DatePicker, Flex, theme } from 'antd';
-import { CalendarOutlined, CloseCircleFilled, SwapRightOutlined } from '@ant-design/icons';
 import type { Dayjs } from 'dayjs';
 
 export interface DatePreset {
@@ -24,16 +23,15 @@ interface DatePresetPickerProps {
 }
 
 // ─── Selettore range date ────────────────────────────────────────────────────
-// Due DatePicker AntD borderless dentro un contenitore con bordo condiviso.
-// getPopupContainer → document.body così il popup non viene clippato da
-// eventuali antenati con overflow:hidden.
+// Due DatePicker AntD standard in un Flex — identico al codice originale
+// che funzionava su iOS. Niente variant="borderless" che altera il touch
+// handling su iOS PWA e impedisce l'apertura del calendario.
 
 interface RangePickerProps {
     start: Dayjs | null;
     end: Dayjs | null;
     onChangeStart: (d: Dayjs | null) => void;
     onChangeEnd: (d: Dayjs | null) => void;
-    onClear: () => void;
     startPlaceholder?: string;
     endPlaceholder?: string;
     disabled?: boolean;
@@ -41,92 +39,41 @@ interface RangePickerProps {
 }
 
 const RangeDatePicker = ({
-    start, end, onChangeStart, onChangeEnd, onClear,
+    start, end, onChangeStart, onChangeEnd,
     startPlaceholder = 'Inizio', endPlaceholder = 'Fine',
     disabled = false, maxDate,
-}: RangePickerProps) => {
-    const { token } = theme.useToken();
-    const [anyFocused, setAnyFocused] = useState(false);
-
-    const pickerStyle: React.CSSProperties = {
-        flex: 1,
-        border: 'none',
-        boxShadow: 'none',
-        background: 'transparent',
-        paddingLeft: 8,
-        paddingRight: 0,
-    };
-
-    return (
-        <div
-            style={{
-                display: 'flex',
-                alignItems: 'center',
-                height: 40,
-                borderRadius: token.borderRadiusLG,
-                border: `1.5px solid ${anyFocused ? token.colorPrimary : token.colorBorder}`,
-                boxShadow: anyFocused
-                    ? `0 0 0 2px ${token.colorPrimaryBorder}`
-                    : '0 1px 3px rgba(0,0,0,0.06)',
-                background: disabled ? token.colorBgContainerDisabled : token.colorBgContainer,
-                transition: 'border-color 0.2s, box-shadow 0.2s',
-                overflow: 'visible',
-                animation: 'datePickerSlideIn 0.18s ease',
-            }}
-        >
-            <DatePicker
-                value={start}
-                onChange={onChangeStart}
-                format="D MMM YYYY"
-                placeholder={startPlaceholder}
-                disabled={disabled}
-                disabledDate={d =>
-                    !!(maxDate && d.isAfter(maxDate, 'day')) ||
-                    !!(end && d.isAfter(end, 'day'))
-                }
-                style={pickerStyle}
-                variant="borderless"
-                suffixIcon={<CalendarOutlined style={{ color: token.colorTextTertiary }} />}
-                onFocus={() => setAnyFocused(true)}
-                onBlur={() => setAnyFocused(false)}
-            />
-
-            <SwapRightOutlined
-                style={{
-                    fontSize: 14,
-                    flexShrink: 0,
-                    color: anyFocused ? token.colorPrimary : token.colorTextQuaternary,
-                    transition: 'color 0.2s',
-                    pointerEvents: 'none',
-                }}
-            />
-
-            <DatePicker
-                value={end}
-                onChange={onChangeEnd}
-                format="D MMM YYYY"
-                placeholder={endPlaceholder}
-                disabled={disabled}
-                disabledDate={d =>
-                    !!(maxDate && d.isAfter(maxDate, 'day')) ||
-                    !!(start && d.isBefore(start, 'day'))
-                }
-                style={{ ...pickerStyle, paddingLeft: 4 }}
-                variant="borderless"
-                suffixIcon={
-                    (start || end) && !disabled ? (
-                        <CloseCircleFilled
-                            style={{ color: token.colorTextQuaternary, cursor: 'pointer', fontSize: 13 }}
-                            onClick={e => { e.stopPropagation(); onClear(); }}
-                        />
-                    ) : null
-                }
-                onFocus={() => setAnyFocused(true)}
-                onBlur={() => setAnyFocused(false)}
-            />
-        </div>
-    );
-};
+}: RangePickerProps) => (
+    <Flex gap={8} style={{ animation: 'datePickerSlideIn 0.18s ease' }}>
+        <DatePicker
+            value={start}
+            onChange={onChangeStart}
+            format="D MMM YYYY"
+            placeholder={startPlaceholder}
+            disabled={disabled}
+            disabledDate={d =>
+                !!(maxDate && d.isAfter(maxDate, 'day')) ||
+                !!(end && d.isAfter(end, 'day'))
+            }
+            style={{ flex: 1 }}
+            allowClear
+            inputReadOnly
+        />
+        <DatePicker
+            value={end}
+            onChange={onChangeEnd}
+            format="D MMM YYYY"
+            placeholder={endPlaceholder}
+            disabled={disabled}
+            disabledDate={d =>
+                !!(maxDate && d.isAfter(maxDate, 'day')) ||
+                !!(start && d.isBefore(start, 'day'))
+            }
+            style={{ flex: 1 }}
+            allowClear
+            inputReadOnly
+        />
+    </Flex>
+);
 
 // ─── Componente principale ────────────────────────────────────────────────────
 
@@ -232,7 +179,6 @@ export const DatePresetPicker = ({
                     end={value[1]}
                     onChangeStart={d => onChange([d, value[1]])}
                     onChangeEnd={d => onChange([value[0], d])}
-                    onClear={() => { setCustomMode(false); onChange([null, null]); }}
                     startPlaceholder={startPlaceholder}
                     endPlaceholder={endPlaceholder}
                     disabled={disabled}

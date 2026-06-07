@@ -190,6 +190,7 @@ export const AiAnalysisCard: React.FC = () => {
                             disabledDate={(current: Dayjs) => current.isAfter(dayjs().endOf('month'), 'day')}
                             disabled={loading}
                             style={{ flex: 1 }}
+                            inputReadOnly
                             presets={PRESETS(t)}
                         />
                         <Button

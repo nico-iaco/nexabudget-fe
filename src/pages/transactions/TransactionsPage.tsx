@@ -847,12 +847,14 @@ export const TransactionsPage = () => {
                             value={filters.startDate}
                             style={{ flex: 1, minWidth: 120 }}
                             onChange={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
+                            inputReadOnly
                         />
                         <DatePicker
                             placeholder={t('transactions.toDate')}
                             value={filters.endDate}
                             style={{ flex: 1, minWidth: 120 }}
                             onChange={(date) => setFilters(prev => ({ ...prev, endDate: date }))}
+                            inputReadOnly
                         />
                         <Select
                             placeholder={t('transactions.sortBy')}
@@ -936,12 +938,14 @@ export const TransactionsPage = () => {
                         value={draftFilters.startDate}
                         style={{ width: '100%' }}
                         onChange={(date) => setDraftFilters(prev => ({ ...prev, startDate: date }))}
+                        inputReadOnly
                     />
                     <DatePicker
                         placeholder={t('transactions.toDate')}
                         value={draftFilters.endDate}
                         style={{ width: '100%' }}
                         onChange={(date) => setDraftFilters(prev => ({ ...prev, endDate: date }))}
+                        inputReadOnly
                     />
                     <Select
                         placeholder={t('transactions.sortBy')}
@@ -995,7 +999,7 @@ export const TransactionsPage = () => {
                         <Input />
                     </Form.Item>
                     <Form.Item name="date" label={t('transactions.data')} initialValue={dayjs()}>
-                        <DatePicker style={{ width: '100%' }} />
+                        <DatePicker style={{ width: '100%' }} inputReadOnly />
                     </Form.Item>
                     <Form.Item name="note" label={t('transactions.note')}>
                         <Input.TextArea />

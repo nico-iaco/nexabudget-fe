@@ -98,10 +98,11 @@ export const ApiKeyFormModal = ({ open, onCancel, onOk, editingKey, loading }: A
                     label={t('settings.apiKeys.expiresAt')}
                     tooltip={t('settings.apiKeys.expiresAtTooltip')}
                 >
-                    <DatePicker 
-                        style={{ width: '100%' }} 
+                    <DatePicker
+                        style={{ width: '100%' }}
                         format="YYYY-MM-DD HH:mm"
-                        showTime 
+                        showTime
+                        inputReadOnly
                     />
                 </Form.Item>
             </Form>
