@@ -1,4 +1,5 @@
-import {App, Card, Divider, Form, Input, Radio, Select, Space, Typography} from 'antd';
+import {App, Card, Divider, Form, Input, Radio, Space, Typography} from 'antd';
+import { SafeSelect } from '../../components/SafeSelect';
 import {useTranslation} from 'react-i18next';
 import {usePreferences} from '../../contexts/PreferencesContext';
 import {useAuth} from '../../contexts/AuthContext';
@@ -46,9 +47,9 @@ export const SettingsPage = () => {
                         <Input value={auth?.email} disabled />
                     </Form.Item>
                     <Form.Item label={t('settings.defaultCurrency')}>
-                        <Select
+                        <SafeSelect
                             value={auth?.defaultCurrency || 'EUR'}
-                            onChange={handleUpdateCurrency}
+                            onChange={(v) => handleUpdateCurrency(v as string)}
                             disabled={updatingParams}
                             options={[
                                 { value: 'EUR', label: 'EUR (€)' },
@@ -80,9 +81,9 @@ export const SettingsPage = () => {
             <Card title={t('settings.languageTitle')} style={{ marginBottom: SPACING.md }}>
                 <Form layout="vertical">
                     <Form.Item label={t('settings.language')}>
-                        <Select
+                        <SafeSelect
                             value={preferences.language}
-                            onChange={(value) => setLanguage(value)}
+                            onChange={(v) => setLanguage(v as Parameters<typeof setLanguage>[0])}
                             options={[
                                 { value: 'it', label: t('settings.languageIt') },
                                 { value: 'en', label: t('settings.languageEn') }

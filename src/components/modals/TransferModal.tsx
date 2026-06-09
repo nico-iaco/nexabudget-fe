@@ -1,10 +1,11 @@
-import {Alert, Button, DatePicker, Form, Input, InputNumber, Modal, Select} from 'antd';
+import {Alert, Button, DatePicker, Form, Input, InputNumber, Modal} from 'antd';
 import dayjs, {type Dayjs} from 'dayjs';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {Account} from '../../types/api';
+import { SafeSelect } from '../SafeSelect';
 
-const { Option } = Select;
+const { Option } = SafeSelect;
 
 export interface TransferFormValues {
     sourceAccountId: string;
@@ -61,9 +62,9 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts, loading = fa
                     label={t('transfers.sourceAccount')}
                     rules={[{ required: true, message: t('transfers.sourceAccountRequired') }]}
                 >
-                    <Select placeholder={t('transfers.sourceAccountPlaceholder')}>
+                    <SafeSelect placeholder={t('transfers.sourceAccountPlaceholder')}>
                         {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
-                    </Select>
+                    </SafeSelect>
                 </Form.Item>
                 <Form.Item
                     name="destinationAccountId"
@@ -80,9 +81,9 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts, loading = fa
                         }),
                     ]}
                 >
-                    <Select placeholder={t('transfers.destinationAccountPlaceholder')}>
+                    <SafeSelect placeholder={t('transfers.destinationAccountPlaceholder')}>
                         {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
-                    </Select>
+                    </SafeSelect>
                 </Form.Item>
                 {isMultiCurrency && (
                     <Alert
