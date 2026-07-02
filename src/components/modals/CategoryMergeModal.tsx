@@ -1,4 +1,5 @@
-import { Alert, Button, Form, Modal, Select, Space } from 'antd';
+import { Alert, Button, Form, Modal, Space } from 'antd';
+import { SafeSelect } from '../SafeSelect';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Category } from '../../types/api';
@@ -50,10 +51,10 @@ export const CategoryMergeModal = ({ open, source, categories, onCancel, onConfi
                         label={t('settings.categories.mergeTargetLabel')}
                         required
                     >
-                        <Select
+                        <SafeSelect
                             value={targetId}
                             placeholder={t('settings.categories.mergeTargetPlaceholder')}
-                            onChange={setTargetId}
+                            onChange={(v) => setTargetId(v as string | undefined)}
                             disabled={targets.length === 0}
                             notFoundContent={t('settings.categories.mergeNoTargets')}
                             options={targets.map(c => ({ value: c.id, label: c.name }))}

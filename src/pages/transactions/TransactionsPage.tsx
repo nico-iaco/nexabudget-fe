@@ -25,6 +25,7 @@ import {
     Tag,
     Typography
 } from 'antd';
+import { SafeSelect } from '../../components/SafeSelect';
 import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, FilterOutlined, PlusOutlined, RetweetOutlined, RobotOutlined, SearchOutlined, SwapOutlined, UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
@@ -914,25 +915,25 @@ export const TransactionsPage = () => {
                 }
             >
                 <Flex vertical gap="middle">
-                    <Select
+                    <SafeSelect
                         placeholder={t('transactions.filterType')}
                         value={draftFilters.type}
-                        onChange={(value) => setDraftFilters(prev => ({ ...prev, type: value }))}
+                        onChange={(value) => setDraftFilters(prev => ({ ...prev, type: value as 'IN' | 'OUT' | undefined }))}
                         style={{ width: '100%' }}
                         allowClear
                     >
-                        <Option value="IN">{t('transactions.typeIn')}</Option>
-                        <Option value="OUT">{t('transactions.typeOut')}</Option>
-                    </Select>
-                    <Select
+                        <Select.Option value="IN">{t('transactions.typeIn')}</Select.Option>
+                        <Select.Option value="OUT">{t('transactions.typeOut')}</Select.Option>
+                    </SafeSelect>
+                    <SafeSelect
                         placeholder={t('transactions.filterCategory')}
                         value={draftFilters.categoryId}
-                        onChange={(value) => setDraftFilters(prev => ({ ...prev, categoryId: value }))}
+                        onChange={(value) => setDraftFilters(prev => ({ ...prev, categoryId: value as string | undefined }))}
                         style={{ width: '100%' }}
                         allowClear
                     >
-                        {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
-                    </Select>
+                        {categories.map(c => <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>)}
+                    </SafeSelect>
                     <DatePicker
                         placeholder={t('transactions.fromDate')}
                         value={draftFilters.startDate}
@@ -947,27 +948,27 @@ export const TransactionsPage = () => {
                         onChange={(date) => setDraftFilters(prev => ({ ...prev, endDate: date }))}
                        
                     />
-                    <Select
+                    <SafeSelect
                         placeholder={t('transactions.sortBy')}
                         value={draftSortConfig.field as string}
-                        onChange={(value) => setDraftSortConfig(prev => ({ ...prev, field: value }))}
+                        onChange={(value) => setDraftSortConfig(prev => ({ ...prev, field: value as string }))}
                         style={{ width: '100%' }}
                     >
-                        <Option value="date">{t('transactions.data')}</Option>
-                        <Option value="description">{t('transactions.description')}</Option>
-                        <Option value="amount">{t('transactions.amount')}</Option>
-                        <Option value="accountName">{t('transactions.account')}</Option>
-                        <Option value="categoryName">{t('transactions.category')}</Option>
-                    </Select>
-                    <Select
+                        <Select.Option value="date">{t('transactions.data')}</Select.Option>
+                        <Select.Option value="description">{t('transactions.description')}</Select.Option>
+                        <Select.Option value="amount">{t('transactions.amount')}</Select.Option>
+                        <Select.Option value="accountName">{t('transactions.account')}</Select.Option>
+                        <Select.Option value="categoryName">{t('transactions.category')}</Select.Option>
+                    </SafeSelect>
+                    <SafeSelect
                         placeholder={t('transactions.sortOrder')}
                         value={draftSortConfig.order}
-                        onChange={(value) => setDraftSortConfig(prev => ({ ...prev, order: value }))}
+                        onChange={(value) => setDraftSortConfig(prev => ({ ...prev, order: value as 'ascend' | 'descend' | null | undefined }))}
                         style={{ width: '100%' }}
                     >
-                        <Option value="ascend">{t('transactions.sortAsc')}</Option>
-                        <Option value="descend">{t('transactions.sortDesc')}</Option>
-                    </Select>
+                        <Select.Option value="ascend">{t('transactions.sortAsc')}</Select.Option>
+                        <Select.Option value="descend">{t('transactions.sortDesc')}</Select.Option>
+                    </SafeSelect>
                 </Flex>
             </Drawer>
 
@@ -977,23 +978,23 @@ export const TransactionsPage = () => {
                 onCancel={handleCancel} footer={null} destroyOnClose>
                 <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: 24 }}>
                     <Form.Item name="accountId" label={t('transactions.account')} rules={[{ required: true }]}>
-                        <Select placeholder={t('transactions.selectAccount')} disabled={!!accountId || !!editingRecord} getPopupContainer={triggerNode => triggerNode.parentNode}>
-                            {accounts.map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
-                        </Select>
+                        <SafeSelect placeholder={t('transactions.selectAccount')} disabled={!!accountId || !!editingRecord}>
+                            {accounts.map(acc => <Select.Option key={acc.id} value={acc.id}>{acc.name}</Select.Option>)}
+                        </SafeSelect>
                     </Form.Item>
                     <Form.Item name="amount" label={t('transactions.amount')} rules={[{ required: true }]}>
                         <InputNumber style={{ width: '100%' }} min={0} addonAfter={formSelectedCurrency} parser={(value) => value?.replace(',', '.') as any} />
                     </Form.Item>
                     <Form.Item name="type" label={t('transactions.type')} rules={[{ required: true }]}>
-                        <Select placeholder={t('transactions.selectType')} getPopupContainer={triggerNode => triggerNode.parentNode}>
-                            <Option value="IN">{t('transactions.typeIn')}</Option>
-                            <Option value="OUT">{t('transactions.typeOut')}</Option>
-                        </Select>
+                        <SafeSelect placeholder={t('transactions.selectType')}>
+                            <Select.Option value="IN">{t('transactions.typeIn')}</Select.Option>
+                            <Select.Option value="OUT">{t('transactions.typeOut')}</Select.Option>
+                        </SafeSelect>
                     </Form.Item>
                     <Form.Item name="categoryId" label={t('transactions.category')}>
-                        <Select placeholder={t('transactions.selectCategory')} allowClear getPopupContainer={triggerNode => triggerNode.parentNode}>
-                            {categories.map(cat => <Option key={cat.id} value={cat.id}>{cat.name}</Option>)}
-                        </Select>
+                        <SafeSelect placeholder={t('transactions.selectCategory')} allowClear>
+                            {categories.map(cat => <Select.Option key={cat.id} value={cat.id}>{cat.name}</Select.Option>)}
+                        </SafeSelect>
                     </Form.Item>
                     <Form.Item name="description" label={t('transactions.description')} rules={[{ required: true }]}>
                         <Input />
@@ -1041,15 +1042,15 @@ export const TransactionsPage = () => {
 
                         <Form layout="vertical">
                             <Form.Item label={t('transactions.linkTransferSelectAccount')}>
-                                <Select
+                                <SafeSelect
                                     placeholder={t('transactions.selectAccount')}
-                                    onChange={(value) => setDestinationAccountId(value)}
+                                    onChange={(value) => setDestinationAccountId(value as string)}
                                     value={destinationAccountId}
                                 >
                                     {accounts
                                         .filter(acc => acc.id !== sourceTransaction.accountId)
-                                        .map(acc => <Option key={acc.id} value={acc.id}>{acc.name}</Option>)}
-                                </Select>
+                                        .map(acc => <Select.Option key={acc.id} value={acc.id}>{acc.name}</Select.Option>)}
+                                </SafeSelect>
                             </Form.Item>
                         </Form>
 

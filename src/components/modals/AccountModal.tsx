@@ -1,10 +1,11 @@
-import {Button, Form, Input, InputNumber, Modal, Select} from 'antd';
+import {Button, Form, Input, InputNumber, Modal} from 'antd';
 import type {Account, AccountRequest} from '../../types/api';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {getCurrencySymbol} from '../../utils/currency';
+import { SafeSelect } from '../SafeSelect';
 
-const { Option } = Select;
+const { Option } = SafeSelect;
 
 interface AccountModalProps {
     open: boolean;
@@ -63,12 +64,12 @@ export const AccountModal = ({ open, onCancel, onFinish, editingAccount, loading
                     label={t('accounts.accountType')}
                     rules={[{ required: true, message: t('accounts.accountTypePlaceholder') }]}
                 >
-                    <Select placeholder={t('accounts.accountTypePlaceholder')}>
+                    <SafeSelect placeholder={t('accounts.accountTypePlaceholder')}>
                         <Option value="CONTO_CORRENTE">{t('accounts.accountTypeChecking')}</Option>
                         <Option value="RISPARMIO">{t('accounts.accountTypeSavings')}</Option>
                         <Option value="INVESTIMENTO">{t('accounts.accountTypeInvestment')}</Option>
                         <Option value="CONTANTI">{t('accounts.accountTypeCash')}</Option>
-                    </Select>
+                    </SafeSelect>
                 </Form.Item>
                 <Form.Item
                     name="starterBalance"

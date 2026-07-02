@@ -1,4 +1,5 @@
-import { Button, Form, InputNumber, Modal, Select, Switch } from 'antd';
+import { Button, Form, InputNumber, Modal, Switch } from 'antd';
+import { SafeSelect } from '../../components/SafeSelect';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BudgetTemplate, BudgetTemplateRequest, Category } from '../../types/api';
@@ -45,21 +46,21 @@ export const BudgetTemplateModal = ({ open, onCancel, onFinish, editing, categor
         >
             <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: 24 }}>
                 <Form.Item name="categoryId" label={t('budgets.category')} rules={[{ required: true, message: t('budgets.categoryRequired') }]}>
-                    <Select placeholder={t('budgets.categoryRequired')}>
+                    <SafeSelect placeholder={t('budgets.categoryRequired')}>
                         {categories.map(c => (
-                            <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>
+                            <SafeSelect.Option key={c.id} value={c.id}>{c.name}</SafeSelect.Option>
                         ))}
-                    </Select>
+                    </SafeSelect>
                 </Form.Item>
                 <Form.Item name="budgetLimit" label={t('budgets.limit')} rules={[{ required: true, message: t('budgets.limitRequired') }]}>
                     <InputNumber style={{ width: '100%' }} min={0.01} precision={2} addonAfter="€" parser={(value) => value?.replace(',', '.') as any} />
                 </Form.Item>
                 <Form.Item name="recurrenceType" label={t('budgets.recurrence')} rules={[{ required: true, message: t('budgets.recurrenceRequired') }]}>
-                    <Select>
-                        <Select.Option value="MONTHLY">{t('budgets.recurrenceMonthly')}</Select.Option>
-                        <Select.Option value="QUARTERLY">{t('budgets.recurrenceQuarterly')}</Select.Option>
-                        <Select.Option value="YEARLY">{t('budgets.recurrenceYearly')}</Select.Option>
-                    </Select>
+                    <SafeSelect>
+                        <SafeSelect.Option value="MONTHLY">{t('budgets.recurrenceMonthly')}</SafeSelect.Option>
+                        <SafeSelect.Option value="QUARTERLY">{t('budgets.recurrenceQuarterly')}</SafeSelect.Option>
+                        <SafeSelect.Option value="YEARLY">{t('budgets.recurrenceYearly')}</SafeSelect.Option>
+                    </SafeSelect>
                 </Form.Item>
                 <Form.Item name="active" label={t('budgets.active')} valuePropName="checked">
                     <Switch />
