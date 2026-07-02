@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Button, Dropdown, Flex, Layout, Menu, Spin, Statistic, Typography, theme } from 'antd';
+import { Button, Dropdown, Flex, Layout, Menu, Spin, Statistic, Tooltip, Typography, theme } from 'antd';
 import {
     BankOutlined,
     ContainerOutlined,
@@ -7,6 +7,7 @@ import {
     DisconnectOutlined,
     EditOutlined,
     EllipsisOutlined,
+    ExclamationCircleFilled,
     FundOutlined,
     HistoryOutlined,
     LineChartOutlined,
@@ -14,6 +15,7 @@ import {
     MenuFoldOutlined,
     PieChartOutlined,
     PlusOutlined,
+    ReloadOutlined,
     RestOutlined,
     RobotOutlined,
     SafetyCertificateOutlined,
@@ -149,6 +151,12 @@ export const AppSider = ({
                     label: isConnectedToGoCardless ? t('accounts.disconnectGoCardless') : t('accounts.connectGoCardless'),
                     onClick: () => { if (!isConnectedToGoCardless) onOpenGoCardless(acc); },
                 }] : []),
+                ...(isConnectedToGoCardless && acc.requiresReauth ? [{
+                    key: 'renewConnection',
+                    icon: <ReloadOutlined />,
+                    label: t('accounts.renewConnection'),
+                    onClick: () => onOpenGoCardless(acc),
+                }] : []),
                 {
                     key: 'edit',
                     icon: <EditOutlined />,
@@ -170,20 +178,27 @@ export const AppSider = ({
                 label: (
                     <Flex justify="space-between" align="center" gap="small">
                         <Flex vertical style={{ flex: 1, minWidth: 0 }}>
-                            <Text style={{
-                                color: siderTextPrimary,
-                                fontWeight: 500,
-                                overflow: 'hidden',
-                                textOverflow: 'ellipsis',
-                                whiteSpace: 'nowrap'
-                            }}>
-                                {acc.name}
-                            </Text>
+                            <Flex align="center" gap={4} style={{ minWidth: 0 }}>
+                                <Text style={{
+                                    color: siderTextPrimary,
+                                    fontWeight: 500,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap'
+                                }}>
+                                    {acc.name}
+                                </Text>
+                                {acc.requiresReauth && (
+                                    <Tooltip title={t('accounts.requiresReauthTooltip')}>
+                                        <ExclamationCircleFilled style={{ color: token.colorError, flexShrink: 0 }} />
+                                    </Tooltip>
+                                )}
+                            </Flex>
                             <Text style={{
                                 fontSize: '0.85em',
-                                color: siderTextSecondary
+                                color: acc.requiresReauth ? token.colorError : siderTextSecondary
                             }}>
-                                {acc.actualBalance.toFixed(2)} {getCurrencySymbol(acc.currency)}
+                                {acc.requiresReauth ? t('accounts.requiresReauthBadge') : `${acc.actualBalance.toFixed(2)} ${getCurrencySymbol(acc.currency)}`}
                             </Text>
                         </Flex>
                         <Dropdown
@@ -204,7 +219,7 @@ export const AppSider = ({
                 onClick: () => handleMenuClick(path),
             };
         });
-    }, [accounts, onOpenGoCardless, onOpenEditAccount, onOpenDeleteAccount, handleMenuClick, t]);
+    }, [accounts, onOpenGoCardless, onOpenEditAccount, onOpenDeleteAccount, handleMenuClick, t, token, siderTextPrimary, siderTextSecondary]);
 
     // Calcola se ci sono conti correnti collegati a GoCardless
     const hasSyncableAccounts = useMemo(() => {

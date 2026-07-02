@@ -30,6 +30,7 @@ export interface Account {
     currency: string;
     linkedToExternal: boolean;
     synchronizing: boolean;
+    requiresReauth: boolean;
     createdAt: string;
 }
 

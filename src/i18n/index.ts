@@ -93,7 +93,10 @@ const resources = {
                 deleteConfirmWarning: 'Il conto e tutte le sue transazioni saranno recuperabili dalla sezione Cestino entro 30 giorni.',
                 totalBalance: 'Saldo Totale',
                 connectGoCardless: 'Collega GoCardless',
-                disconnectGoCardless: 'Disconnetti GoCardless'
+                disconnectGoCardless: 'Disconnetti GoCardless',
+                requiresReauthBadge: 'Riautenticazione richiesta',
+                requiresReauthTooltip: 'Collegamento bancario scaduto — riautenticazione richiesta',
+                renewConnection: 'Rinnova collegamento'
             },
             transfers: {
                 newTransfer: 'Nuovo Trasferimento',
@@ -784,7 +787,10 @@ const resources = {
                 deleteConfirmWarning: 'The account and all its transactions will be recoverable from the Trash section within 30 days.',
                 totalBalance: 'Total Balance',
                 connectGoCardless: 'Connect GoCardless',
-                disconnectGoCardless: 'Disconnect GoCardless'
+                disconnectGoCardless: 'Disconnect GoCardless',
+                requiresReauthBadge: 'Reauthentication required',
+                requiresReauthTooltip: 'Bank connection expired — reauthentication required',
+                renewConnection: 'Renew connection'
             },
             transfers: {
                 newTransfer: 'New Transfer',
