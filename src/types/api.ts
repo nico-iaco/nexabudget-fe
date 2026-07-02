@@ -30,6 +30,7 @@ export interface Account {
     currency: string;
     linkedToExternal: boolean;
     synchronizing: boolean;
+    requiresReauth: boolean;
     createdAt: string;
 }
 
@@ -113,6 +114,22 @@ export interface GoCardlessBankDetails {
     account_id: string;
     institution: GoCardlessBank;
     name: string;
+}
+
+export type GoCardlessLinkedStatus = 'linked' | 'expired' | 'rejected' | 'suspended' | 'pending' | 'unknown';
+
+export interface GoCardlessBankAccountsResponse {
+    linkedStatus: GoCardlessLinkedStatus;
+    requisitionStatus?: string;
+    renewable: boolean;
+    /** Alias semantico di renewable — usare questo nella UI */
+    requiresReauth: boolean;
+    /** Valorizzato solo quando linkedStatus === 'pending' */
+    link?: string;
+    errorCode?: string;
+    reason?: string;
+    /** Valorizzato solo quando linkedStatus === 'linked' */
+    accounts: GoCardlessBankDetails[];
 }
 
 export interface GoCardlessCompleteBankLinkRequest {

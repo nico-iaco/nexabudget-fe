@@ -93,7 +93,10 @@ const resources = {
                 deleteConfirmWarning: 'Il conto e tutte le sue transazioni saranno recuperabili dalla sezione Cestino entro 30 giorni.',
                 totalBalance: 'Saldo Totale',
                 connectGoCardless: 'Collega GoCardless',
-                disconnectGoCardless: 'Disconnetti GoCardless'
+                disconnectGoCardless: 'Disconnetti GoCardless',
+                requiresReauthBadge: 'Riautenticazione richiesta',
+                requiresReauthTooltip: 'Collegamento bancario scaduto — riautenticazione richiesta',
+                renewConnection: 'Rinnova collegamento'
             },
             transfers: {
                 newTransfer: 'Nuovo Trasferimento',
@@ -161,7 +164,19 @@ const resources = {
                 currentBalancePlaceholder: 'Es: 1000.00',
                 balanceWarningTitle: 'Attenzione al saldo sincronizzato',
                 balanceWarningDescription: 'Il saldo importato da GoCardless potrebbe differire dal saldo reale del tuo conto. Inserisci il saldo attuale manualmente se desideri che il bilancio in app sia corretto fin da subito.',
-                confirmSelection: 'Conferma Selezione'
+                confirmSelection: 'Conferma Selezione',
+                expiredTitle: 'Connessione Bancaria Scaduta',
+                expiredDescription: 'La tua connessione con la banca è scaduta. Devi ri-autenticarti per continuare a sincronizzare le transazioni.',
+                rejectedTitle: 'Connessione Bancaria Rifiutata',
+                rejectedDescription: 'La connessione con la banca è stata rifiutata. Avvia una nuova autenticazione per collegare nuovamente il conto.',
+                suspendedTitle: 'Connessione Bancaria Sospesa',
+                suspendedDescription: 'La connessione con la banca è stata sospesa. Ri-autenticati per ripristinare la sincronizzazione.',
+                pendingTitle: 'Autenticazione in Attesa',
+                pendingDescription: 'Hai già avviato un\'autenticazione con la banca che non è ancora stata completata. Clicca il bottone per continuare.',
+                unknownTitle: 'Stato Connessione Sconosciuto',
+                unknownDescription: 'Non è stato possibile determinare lo stato della connessione bancaria. Riprova più tardi.',
+                reconnectButton: 'Riconnetti Banca',
+                continueAuthButton: 'Continua Autenticazione'
             },
             dashboard: {
                 title: 'Dashboard',
@@ -772,7 +787,10 @@ const resources = {
                 deleteConfirmWarning: 'The account and all its transactions will be recoverable from the Trash section within 30 days.',
                 totalBalance: 'Total Balance',
                 connectGoCardless: 'Connect GoCardless',
-                disconnectGoCardless: 'Disconnect GoCardless'
+                disconnectGoCardless: 'Disconnect GoCardless',
+                requiresReauthBadge: 'Reauthentication required',
+                requiresReauthTooltip: 'Bank connection expired — reauthentication required',
+                renewConnection: 'Renew connection'
             },
             transfers: {
                 newTransfer: 'New Transfer',
@@ -840,7 +858,19 @@ const resources = {
                 currentBalancePlaceholder: 'e.g. 1000.00',
                 balanceWarningTitle: 'Note on synced balance',
                 balanceWarningDescription: 'The balance imported from GoCardless may differ from your actual account balance. Enter the current balance manually if you want the in-app balance to be accurate from the start.',
-                confirmSelection: 'Confirm Selection'
+                confirmSelection: 'Confirm Selection',
+                expiredTitle: 'Bank Connection Expired',
+                expiredDescription: 'Your bank connection has expired. You need to re-authenticate to continue syncing transactions.',
+                rejectedTitle: 'Bank Connection Rejected',
+                rejectedDescription: 'The bank connection was rejected. Start a new authentication to link the account again.',
+                suspendedTitle: 'Bank Connection Suspended',
+                suspendedDescription: 'The bank connection has been suspended. Re-authenticate to restore synchronisation.',
+                pendingTitle: 'Authentication Pending',
+                pendingDescription: 'You have already started an authentication with the bank that has not yet been completed. Click the button to continue.',
+                unknownTitle: 'Unknown Connection Status',
+                unknownDescription: 'The status of the bank connection could not be determined. Please try again later.',
+                reconnectButton: 'Reconnect Bank',
+                continueAuthButton: 'Continue Authentication'
             },
             dashboard: {
                 title: 'Dashboard',

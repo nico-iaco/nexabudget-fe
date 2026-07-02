@@ -146,6 +146,7 @@ export const Layout = () => {
             fetchCategories: () => {},
             handleOpenTransferModal: () => {},
             onOpenCreateAccount: () => {},
+            onOpenGoCardless: () => {},
         };
         return <Outlet context={emptyContext} />;
     }
@@ -158,6 +159,7 @@ export const Layout = () => {
         fetchCategories,
         handleOpenTransferModal,
         onOpenCreateAccount: () => handleOpenCreateAccountModal(isMobile ? () => setCollapsed(true) : undefined),
+        onOpenGoCardless: gcActions.open,
     };
 
     return (
