@@ -1,32 +1,32 @@
 import React, {useState} from 'react';
 import {App, Button, Form, Input, Modal} from 'antd';
 import {useTranslation} from 'react-i18next';
-import {saveCoinbaseKeys} from '../services/api';
-import type {CoinbaseKeysRequest} from '../types/api';
+import {saveBinanceKeys} from '../../services/api';
+import type {BinanceKeysRequest} from '../../types/api';
 
-interface CoinbaseKeysModalProps {
+interface BinanceKeysModalProps {
     open: boolean;
     onClose: () => void;
     onSuccess: () => void;
 }
 
-export const CoinbaseKeysModal: React.FC<CoinbaseKeysModalProps> = ({ open, onClose, onSuccess }) => {
+export const BinanceKeysModal: React.FC<BinanceKeysModalProps> = ({ open, onClose, onSuccess }) => {
     const { t } = useTranslation();
     const { message } = App.useApp();
     const [loading, setLoading] = useState(false);
     const [form] = Form.useForm();
 
-    const handleSubmit = async (values: CoinbaseKeysRequest) => {
+    const handleSubmit = async (values: BinanceKeysRequest) => {
         setLoading(true);
         try {
-            await saveCoinbaseKeys(values);
-            message.success(t('coinbaseKeys.saveSuccess'));
+            await saveBinanceKeys(values);
+            message.success(t('binanceKeys.saveSuccess'));
             form.resetFields();
             onSuccess();
             onClose();
         } catch (error) {
-            console.error('Failed to save Coinbase keys:', error);
-            message.error(t('coinbaseKeys.saveError'));
+            console.error('Failed to save Binance keys:', error);
+            message.error(t('binanceKeys.saveError'));
         } finally {
             setLoading(false);
         }
@@ -34,7 +34,7 @@ export const CoinbaseKeysModal: React.FC<CoinbaseKeysModalProps> = ({ open, onCl
 
     return (
         <Modal
-            title={t('coinbaseKeys.title')}
+            title={t('binanceKeys.title')}
             open={open}
             onCancel={onClose}
             footer={null}
@@ -45,29 +45,26 @@ export const CoinbaseKeysModal: React.FC<CoinbaseKeysModalProps> = ({ open, onCl
                 onFinish={handleSubmit}
             >
                 <Form.Item
-                    name="apiKeyName"
-                    label={t('coinbaseKeys.apiKeyName')}
-                    rules={[{ required: true, message: t('coinbaseKeys.apiKeyNameRequired') }]}
+                    name="apiKey"
+                    label={t('binanceKeys.apiKey')}
+                    rules={[{ required: true, message: t('binanceKeys.apiKeyRequired') }]}
                 >
-                    <Input placeholder={t('coinbaseKeys.apiKeyNamePlaceholder')} />
+                    <Input.Password placeholder={t('binanceKeys.apiKey')} />
                 </Form.Item>
 
                 <Form.Item
-                    name="privateKey"
-                    label={t('coinbaseKeys.privateKey')}
-                    rules={[{ required: true, message: t('coinbaseKeys.privateKeyRequired') }]}
+                    name="apiSecret"
+                    label={t('binanceKeys.apiSecret')}
+                    rules={[{ required: true, message: t('binanceKeys.apiSecretRequired') }]}
                 >
-                    <Input.TextArea
-                        placeholder={t('coinbaseKeys.privateKeyPlaceholder')}
-                        autoSize={{ minRows: 6, maxRows: 12 }}
-                    />
+                    <Input.Password placeholder={t('binanceKeys.apiSecret')} />
                 </Form.Item>
 
                 <Form.Item>
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                         <Button onClick={onClose}>{t('common.cancel')}</Button>
                         <Button type="primary" htmlType="submit" loading={loading}>
-                            {t('coinbaseKeys.saveKeys')}
+                            {t('binanceKeys.saveKeys')}
                         </Button>
                     </div>
                 </Form.Item>

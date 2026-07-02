@@ -25,7 +25,7 @@ import {
     Tag,
     Typography
 } from 'antd';
-import { SafeSelect } from '../../components/SafeSelect';
+import { SafeSelect } from '../../components/common/SafeSelect';
 import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, FilterOutlined, PlusOutlined, RetweetOutlined, RobotOutlined, SearchOutlined, SwapOutlined, UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
@@ -42,9 +42,10 @@ import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { TransactionCard } from '../../components/TransactionCard';
 import { TransactionImportModal } from '../../components/modals/TransactionImportModal';
-import { PageHeader } from '../../components/PageHeader';
+import { PageHeader } from '../../components/common/PageHeader';
 import { getCurrencySymbol } from '../../utils/currency';
-import { COLOR_POSITIVE, COLOR_NEGATIVE } from '../../theme/tokens';
+import { COLOR_POSITIVE, COLOR_NEGATIVE, FONT_SIZE, RADIUS, SHADOW, SPACING } from '../../theme/tokens';
+import { useConfirm } from '../../hooks/useConfirm';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
 import type { AppOutletContext } from '../../types/outletContext';
@@ -68,6 +69,7 @@ export const TransactionsPage = () => {
     const { t } = useTranslation();
     const { accountId } = useParams<{ accountId?: string }>();
     const { auth } = useAuth();
+    const confirm = useConfirm();
     const {
         accounts,
         fetchAccounts: fetchLayoutAccounts,
@@ -397,11 +399,11 @@ export const TransactionsPage = () => {
 
 
     const handleDelete = useCallback(async (id: string) => {
-        Modal.confirm({
+        confirm({
             title: t('transactions.deleteConfirm'),
             content: t('trash.recoverableFor30Days'),
             okText: t('common.delete'),
-            okButtonProps: { danger: true },
+            danger: true,
             cancelText: t('common.cancel'),
             onOk: async () => {
                 try {
@@ -416,7 +418,7 @@ export const TransactionsPage = () => {
             }
         });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [t, fetchLayoutAccounts]);
+    }, [t, confirm, fetchLayoutAccounts]);
 
     const handleOpenEditModal = useCallback((record: Transaction) => {
         setEditingRecord(record);
@@ -574,7 +576,7 @@ export const TransactionsPage = () => {
                         {' '}{amount.toFixed(2)} {sym}
                     </span>
                     {record.originalCurrency && record.originalAmount != null && record.exchangeRate != null && (
-                        <Text type="secondary" style={{ fontSize: '11px', display: 'block' }}>
+                        <Text type="secondary" style={{ fontSize: FONT_SIZE.xs, display: 'block' }}>
                             {t('transactions.exchangeRateHint', {
                                 originalAmount: record.originalAmount.toFixed(2),
                                 originalCurrency: record.originalCurrency,
@@ -650,7 +652,7 @@ export const TransactionsPage = () => {
                             showIcon
                             message={currentAccount?.name || t('transactions.accountLabelFallback')}
                             description={t('transactions.currentBalanceLabel', { balance: formattedCurrentBalance ?? t('transactions.currentBalanceFallback') })}
-                            style={{ marginBottom: 12 }}
+                            style={{ marginBottom: SPACING.sm }}
                         />
                     )}
                     <List
@@ -678,7 +680,7 @@ export const TransactionsPage = () => {
                         showSizeChanger={false}
                         showTotal={(total) => t('transactions.totalLabel', { total })}
                         size="small"
-                        style={{ textAlign: 'center', marginTop: 16 }}
+                        style={{ textAlign: 'center', marginTop: SPACING.md }}
                     />
                 </>
             );
@@ -789,7 +791,7 @@ export const TransactionsPage = () => {
             />
 
 
-            <Flex vertical gap="middle" style={{ marginBottom: 16 }}>
+            <Flex vertical gap="middle" style={{ marginBottom: SPACING.md }}>
                 <Flex gap="small" align="stretch">
                     <Input
                         aria-label={t('transactions.searchPlaceholder')}
@@ -976,7 +978,7 @@ export const TransactionsPage = () => {
 
             <Modal title={editingRecord ? t('transactions.editTransaction') : t('transactions.newTransaction')} open={isModalOpen}
                 onCancel={handleCancel} footer={null} destroyOnClose>
-                <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: 24 }}>
+                <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: SPACING.lg }}>
                     <Form.Item name="accountId" label={t('transactions.account')} rules={[{ required: true }]}>
                         <SafeSelect placeholder={t('transactions.selectAccount')} disabled={!!accountId || !!editingRecord}>
                             {accounts.map(acc => <Select.Option key={acc.id} value={acc.id}>{acc.name}</Select.Option>)}
@@ -1132,7 +1134,7 @@ export const TransactionsPage = () => {
                         description={t('transactions.balanceCurrentInfo')}
                         type="info"
                         showIcon
-                        style={{ marginBottom: 16 }}
+                        style={{ marginBottom: SPACING.md }}
                     />
                     <Form.Item label={t('transactions.balanceCurrent')}>
                         <InputNumber
@@ -1226,7 +1228,7 @@ export const TransactionsPage = () => {
                         )}
                     </Space>
                 ) : (
-                    <Flex justify="center" align="center" style={{ padding: '24px 0' }}>
+                    <Flex justify="center" align="center" style={{ padding: `${SPACING.lg}px 0` }}>
                         <Spin />
                     </Flex>
                 )}
@@ -1240,15 +1242,15 @@ export const TransactionsPage = () => {
                     zIndex: 1000,
                     width: 280,
                     background: 'var(--ant-color-bg-elevated)',
-                    borderRadius: 8,
-                    boxShadow: '0 6px 24px rgba(0,0,0,0.18)',
-                    padding: '12px 16px',
+                    borderRadius: RADIUS.lg,
+                    boxShadow: SHADOW.elevated,
+                    padding: `${SPACING.sm}px ${SPACING.md}px`,
                     display: 'flex',
                     flexDirection: 'column',
                     gap: 8,
                 }}>
                     <Flex justify="space-between" align="center">
-                        <Text strong style={{ fontSize: 13 }}>
+                        <Text strong style={{ fontSize: FONT_SIZE.md }}>
                             <RobotOutlined style={{ marginRight: 6 }} />
                             {t('transactions.categorizeAi.modalTitle')}
                         </Text>
@@ -1261,7 +1263,7 @@ export const TransactionsPage = () => {
                             {t('transactions.categorizeAi.reopen')}
                         </Button>
                     </Flex>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
+                    <Text type="secondary" style={{ fontSize: FONT_SIZE.sm }}>
                         {aiCategorizationJob.status === 'PENDING'
                             ? t('transactions.categorizeAi.statusPending')
                             : t('transactions.categorizeAi.statusInProgress')}
@@ -1273,7 +1275,7 @@ export const TransactionsPage = () => {
                         status="active"
                         size="small"
                     />
-                    <Text type="secondary" style={{ fontSize: 11 }}>
+                    <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
                         {t('transactions.categorizeAi.progress', {
                             processed: aiCategorizationJob.processed,
                             total: aiCategorizationJob.total,

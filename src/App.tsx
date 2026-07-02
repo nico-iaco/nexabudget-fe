@@ -6,9 +6,9 @@ import { Layout } from './components/Layout';
 import { Suspense, lazy, type ReactNode } from 'react';
 import type { JSX } from 'react';
 import { usePreferences } from './contexts/PreferencesContext';
-import { BRAND_PRIMARY } from './theme/tokens';
-import { ErrorBoundary } from './components/ErrorBoundary';
-import { RouteErrorFallback } from './components/RouteErrorFallback';
+import { BRAND_PRIMARY, RADIUS_BASE } from './theme/tokens';
+import { ErrorBoundary } from './components/common/ErrorBoundary';
+import { RouteErrorFallback } from './components/common/RouteErrorFallback';
 
 // Dynamic imports (Code Splitting)
 const LoginPage = lazy(() => import('./pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -141,7 +141,7 @@ function App() {
                 algorithm,
                 token: {
                     colorPrimary: BRAND_PRIMARY,
-                    borderRadius: 8,
+                    borderRadius: RADIUS_BASE,
                 },
             }}
             getPopupContainer={(triggerNode) => {

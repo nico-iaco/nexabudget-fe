@@ -7,6 +7,7 @@ import {
     TransactionOutlined,
 } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { SPACING } from '../../theme/tokens';
 
 const { Text } = Typography;
 
@@ -84,7 +85,7 @@ export const OnboardingChecklist = ({
 
     return (
         <Card
-            style={{ marginBottom: 24, borderStyle: 'dashed' }}
+            style={{ marginBottom: SPACING.lg, borderStyle: 'dashed' }}
             styles={{ body: { padding: '16px 20px' } }}
             extra={
                 <Button
@@ -97,13 +98,13 @@ export const OnboardingChecklist = ({
             }
             title={t('onboarding.title')}
         >
-            <Text type="secondary" style={{ display: 'block', marginBottom: 16 }}>
+            <Text type="secondary" style={{ display: 'block', marginBottom: SPACING.md }}>
                 {t('onboarding.subtitle')}
             </Text>
             <Steps
                 current={currentStep}
                 size="small"
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: SPACING.md }}
                 items={steps.map(s => ({
                     title: s.title,
                     status: s.done ? 'finish' : undefined,

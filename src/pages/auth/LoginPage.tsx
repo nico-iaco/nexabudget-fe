@@ -7,6 +7,7 @@ import {Link, useNavigate} from 'react-router-dom';
 import {useAuth} from '../../contexts/AuthContext';
 import * as api from '../../services/api';
 import type {LoginRequest} from '../../types/api';
+import {SHADOW, SPACING} from '../../theme/tokens';
 
 const { Title } = Typography;
 const { Content } = Layout;
@@ -40,18 +41,18 @@ export const LoginPage = () => {
                 display: 'flex',
                 justifyContent: 'center',
                 alignItems: 'center',
-                padding: '24px 16px'
+                padding: `${SPACING.lg}px ${SPACING.md}px`
             }}>
                 <Card style={{
                     width: '100%',
                     maxWidth: 400,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+                    boxShadow: SHADOW.card
                 }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '24px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: SPACING.lg }}>
                         <img src="/pwa-192x192.png" alt={t('app.name')} width="64" height="64" style={{ width: '64px', height: '64px' }} />
                     </div>
-                    <Title level={2} style={{ textAlign: 'center', marginBottom: '24px' }}>{t('auth.loginTitle')}</Title>
-                    {error && <Alert message={error} type="error" showIcon style={{ marginBottom: 24 }} />}
+                    <Title level={2} style={{ textAlign: 'center', marginBottom: SPACING.lg }}>{t('auth.loginTitle')}</Title>
+                    {error && <Alert message={error} type="error" showIcon style={{ marginBottom: SPACING.lg }} />}
                     <Form name="login" onFinish={onFinish} autoComplete="off" size="large">
                         <Form.Item
                             name="username"

@@ -1,10 +1,11 @@
 import React, {useMemo} from 'react';
-import {Button, Card, Col, Collapse, List, Popconfirm, Row, Statistic, Table, Tag, Typography, Flex} from 'antd';
+import {Button, Card, Col, Collapse, List, Popconfirm, Row, Table, Tag, Typography, Flex} from 'antd';
 import {DeleteOutlined, EditOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import type {CryptoAsset, PortfolioValueResponse} from '../types/api.ts';
-import {COLOR_POSITIVE} from '../theme/tokens';
+import {COLOR_POSITIVE, FONT_SIZE, SPACING} from '../theme/tokens';
 import {useMediaQuery} from '../hooks/useMediaQuery';
+import {StatCard} from './common/StatCard';
 
 const { Text } = Typography;
 
@@ -108,7 +109,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                                 <Button
                                     icon={<EditOutlined />}
                                     size="small"
-                                    style={{ marginRight: 8 }}
+                                    style={{ marginRight: SPACING.xs }}
                                     onClick={() => onEditAsset?.(asset)}
                                     aria-label={t('common.edit')}
                                 />
@@ -134,18 +135,17 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
 
     return (
         <div>
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+            <Row gutter={[16, 16]} style={{ marginBottom: SPACING.lg }}>
                 <Col xs={24} sm={12} md={8}>
-                    <Card bordered={false}>
-                        <Statistic
-                            title={t('portfolio.totalValue')}
-                            value={data?.totalValue}
-                            precision={2}
-                            valueStyle={{ color: COLOR_POSITIVE }}
-                            prefix={data?.currency === 'EUR' ? '€' : '$'}
-                            loading={loading}
-                        />
-                    </Card>
+                    <StatCard
+                        bordered={false}
+                        title={t('portfolio.totalValue')}
+                        value={data?.totalValue}
+                        precision={2}
+                        color={COLOR_POSITIVE}
+                        prefix={data?.currency === 'EUR' ? '€' : '$'}
+                        loading={loading}
+                    />
                 </Col>
             </Row>
 
@@ -155,7 +155,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                         dataSource={groupedAssets}
                         loading={loading}
                         renderItem={(record, index) => (
-                            <Card size="small" style={{ marginBottom: 12 }}>
+                            <Card size="small" style={{ marginBottom: SPACING.sm }}>
                                 <Collapse
                                     ghost
                                     items={[
@@ -166,7 +166,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                                                     <Tag color={colors[index % colors.length]}>{record.symbol}</Tag>
                                                     <div style={{ textAlign: 'right' }}>
                                                         <div><Text strong>{new Intl.NumberFormat(locale, { style: 'currency', currency: data?.currency || 'USD' }).format(record.value)}</Text></div>
-                                                        <div><Text type="secondary" style={{ fontSize: '12px' }}>{record.amount.toLocaleString(locale, { maximumFractionDigits: 8 })}</Text></div>
+                                                        <div><Text type="secondary" style={{ fontSize: `${FONT_SIZE.sm}px` }}>{record.amount.toLocaleString(locale, { maximumFractionDigits: 8 })}</Text></div>
                                                     </div>
                                                 </Flex>
                                             ),
@@ -176,7 +176,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                                                     rowKey="id"
                                                     renderItem={(asset) => (
                                                         <List.Item
-                                                            style={{ padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}
+                                                            style={{ padding: `${SPACING.xs}px 0`, borderBottom: '1px solid #f0f0f0' }}
                                                             actions={
                                                                 asset.source === 'MANUAL'
                                                                     ? [

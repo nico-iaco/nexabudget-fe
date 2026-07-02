@@ -12,6 +12,7 @@ import {
 } from '@ant-design/icons';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { NAV_ITEMS as ALL_NAV_ITEMS } from './navItems';
+import { FONT_SIZE, SHADOW } from '../../theme/tokens';
 
 /** Icone per la bottom-bar — stesso mapping di AppSider, solo subset mobile */
 const BOTTOM_BAR_ICON_MAP: Record<string, React.ReactNode> = {
@@ -50,7 +51,7 @@ const BottomNavBarInner = () => {
                 borderTop: `1px solid ${token.colorBorderSecondary}`,
                 display: 'flex',
                 zIndex: 999,
-                boxShadow: '0 -2px 8px rgba(0,0,0,0.08)',
+                boxShadow: SHADOW.bottomNav,
                 transform: 'translateZ(0)',
                 willChange: 'transform',
             }}
@@ -75,7 +76,7 @@ const BottomNavBarInner = () => {
                             background: 'transparent',
                             cursor: 'pointer',
                             color: isActive ? token.colorPrimary : token.colorTextSecondary,
-                            fontSize: 10,
+                            fontSize: FONT_SIZE.xxs,
                             fontWeight: isActive ? 600 : 400,
                             padding: '6px 0',
                             transition: 'color 0.2s',
@@ -84,7 +85,7 @@ const BottomNavBarInner = () => {
                         aria-label={label}
                         aria-current={isActive ? 'page' : undefined}
                     >
-                        <span style={{ fontSize: 20, lineHeight: 1 }}>{icon}</span>
+                        <span style={{ fontSize: FONT_SIZE.xxxl, lineHeight: 1 }}>{icon}</span>
                         <span>{label}</span>
                     </button>
                 );

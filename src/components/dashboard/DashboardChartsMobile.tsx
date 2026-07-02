@@ -1,8 +1,8 @@
-import { Empty, Flex, Progress, Typography } from 'antd';
+import { Flex, Progress, theme, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { BarData } from '../../hooks/useDashboardData';
-import { usePreferences } from '../../contexts/PreferencesContext';
-import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT, SERIES_INCOME } from '../../theme/tokens';
+import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT, SERIES_INCOME, FONT_SIZE, RADIUS } from '../../theme/tokens';
+import { EmptyState } from '../common/EmptyState';
 
 export { TrendDualChart } from './TrendDualChart';
 
@@ -18,27 +18,26 @@ interface PieChartProps {
 
 export const GenericPieChart = ({ data, centerLabel }: PieChartProps) => {
     const { t } = useTranslation();
-    const { preferences } = usePreferences();
-    const isDark = preferences.theme === 'dark';
-    if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
+    const { token } = theme.useToken();
+    if (!data || data.length === 0) return <EmptyState description={t('charts.noData')} />;
 
     const total = data.reduce((sum, d) => sum + d.value, 0);
     const sorted = [...data].sort((a, b) => b.value - a.value);
     return (
         <Flex vertical gap={10}>
             <Flex vertical align="center" style={{ marginBottom: 4 }}>
-                <Text type="secondary" style={{ fontSize: 12 }}>
+                <Text type="secondary" style={{ fontSize: FONT_SIZE.sm }}>
                     {centerLabel ?? t('reports.total')}
                 </Text>
-                <Text strong style={{ fontSize: 18 }}>{formatCurrency(total)}</Text>
+                <Text strong style={{ fontSize: FONT_SIZE.xxl }}>{formatCurrency(total)}</Text>
             </Flex>
             {sorted.map((item) => {
                 const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
                 return (
                     <div key={item.type}>
                         <Flex justify="space-between" style={{ marginBottom: 2 }}>
-                            <Text style={{ fontSize: 13 }}>{item.type}</Text>
-                            <Text style={{ fontSize: 13 }} type="secondary">
+                            <Text style={{ fontSize: FONT_SIZE.md }}>{item.type}</Text>
+                            <Text style={{ fontSize: FONT_SIZE.md }} type="secondary">
                                 {item.value.toFixed(2)} ({pct}%)
                             </Text>
                         </Flex>
@@ -47,7 +46,7 @@ export const GenericPieChart = ({ data, centerLabel }: PieChartProps) => {
                             percent={pct}
                             showInfo={false}
                             size="small"
-                            strokeColor={isDark ? '#177ddc' : '#1890ff'}
+                            strokeColor={token.colorPrimary}
                         />
                     </div>
                 );
@@ -62,7 +61,7 @@ interface BarChartProps {
 
 export const TrendBarChart = ({ data }: BarChartProps) => {
     const { t } = useTranslation();
-    if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
+    if (!data || data.length === 0) return <EmptyState description={t('charts.noData')} />;
 
     const months = [...new Set(data.map(d => d.month))];
     const maxValue = Math.max(...data.map(d => d.value), 1);
@@ -83,8 +82,8 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
             <Flex gap={12} style={{ marginBottom: 8 }}>
                 {types.map(type => (
                     <Flex key={type} align="center" gap={4}>
-                        <div style={{ width: 10, height: 10, borderRadius: 2, backgroundColor: colorFor(type) }} />
-                        <Text style={{ fontSize: 11 }}>{labelFor(type)}</Text>
+                        <div style={{ width: 10, height: 10, borderRadius: RADIUS.xs, backgroundColor: colorFor(type) }} />
+                        <Text style={{ fontSize: FONT_SIZE.xs }}>{labelFor(type)}</Text>
                     </Flex>
                 ))}
             </Flex>
@@ -139,33 +138,34 @@ export const ComparisonBars = ({
     currentIncome, previousIncome, currentExpense, previousExpense,
 }: ComparisonBarsProps) => {
     const { t } = useTranslation();
+    const { token } = theme.useToken();
     const max = Math.max(currentIncome, previousIncome, currentExpense, previousExpense, 1);
 
     const Row = ({ label, current, previous, color }: { label: string; current: number; previous: number; color: string }) => (
         <div>
             <Flex justify="space-between" style={{ marginBottom: 2 }}>
-                <Text style={{ fontSize: 12 }}>{label}</Text>
-                <Text type="secondary" style={{ fontSize: 11 }}>
-                    {formatCurrency(current)} <Text type="secondary" style={{ fontSize: 10 }}>({formatCurrency(previous)})</Text>
+                <Text style={{ fontSize: FONT_SIZE.sm }}>{label}</Text>
+                <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
+                    {formatCurrency(current)} <Text type="secondary" style={{ fontSize: FONT_SIZE.xxs }}>({formatCurrency(previous)})</Text>
                 </Text>
             </Flex>
             <div style={{ position: 'relative', height: 14 }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, height: 6, width: `${(previous / max) * 100}%`, backgroundColor: '#bfbfbf', borderRadius: 2 }} />
-                <div style={{ position: 'absolute', left: 0, top: 8, height: 6, width: `${(current / max) * 100}%`, backgroundColor: color, borderRadius: 2 }} />
+                <div style={{ position: 'absolute', left: 0, top: 0, height: 6, width: `${(previous / max) * 100}%`, backgroundColor: token.colorTextQuaternary, borderRadius: RADIUS.xs }} />
+                <div style={{ position: 'absolute', left: 0, top: 8, height: 6, width: `${(current / max) * 100}%`, backgroundColor: color, borderRadius: RADIUS.xs }} />
             </div>
         </div>
     );
 
     return (
         <Flex vertical gap={12}>
-            <Flex gap={12} style={{ fontSize: 11 }}>
+            <Flex gap={12} style={{ fontSize: FONT_SIZE.xs }}>
                 <Flex gap={4} align="center">
-                    <div style={{ width: 8, height: 8, backgroundColor: '#bfbfbf', borderRadius: 2 }} />
-                    <Text style={{ fontSize: 11 }}>{t('reports.previousMonth')}</Text>
+                    <div style={{ width: 8, height: 8, backgroundColor: token.colorTextQuaternary, borderRadius: RADIUS.xs }} />
+                    <Text style={{ fontSize: FONT_SIZE.xs }}>{t('reports.previousMonth')}</Text>
                 </Flex>
                 <Flex gap={4} align="center">
-                    <div style={{ width: 8, height: 8, backgroundColor: COLOR_ACCENT, borderRadius: 2 }} />
-                    <Text style={{ fontSize: 11 }}>{t('reports.currentMonth')}</Text>
+                    <div style={{ width: 8, height: 8, backgroundColor: COLOR_ACCENT, borderRadius: RADIUS.xs }} />
+                    <Text style={{ fontSize: FONT_SIZE.xs }}>{t('reports.currentMonth')}</Text>
                 </Flex>
             </Flex>
             <Row label={t('reports.typeIn')} current={currentIncome} previous={previousIncome} color={COLOR_POSITIVE} />

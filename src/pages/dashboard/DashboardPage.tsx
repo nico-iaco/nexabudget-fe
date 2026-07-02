@@ -2,7 +2,7 @@
 import { useState, lazy, Suspense } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
-    Button, Card, Col, DatePicker, Empty, Flex, Progress, Row,
+    Button, Card, Col, DatePicker, Flex, Progress, Row,
     Select, Skeleton, Statistic, Table, Tabs, Typography
 } from 'antd';
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
@@ -30,12 +30,13 @@ import * as api from '../../services/api';
 import type { CategoryBreakdownItem, MonthComparisonResponse, MonthlySummaryResponse } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT, SPACING } from '../../theme/tokens';
-import { PageHeader } from '../../components/PageHeader';
-import { EmptyState } from '../../components/EmptyState';
+import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_WARNING, COLOR_ACCENT, SPACING, FONT_SIZE } from '../../theme/tokens';
+import { PageHeader } from '../../components/common/PageHeader';
+import { EmptyState } from '../../components/common/EmptyState';
+import { StatCard } from '../../components/common/StatCard';
 import { OnboardingChecklist } from '../../components/onboarding/OnboardingChecklist';
 import type { AppOutletContext } from '../../types/outletContext';
-import { DatePresetPicker } from '../../components/DatePresetPicker';
+import { DatePresetPicker } from '../../components/common/DatePresetPicker';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -110,7 +111,7 @@ export const DashboardPage = () => {
 
     const budgetProgressColor = (pct: number): string => {
         if (pct >= 100) return COLOR_NEGATIVE;
-        if (pct >= 75) return '#faad14';
+        if (pct >= 75) return COLOR_WARNING;
         return COLOR_POSITIVE;
     };
 
@@ -118,8 +119,8 @@ export const DashboardPage = () => {
         <Col key={item.budgetId} xs={24} sm={12} lg={8}>
             <div style={{ marginBottom: 4 }}>
                 <Flex justify="space-between" align="center">
-                    <Text strong style={{ fontSize: 13 }}>{item.categoryName}</Text>
-                    <Text type="secondary" style={{ fontSize: 12 }}>
+                    <Text strong style={{ fontSize: FONT_SIZE.md }}>{item.categoryName}</Text>
+                    <Text type="secondary" style={{ fontSize: FONT_SIZE.sm }}>
                         {item.spent.toFixed(2)} / {item.limit.toFixed(2)} €
                     </Text>
                 </Flex>
@@ -128,10 +129,10 @@ export const DashboardPage = () => {
                     percent={Math.min(item.percentageUsed, 100)}
                     size="small"
                     strokeColor={budgetProgressColor(item.percentageUsed)}
-                    format={pct => <Text style={{ fontSize: 11 }}>{pct}%</Text>}
+                    format={pct => <Text style={{ fontSize: FONT_SIZE.xs }}>{pct}%</Text>}
                 />
                 <Flex justify="space-between">
-                    <Text type="secondary" style={{ fontSize: 11 }}>
+                    <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
                         {t('dashboard.budgetSummary.remaining')}: {item.remaining.toFixed(2)} €
                     </Text>
                 </Flex>
@@ -232,75 +233,75 @@ export const DashboardPage = () => {
                     {/* Statistiche mese corrente */}
                     <Row gutter={[16, 16]}>
                         <Col {...statCols}>
-                            <Card>
-                                <Statistic
-                                    title={t('dashboard.netBalance')}
-                                    value={netBalance}
-                                    precision={2}
-                                    valueStyle={{ color: netBalance >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE }}
-                                    prefix={netBalance >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                                    suffix="€"
-                                />
-                                <Suspense fallback={null}>
-                                    <Sparkline values={netSparkline} color={netBalance >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE} />
-                                </Suspense>
-                            </Card>
+                            <StatCard
+                                title={t('dashboard.netBalance')}
+                                value={netBalance}
+                                precision={2}
+                                color={netBalance >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE}
+                                prefix={netBalance >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+                                suffix="€"
+                                footer={
+                                    <Suspense fallback={null}>
+                                        <Sparkline values={netSparkline} color={netBalance >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE} />
+                                    </Suspense>
+                                }
+                            />
                         </Col>
                         <Col {...statCols}>
-                            <Card>
-                                <Statistic
-                                    title={t('dashboard.totalIncome')}
-                                    value={totalIncome}
-                                    precision={2}
-                                    valueStyle={{ color: COLOR_POSITIVE }}
-                                    prefix={<ArrowUpOutlined />}
-                                    suffix="€"
-                                />
-                                <Suspense fallback={null}>
-                                    <Sparkline values={incomeSparkline} color={COLOR_POSITIVE} />
-                                </Suspense>
-                            </Card>
+                            <StatCard
+                                title={t('dashboard.totalIncome')}
+                                value={totalIncome}
+                                precision={2}
+                                color={COLOR_POSITIVE}
+                                prefix={<ArrowUpOutlined />}
+                                suffix="€"
+                                footer={
+                                    <Suspense fallback={null}>
+                                        <Sparkline values={incomeSparkline} color={COLOR_POSITIVE} />
+                                    </Suspense>
+                                }
+                            />
                         </Col>
                         <Col {...statCols}>
-                            <Card>
-                                <Statistic
-                                    title={t('dashboard.totalExpenses')}
-                                    value={totalExpenses}
-                                    precision={2}
-                                    valueStyle={{ color: COLOR_NEGATIVE }}
-                                    prefix={<ArrowDownOutlined />}
-                                    suffix="€"
-                                />
-                                {expenseComparison && (
-                                    <div style={{ marginTop: 4, fontSize: '12px' }}>
-                                        <Text type={expenseComparison.percentageChange >= 0 ? 'danger' : 'success'}>
-                                            {expenseComparison.percentageChange.toFixed(2)}%
-                                        </Text>
-                                        <Text type="secondary"> {t('dashboard.vsPeriod', { period: t('dashboard.previousMonth') })}</Text>
-                                    </div>
-                                )}
-                                <Suspense fallback={null}>
-                                    <Sparkline values={expenseSparkline} color={COLOR_NEGATIVE} />
-                                </Suspense>
-                            </Card>
+                            <StatCard
+                                title={t('dashboard.totalExpenses')}
+                                value={totalExpenses}
+                                precision={2}
+                                color={COLOR_NEGATIVE}
+                                prefix={<ArrowDownOutlined />}
+                                suffix="€"
+                                footer={
+                                    <>
+                                        {expenseComparison && (
+                                            <div style={{ marginTop: 4, fontSize: FONT_SIZE.sm }}>
+                                                <Text type={expenseComparison.percentageChange >= 0 ? 'danger' : 'success'}>
+                                                    {expenseComparison.percentageChange.toFixed(2)}%
+                                                </Text>
+                                                <Text type="secondary"> {t('dashboard.vsPeriod', { period: t('dashboard.previousMonth') })}</Text>
+                                            </div>
+                                        )}
+                                        <Suspense fallback={null}>
+                                            <Sparkline values={expenseSparkline} color={COLOR_NEGATIVE} />
+                                        </Suspense>
+                                    </>
+                                }
+                            />
                         </Col>
                         {showCrypto && (
                             <Col {...statCols}>
-                                <Card>
-                                    <Statistic
-                                        title={t('dashboard.cryptoPortfolio')}
-                                        value={portfolioValue.totalValue}
-                                        precision={2}
-                                        valueStyle={{ color: COLOR_ACCENT }}
-                                        prefix={portfolioValue.currency === 'EUR' ? '€' : '$'}
-                                    />
-                                </Card>
+                                <StatCard
+                                    title={t('dashboard.cryptoPortfolio')}
+                                    value={portfolioValue.totalValue}
+                                    precision={2}
+                                    color={COLOR_ACCENT}
+                                    prefix={portfolioValue.currency === 'EUR' ? '€' : '$'}
+                                />
                             </Col>
                         )}
                     </Row>
 
                     {/* Analisi Finanziaria AI */}
-                    <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                    <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
                         <Col xs={24}>
                             <AiAnalysisCard />
                         </Col>
@@ -308,7 +309,7 @@ export const DashboardPage = () => {
 
                     {/* Panoramica Budget del Mese */}
                     {budgetSummary.length > 0 && (
-                        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                        <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
                             <Col xs={24}>
                                 <Card title={t('dashboard.budgetSummary.title')}>
                                     <Row gutter={[16, 16]}>
@@ -320,7 +321,7 @@ export const DashboardPage = () => {
                     )}
 
                     {/* Proiezione + Confronto mese affiancati */}
-                    <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                    <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
                         {projection && (
                             <Col xs={24} lg={12}>
                                 <Card title={t('dashboard.projection')} style={{ height: '100%' }}>
@@ -375,14 +376,14 @@ export const DashboardPage = () => {
                                         />
                                     </Suspense>
                                 ) : (
-                                    <Empty />
+                                    <EmptyState description={t('charts.noData')} />
                                 )}
                             </Card>
                         </Col>
                     </Row>
 
                     {/* Pie charts + tabella breakdown */}
-                    <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                    <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
                         <Col xs={24}>
                             <Card title={t('reports.categoryBreakdown')}>
                                 <Tabs
@@ -404,7 +405,7 @@ export const DashboardPage = () => {
                                                             rowKey={(record) => record.categoryId ?? 'uncategorized'}
                                                             size="small"
                                                             pagination={false}
-                                                            locale={{ emptyText: <Empty description={t('charts.noData')} /> }}
+                                                            locale={{ emptyText: <EmptyState description={t('charts.noData')} /> }}
                                                         />
                                                     </Col>
                                                 </Row>
@@ -427,7 +428,7 @@ export const DashboardPage = () => {
                                                             rowKey={(record) => record.categoryId ?? 'uncategorized'}
                                                             size="small"
                                                             pagination={false}
-                                                            locale={{ emptyText: <Empty description={t('charts.noData')} /> }}
+                                                            locale={{ emptyText: <EmptyState description={t('charts.noData')} /> }}
                                                         />
                                                     </Col>
                                                 </Row>
@@ -440,14 +441,14 @@ export const DashboardPage = () => {
                     </Row>
 
                     {/* Andamento saldo netto cumulato */}
-                    <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                    <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
                         <Col xs={24}>
                             <BalanceTrendSection />
                         </Col>
                     </Row>
 
                     {/* Andamento mensile */}
-                    <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+                    <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
                         <Col xs={24}>
                             <Card
                                 title={t('dashboard.monthlyTrend')}
@@ -472,7 +473,7 @@ export const DashboardPage = () => {
                                 })}
                             >
                                 {isMobile && (
-                                    <Flex justify="flex-end" gap={6} style={{ marginBottom: 8 }}>
+                                    <Flex justify="flex-end" gap={6} style={{ marginBottom: SPACING.xs }}>
                                         {[6, 12, 24].map(m => (
                                             <Button
                                                 key={m}

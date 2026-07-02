@@ -4,9 +4,10 @@ import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { getApiKeys, createApiKey, updateApiKey, deleteApiKey } from '../../services/api';
 import type { ApiKeyResponse, CreateApiKeyRequest, UpdateApiKeyRequest } from '../../types/api';
-import { ApiKeyFormModal } from './ApiKeyFormModal';
-import { ApiKeySecretModal } from './ApiKeySecretModal';
+import { ApiKeyFormModal } from '../../components/modals/ApiKeyFormModal';
+import { ApiKeySecretModal } from '../../components/modals/ApiKeySecretModal';
 import dayjs from 'dayjs';
+import { SPACING } from '../../theme/tokens';
 
 const { Text } = Typography;
 
@@ -167,7 +168,7 @@ export const ApiKeysCard = () => {
         <Card 
             title={t('settings.apiKeys.cardTitle')} 
             extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingKey(undefined); setFormModalVisible(true); }}>{t('settings.apiKeys.generateNew')}</Button>}
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: SPACING.md }}
         >
             <Table
                 dataSource={keys}

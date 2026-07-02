@@ -1,8 +1,9 @@
 import { Alert, Button, Form, Modal, Space } from 'antd';
-import { SafeSelect } from '../SafeSelect';
+import { SafeSelect } from '../common/SafeSelect';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Category } from '../../types/api';
+import { SPACING } from '../../theme/tokens';
 
 interface CategoryMergeModalProps {
     open: boolean;
@@ -40,7 +41,7 @@ export const CategoryMergeModal = ({ open, source, categories, onCancel, onConfi
             footer={null}
             destroyOnClose
         >
-            <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: 16 }}>
+            <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: SPACING.md }}>
                 <Alert
                     type="warning"
                     showIcon

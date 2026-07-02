@@ -3,7 +3,8 @@ import type {Account, AccountRequest} from '../../types/api';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import {getCurrencySymbol} from '../../utils/currency';
-import { SafeSelect } from '../SafeSelect';
+import { SafeSelect } from '../common/SafeSelect';
+import { SPACING } from '../../theme/tokens';
 
 const { Option } = SafeSelect;
 
@@ -49,7 +50,7 @@ export const AccountModal = ({ open, onCancel, onFinish, editingAccount, loading
                 form={form}
                 layout="vertical"
                 onFinish={onFinish}
-                style={{ marginTop: 24 }}
+                style={{ marginTop: SPACING.lg }}
                 initialValues={{ currency: 'EUR' }}
             >
                 <Form.Item

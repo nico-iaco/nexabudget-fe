@@ -10,6 +10,7 @@ import { createCategory, deleteCategory, mergeCategoryInto, updateCategory } fro
 import { CategoryFormModal } from '../../components/modals/CategoryFormModal';
 import { CategoryMergeModal } from '../../components/modals/CategoryMergeModal';
 import type { AppOutletContext } from '../../types/outletContext';
+import { SPACING } from '../../theme/tokens';
 
 export const CategoriesCard = () => {
     const { t } = useTranslation();
@@ -176,7 +177,7 @@ export const CategoriesCard = () => {
                     {t('settings.categories.newCategory')}
                 </Button>
             }
-            style={{ marginBottom: 16 }}
+            style={{ marginBottom: SPACING.md }}
         >
             <Table<Category>
                 dataSource={sortedCategories}

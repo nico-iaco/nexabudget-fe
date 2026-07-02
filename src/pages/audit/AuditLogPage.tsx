@@ -7,8 +7,9 @@ import type { AuditAction, AuditLogEntry } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import { PageHeader } from '../../components/PageHeader';
-import { EmptyState } from '../../components/EmptyState';
+import { PageHeader } from '../../components/common/PageHeader';
+import { EmptyState } from '../../components/common/EmptyState';
+import { FONT_SIZE, SPACING, RADIUS } from '../../theme/tokens';
 
 const { Text } = Typography;
 
@@ -84,7 +85,7 @@ export const AuditLogPage = () => {
             dataIndex: 'entityId',
             key: 'entityId',
             render: (v: string) => (
-                <Text copyable={{ text: v }} style={{ fontSize: 12, fontFamily: 'monospace' }}>
+                <Text copyable={{ text: v }} style={{ fontSize: FONT_SIZE.sm, fontFamily: 'monospace' }}>
                     {v.substring(0, 8)}…
                 </Text>
             ),
@@ -124,19 +125,19 @@ export const AuditLogPage = () => {
                     loading={loading}
                     pagination={entries.length > 0 ? { ...paginationProps, position: 'bottom', align: 'center' } : false}
                     renderItem={(record) => (
-                        <Card size="small" style={{ marginBottom: 12 }}>
+                        <Card size="small" style={{ marginBottom: SPACING.sm }}>
                             <Flex vertical gap={6}>
                                 <Flex justify="space-between" align="center" wrap="wrap" gap="small">
                                     <Tag color={ACTION_COLORS[record.action]} style={{ margin: 0 }}>
                                         {t(`audit.actions.${record.action}`)}
                                     </Tag>
-                                    <Text type="secondary" style={{ fontSize: 12 }}>
+                                    <Text type="secondary" style={{ fontSize: FONT_SIZE.sm }}>
                                         {dayjs(record.timestamp).format('DD/MM/YYYY HH:mm')}
                                     </Text>
                                 </Flex>
                                 <Flex gap="small" wrap="wrap">
-                                    <Text style={{ fontSize: 12 }}>{record.entityType}</Text>
-                                    <Text copyable={{ text: record.entityId }} type="secondary" style={{ fontSize: 12, fontFamily: 'monospace' }}>
+                                    <Text style={{ fontSize: FONT_SIZE.sm }}>{record.entityType}</Text>
+                                    <Text copyable={{ text: record.entityId }} type="secondary" style={{ fontSize: FONT_SIZE.sm, fontFamily: 'monospace' }}>
                                         {record.entityId.substring(0, 8)}…
                                     </Text>
                                 </Flex>
@@ -146,9 +147,9 @@ export const AuditLogPage = () => {
                                         ghost
                                         items={[{
                                             key: '1',
-                                            label: <Text type="secondary" style={{ fontSize: 12 }}>{t('audit.newValue')}</Text>,
+                                            label: <Text type="secondary" style={{ fontSize: FONT_SIZE.sm }}>{t('audit.newValue')}</Text>,
                                             children: (
-                                                <pre style={{ fontSize: 11, maxHeight: 200, overflow: 'auto', margin: 0, background: token.colorFillTertiary, padding: 8, borderRadius: 4 }}>
+                                                <pre style={{ fontSize: FONT_SIZE.xs, maxHeight: 200, overflow: 'auto', margin: 0, background: token.colorFillTertiary, padding: SPACING.xs, borderRadius: RADIUS.sm }}>
                                                     {formatValue(record.newValue)}
                                                 </pre>
                                             ),
@@ -169,7 +170,7 @@ export const AuditLogPage = () => {
                     scroll={{ x: 'max-content' }}
                     expandable={{
                         expandedRowRender: (record) => (
-                            <pre style={{ fontSize: 12, maxHeight: 300, overflow: 'auto', margin: 0, background: token.colorFillTertiary, padding: 8, borderRadius: 4 }}>
+                            <pre style={{ fontSize: FONT_SIZE.sm, maxHeight: 300, overflow: 'auto', margin: 0, background: token.colorFillTertiary, padding: SPACING.xs, borderRadius: RADIUS.sm }}>
                                 {formatValue(record.newValue)}
                             </pre>
                         ),

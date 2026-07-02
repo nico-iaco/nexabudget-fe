@@ -2,6 +2,7 @@ import { Button, Form, Input, Modal } from 'antd';
 import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Category, CategoryRequest } from '../../types/api';
+import { SPACING } from '../../theme/tokens';
 
 interface CategoryFormModalProps {
     open: boolean;
@@ -41,7 +42,7 @@ export const CategoryFormModal = ({ open, onCancel, onFinish, editingCategory, s
                 form={form}
                 layout="vertical"
                 onFinish={handleFinish}
-                style={{ marginTop: 24 }}
+                style={{ marginTop: SPACING.lg }}
             >
                 <Form.Item
                     name="name"

@@ -6,7 +6,7 @@ import dayjs from 'dayjs';
 import {useTranslation} from 'react-i18next';
 import type {Transaction} from '../types/api';
 import { getCurrencySymbol } from '../utils/currency';
-import { COLOR_POSITIVE, COLOR_NEGATIVE } from '../theme/tokens';
+import { COLOR_POSITIVE, COLOR_NEGATIVE, FONT_SIZE, SPACING } from '../theme/tokens';
 import { haptic } from '../utils/haptic';
 
 const { Text } = Typography;
@@ -28,29 +28,29 @@ const TransactionCardInner = ({ transaction, currency = 'EUR', onEdit, onDelete,
 
     return (
         <Card
-            style={{ marginBottom: 12 }}
-            styles={{ body: { padding: '12px 16px' } }}
+            style={{ marginBottom: SPACING.sm }}
+            styles={{ body: { padding: `${SPACING.sm}px ${SPACING.md}px` } }}
         >
             <Flex justify="space-between" align="start" gap="middle">
                 <Flex vertical style={{ flex: 1, minWidth: 0 }}>
-                    <Text strong style={{ fontSize: '15px' }}>{transaction.description}</Text>
-                    <Text type="secondary" style={{ fontSize: '13px' }}>{transaction.accountName}</Text>
+                    <Text strong style={{ fontSize: `${FONT_SIZE.lg}px` }}>{transaction.description}</Text>
+                    <Text type="secondary" style={{ fontSize: `${FONT_SIZE.md}px` }}>{transaction.accountName}</Text>
                     {transaction.categoryName && (
-                        <Text type="secondary" italic style={{ fontSize: '12px' }}>
+                        <Text type="secondary" italic style={{ fontSize: `${FONT_SIZE.sm}px` }}>
                             {transaction.categoryName}
                         </Text>
                     )}
-                    <Text type="secondary" style={{ fontSize: '12px', marginTop: 4 }}>
+                    <Text type="secondary" style={{ fontSize: `${FONT_SIZE.sm}px`, marginTop: 4 }}>
                         {dayjs(transaction.date).format('DD/MM/YYYY')}
                     </Text>
                 </Flex>
                 <Flex vertical align="end" style={{ flexShrink: 0 }}>
-                    <Text strong style={{ color: amountColor, fontSize: '16px', whiteSpace: 'nowrap' }}>
+                    <Text strong style={{ color: amountColor, fontSize: `${FONT_SIZE.xl}px`, whiteSpace: 'nowrap' }}>
                         {isIncome ? <ArrowUpOutlined aria-hidden="true" /> : <ArrowDownOutlined aria-hidden="true" />}
                         {' '}{transaction.amount.toFixed(2)} {currencySymbol}
                     </Text>
                     {transaction.originalCurrency && transaction.originalAmount != null && transaction.exchangeRate != null && (
-                        <Text type="secondary" style={{ fontSize: '11px', whiteSpace: 'nowrap' }}>
+                        <Text type="secondary" style={{ fontSize: `${FONT_SIZE.xs}px`, whiteSpace: 'nowrap' }}>
                             {t('transactions.exchangeRateHint', {
                                 originalAmount: transaction.originalAmount.toFixed(2),
                                 originalCurrency: transaction.originalCurrency,
@@ -63,7 +63,7 @@ const TransactionCardInner = ({ transaction, currency = 'EUR', onEdit, onDelete,
                     </Tag>
                 </Flex>
             </Flex>
-            <Flex justify="end" gap="small" style={{ marginTop: 12 }}>
+            <Flex justify="end" gap="small" style={{ marginTop: SPACING.sm }}>
                 <Button
                     icon={<EditOutlined />}
                     onClick={() => onEdit(transaction)}

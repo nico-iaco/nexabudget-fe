@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Empty, Flex, Typography } from 'antd';
+import { Flex, theme, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { usePreferences } from '../../contexts/PreferencesContext';
-import { COLOR_ACCENT, COLOR_NEGATIVE, COLOR_POSITIVE } from '../../theme/tokens';
+import { COLOR_ACCENT, COLOR_NEGATIVE, COLOR_POSITIVE, FONT_SIZE, RADIUS, SHADOW } from '../../theme/tokens';
+import { EmptyState } from '../common/EmptyState';
 
 const { Text } = Typography;
 
@@ -30,8 +30,7 @@ const formatTickShort = (v: number): string => {
 
 export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Props) => {
     const { t } = useTranslation();
-    const { preferences } = usePreferences();
-    const isDark = preferences.theme === 'dark';
+    const { token } = theme.useToken();
 
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerW, setContainerW] = useState(0);
@@ -53,7 +52,7 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
         [locale, currency],
     );
 
-    if (!points || points.length === 0) return <Empty description={t('charts.noData')} />;
+    if (!points || points.length === 0) return <EmptyState description={t('charts.noData')} />;
 
     const N = points.length;
     const MARGIN_LEFT = 64;
@@ -85,9 +84,9 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
     const tickCount = 4;
     const ticks = Array.from({ length: tickCount + 1 }, (_, i) => yMin + (span * i) / tickCount);
 
-    const axisColor = isDark ? 'rgba(255,255,255,0.55)' : 'rgba(0,0,0,0.55)';
-    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-    const zeroColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.5)';
+    const axisColor = token.colorTextSecondary;
+    const gridColor = token.colorSplit;
+    const zeroColor = token.colorTextTertiary;
 
     const labelStep = colW < 56 ? Math.ceil(56 / Math.max(colW, 1)) : 1;
 
@@ -119,7 +118,7 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
             <Flex gap={16} style={{ marginBottom: 6 }} wrap>
                 <Flex align="center" gap={6}>
                     <span style={{ display: 'inline-block', width: 14, height: 2, backgroundColor: COLOR_ACCENT }} />
-                    <Text style={{ fontSize: 12 }}>{t('reports.balanceTrend.closingBalance')}</Text>
+                    <Text style={{ fontSize: FONT_SIZE.sm }}>{t('reports.balanceTrend.closingBalance')}</Text>
                 </Flex>
             </Flex>
 
@@ -149,7 +148,7 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
                                     x={MARGIN_LEFT - 8}
                                     y={y + 3}
                                     textAnchor="end"
-                                    fontSize={10}
+                                    fontSize={FONT_SIZE.xxs}
                                     fill={axisColor}
                                 >
                                     {formatTickShort(tv)}
@@ -203,7 +202,7 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
                                 x={xCenter(i)}
                                 y={height - 10}
                                 textAnchor="middle"
-                                fontSize={10}
+                                fontSize={FONT_SIZE.xxs}
                                 fill={axisColor}
                             >
                                 {p.label}
@@ -219,14 +218,14 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
                             left: tooltipLeft,
                             top: MARGIN_TOP,
                             width: tooltipW,
-                            background: isDark ? '#1f1f1f' : '#ffffff',
-                            color: isDark ? '#ffffff' : '#000000',
+                            background: token.colorBgElevated,
+                            color: token.colorText,
                             border: `1px solid ${gridColor}`,
                             padding: '8px 10px',
-                            borderRadius: 6,
-                            fontSize: 12,
+                            borderRadius: RADIUS.md,
+                            fontSize: FONT_SIZE.sm,
                             pointerEvents: 'none',
-                            boxShadow: '0 3px 6px -4px rgba(0,0,0,0.32), 0 6px 16px 0 rgba(0,0,0,0.16)',
+                            boxShadow: SHADOW.tooltip,
                         }}
                     >
                         <div style={{ fontWeight: 600, marginBottom: 6 }}>{hoverPoint.label}</div>

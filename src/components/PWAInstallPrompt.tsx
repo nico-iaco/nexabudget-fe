@@ -3,6 +3,7 @@ import {useEffect, useState} from 'react';
 import {Button, Card, Flex, Typography} from 'antd';
 import {CloseOutlined, DownloadOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
+import { FONT_SIZE, SHADOW, SPACING } from '../theme/tokens';
 
 const { Text } = Typography;
 
@@ -64,14 +65,14 @@ export const PWAInstallPrompt = () => {
                 maxWidth: 400,
                 margin: '0 auto',
                 zIndex: 1000,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                boxShadow: SHADOW.floating,
             }}
-            styles={{ body: { padding: 16 } }}
+            styles={{ body: { padding: SPACING.md } }}
         >
             <Flex justify="space-between" align="center" gap="middle">
                 <Flex vertical gap="small" style={{ flex: 1 }}>
                     <Text strong>{t('pwa.title')}</Text>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
+                    <Text type="secondary" style={{ fontSize: `${FONT_SIZE.sm}px` }}>
                         {t('pwa.description')}
                     </Text>
                 </Flex>

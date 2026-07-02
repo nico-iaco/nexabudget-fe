@@ -8,8 +8,8 @@ import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { COLOR_ACCENT } from '../../theme/tokens';
-import { DatePresetPicker } from '../DatePresetPicker';
+import { COLOR_ACCENT, RADIUS, SPACING } from '../../theme/tokens';
+import { DatePresetPicker } from '../common/DatePresetPicker';
 
 const { RangePicker } = DatePicker;
 const { Title, Text } = Typography;
@@ -206,9 +206,9 @@ export const AiAnalysisCard: React.FC = () => {
                 )}
 
                 {loading && (
-                    <div style={{ textAlign: 'center', margin: '24px 0' }}>
+                    <div style={{ textAlign: 'center', margin: `${SPACING.lg}px 0` }}>
                         <Spin size="large" />
-                        <Title level={5} style={{ marginTop: 16 }}>
+                        <Title level={5} style={{ marginTop: SPACING.md }}>
                             {t('dashboard.aiAnalysis.analyzingTitle')}
                         </Title>
                         <Text type="secondary">{t('dashboard.aiAnalysis.analyzingSub')}</Text>
@@ -216,8 +216,8 @@ export const AiAnalysisCard: React.FC = () => {
                 )}
 
                 {result && !loading && (
-                    <div style={{ marginTop: 16, padding: 16, backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: 8 }}>
-                        <Flex justify="flex-end" style={{ marginBottom: 16 }}>
+                    <div style={{ marginTop: SPACING.md, padding: SPACING.md, backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: RADIUS.lg }}>
+                        <Flex justify="flex-end" style={{ marginBottom: SPACING.md }}>
                             <Button type="default" icon={<DownloadOutlined />} onClick={handleDownload}>
                                 {t('dashboard.aiAnalysis.downloadReport')}
                             </Button>

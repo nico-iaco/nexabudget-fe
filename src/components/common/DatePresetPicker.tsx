@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { DatePicker, Flex, theme } from 'antd';
 import { CalendarOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
+import { FONT_SIZE, RADIUS } from '../../theme/tokens';
 
 export interface DatePreset {
     label: string;
@@ -85,12 +86,12 @@ const NativeDateInput = ({
                 overflow: 'hidden',
             }}>
                 <CalendarOutlined style={{
-                    fontSize: 13, flexShrink: 0,
+                    fontSize: FONT_SIZE.md, flexShrink: 0,
                     color: focused ? token.colorPrimary : token.colorTextTertiary,
                     transition: 'color 0.2s',
                 }} />
                 <span style={{
-                    flex: 1, fontSize: 14,
+                    flex: 1, fontSize: FONT_SIZE.base,
                     color: formatted ? token.colorText : token.colorTextPlaceholder,
                     overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                     opacity: disabled ? 0.5 : 1,
@@ -238,8 +239,8 @@ export const DatePresetPicker = ({
             alignItems: 'center',
             height: 30,
             padding: '0 13px',
-            borderRadius: 100,
-            fontSize: 13,
+            borderRadius: RADIUS.pill,
+            fontSize: FONT_SIZE.md,
             fontWeight: 500,
             whiteSpace: 'nowrap',
             flexShrink: 0,

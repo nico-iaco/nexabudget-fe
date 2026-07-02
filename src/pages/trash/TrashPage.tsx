@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
-import { App, Button, Empty, Table, Tabs, Tag } from 'antd';
+import { App, Button, Table, Tabs, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import dayjs from 'dayjs';
 import * as api from '../../services/api';
 import type { DeletedAccount, Transaction } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
-import { PageHeader } from '../../components/PageHeader';
+import { PageHeader } from '../../components/common/PageHeader';
+import { EmptyState } from '../../components/common/EmptyState';
 
 export const TrashPage = () => {
     const { t } = useTranslation();
@@ -192,7 +193,7 @@ export const TrashPage = () => {
                                 loading={loadingTx}
                                 size="small"
                                 scroll={{ x: 'max-content' }}
-                                locale={{ emptyText: <Empty description={t('trash.emptyTransactions')} /> }}
+                                locale={{ emptyText: <EmptyState description={t('trash.emptyTransactions')} /> }}
                                 pagination={{ defaultPageSize: 20, showSizeChanger: false }}
                             />
                         ),
@@ -208,7 +209,7 @@ export const TrashPage = () => {
                                 loading={loadingAcc}
                                 size="small"
                                 scroll={{ x: 'max-content' }}
-                                locale={{ emptyText: <Empty description={t('trash.emptyAccounts')} /> }}
+                                locale={{ emptyText: <EmptyState description={t('trash.emptyAccounts')} /> }}
                                 pagination={{ defaultPageSize: 20, showSizeChanger: false }}
                             />
                         ),

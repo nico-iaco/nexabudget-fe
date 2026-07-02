@@ -2,6 +2,7 @@ import { App, Modal, Typography, Button, Alert } from 'antd';
 import { CopyOutlined, CheckOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useState } from 'react';
+import { SPACING, RADIUS, FONT_SIZE } from '../../theme/tokens';
 
 const { Text, Paragraph } = Typography;
 
@@ -42,10 +43,10 @@ export const ApiKeySecretModal = ({ open, onClose, plaintextKey }: ApiKeySecretM
                 description={t('settings.apiKeys.secretWarningDesc')}
                 type="warning"
                 showIcon
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: SPACING.md }}
             />
-            <div style={{ padding: '16px', background: 'var(--ant-color-bg-layout)', borderRadius: 8, textAlign: 'center' }}>
-                <Paragraph style={{ marginBottom: 16 }}>
+            <div style={{ padding: `${SPACING.md}px`, background: 'var(--ant-color-bg-layout)', borderRadius: RADIUS.lg, textAlign: 'center' }}>
+                <Paragraph style={{ marginBottom: SPACING.md }}>
                     <Text strong>{t('settings.apiKeys.yourKey')}:</Text>
                 </Paragraph>
                 <Paragraph
@@ -56,12 +57,12 @@ export const ApiKeySecretModal = ({ open, onClose, plaintextKey }: ApiKeySecretM
                     }}
                     style={{
                         background: 'var(--ant-color-bg-container)',
-                        padding: '12px',
-                        borderRadius: '6px',
+                        padding: `${SPACING.sm}px`,
+                        borderRadius: `${RADIUS.md}px`,
                         border: '1px solid var(--ant-color-border)',
                         wordBreak: 'break-all',
                         fontFamily: 'monospace',
-                        fontSize: '16px'
+                        fontSize: `${FONT_SIZE.xl}px`
                     }}
                 >
                     {plaintextKey}

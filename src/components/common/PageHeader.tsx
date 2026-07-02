@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Flex, Typography } from 'antd';
-import { useBreakpoints } from '../hooks/useBreakpoints';
-import { PAGE_HEADER_MARGIN_BOTTOM } from '../theme/tokens';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
+import { PAGE_HEADER_MARGIN_BOTTOM } from '../../theme/tokens';
 
 const { Title } = Typography;
 

@@ -2,6 +2,7 @@ import {Button, Flex, Form, Modal, Select, Spin, Steps} from 'antd';
 import {europeanCountries} from '../../utils/countries';
 import type {Account, GoCardlessBank} from '../../types/api';
 import {useTranslation} from 'react-i18next';
+import {SPACING} from '../../theme/tokens';
 
 const { Option } = Select;
 
@@ -54,7 +55,7 @@ export const GoCardlessModal = ({
         >
             <Steps
                 current={currentStep}
-                style={{ marginBottom: 24 }}
+                style={{ marginBottom: SPACING.lg }}
                 items={[
                     { title: t('gocardless.selectCountry') },
                     { title: t('gocardless.selectBank') },

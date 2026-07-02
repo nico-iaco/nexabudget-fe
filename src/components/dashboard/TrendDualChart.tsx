@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
-import { Empty, Flex, Typography } from 'antd';
+import { Flex, theme, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { TrendPoint } from '../../hooks/useDashboardData';
-import { usePreferences } from '../../contexts/PreferencesContext';
-import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT } from '../../theme/tokens';
+import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT, FONT_SIZE, RADIUS, SHADOW } from '../../theme/tokens';
+import { EmptyState } from '../common/EmptyState';
 
 const { Text } = Typography;
 
@@ -24,7 +24,7 @@ const formatEur = (v: number): string =>
 const TooltipRow = ({ label, value, color }: { label: string; value: number; color: string }) => (
     <Flex justify="space-between" gap={16} style={{ lineHeight: '18px' }}>
         <Flex align="center" gap={6}>
-            <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: 2, backgroundColor: color }} />
+            <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: RADIUS.xs, backgroundColor: color }} />
             <span>{label}</span>
         </Flex>
         <span style={{ fontWeight: 500 }}>{formatEur(value)}</span>
@@ -33,8 +33,7 @@ const TooltipRow = ({ label, value, color }: { label: string; value: number; col
 
 export const TrendDualChart = ({ points, height = 280 }: Props) => {
     const { t } = useTranslation();
-    const { preferences } = usePreferences();
-    const isDark = preferences.theme === 'dark';
+    const { token } = theme.useToken();
 
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerW, setContainerW] = useState(0);
@@ -47,7 +46,7 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
         return () => ro.disconnect();
     }, []);
 
-    if (!points || points.length === 0) return <Empty description={t('charts.noData')} />;
+    if (!points || points.length === 0) return <EmptyState description={t('charts.noData')} />;
 
     const incomeLabel = t('reports.typeIn');
     const expenseLabel = t('reports.typeOut');
@@ -81,9 +80,9 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
 
     const BAR_W = Math.min(14, Math.max(4, colW * 0.32));
     const BAR_GAP = 2;
-    const axisColor = isDark ? 'rgba(255,255,255,0.45)' : 'rgba(0,0,0,0.55)';
-    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-    const zeroColor = isDark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.3)';
+    const axisColor = token.colorTextSecondary;
+    const gridColor = token.colorSplit;
+    const zeroColor = token.colorTextTertiary;
 
     // Show every Nth label on narrow screens to avoid overlap.
     const labelStep = colW < 40 ? Math.ceil(40 / colW) : 1;
@@ -110,16 +109,16 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
             {/* Legend */}
             <Flex gap={16} style={{ marginBottom: 6 }} wrap>
                 <Flex align="center" gap={6}>
-                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, backgroundColor: COLOR_POSITIVE }} />
-                    <Text style={{ fontSize: 12 }}>{incomeLabel}</Text>
+                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: RADIUS.xs, backgroundColor: COLOR_POSITIVE }} />
+                    <Text style={{ fontSize: FONT_SIZE.sm }}>{incomeLabel}</Text>
                 </Flex>
                 <Flex align="center" gap={6}>
-                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, backgroundColor: COLOR_NEGATIVE }} />
-                    <Text style={{ fontSize: 12 }}>{expenseLabel}</Text>
+                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: RADIUS.xs, backgroundColor: COLOR_NEGATIVE }} />
+                    <Text style={{ fontSize: FONT_SIZE.sm }}>{expenseLabel}</Text>
                 </Flex>
                 <Flex align="center" gap={6}>
                     <span style={{ display: 'inline-block', width: 14, height: 2, backgroundColor: COLOR_ACCENT }} />
-                    <Text style={{ fontSize: 12 }}>{netLabel}</Text>
+                    <Text style={{ fontSize: FONT_SIZE.sm }}>{netLabel}</Text>
                 </Flex>
             </Flex>
 
@@ -150,7 +149,7 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
                                     x={MARGIN_LEFT - 6}
                                     y={y + 3}
                                     textAnchor="end"
-                                    fontSize={10}
+                                    fontSize={FONT_SIZE.xxs}
                                     fill={axisColor}
                                 >
                                     {formatTick(tv)}
@@ -173,7 +172,7 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
                                     width={BAR_W}
                                     height={Math.max(zeroY - incomeY, 1)}
                                     fill={COLOR_POSITIVE}
-                                    rx={2}
+                                    rx={RADIUS.xs}
                                 />
                                 <rect
                                     x={cx + BAR_GAP / 2}
@@ -181,7 +180,7 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
                                     width={BAR_W}
                                     height={Math.max(zeroY - expenseY, 1)}
                                     fill={COLOR_NEGATIVE}
-                                    rx={2}
+                                    rx={RADIUS.xs}
                                 />
                             </g>
                         );
@@ -225,7 +224,7 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
                                 x={xCenter(i)}
                                 y={height - 8}
                                 textAnchor="middle"
-                                fontSize={10}
+                                fontSize={FONT_SIZE.xxs}
                                 fill={axisColor}
                             >
                                 {p.month}
@@ -242,14 +241,14 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
                             left: tooltipLeft,
                             top: MARGIN_TOP,
                             width: tooltipW,
-                            background: isDark ? '#1f1f1f' : '#ffffff',
-                            color: isDark ? '#ffffff' : '#000000',
+                            background: token.colorBgElevated,
+                            color: token.colorText,
                             border: `1px solid ${gridColor}`,
                             padding: '8px 10px',
-                            borderRadius: 6,
-                            fontSize: 12,
+                            borderRadius: RADIUS.md,
+                            fontSize: FONT_SIZE.sm,
                             pointerEvents: 'none',
-                            boxShadow: '0 3px 6px -4px rgba(0,0,0,0.32), 0 6px 16px 0 rgba(0,0,0,0.16)',
+                            boxShadow: SHADOW.tooltip,
                         }}
                     >
                         <div style={{ fontWeight: 600, marginBottom: 4 }}>{hoverPoint.month}</div>

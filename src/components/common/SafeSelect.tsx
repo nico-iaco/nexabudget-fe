@@ -4,6 +4,7 @@ import React, { useRef } from 'react';
 import { Select, theme } from 'antd';
 import type { SelectProps } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
+import { FONT_SIZE } from '../../theme/tokens';
 
 const detectIOS = (): boolean => {
     if (typeof navigator === 'undefined') return false;
@@ -60,7 +61,7 @@ function NativeSelect({
 
     const heights: Record<string, number> = { small: 24, middle: 32, large: 40 };
     const height = heights[(size as string) ?? 'middle'] ?? 32;
-    const fontSize = size === 'small' ? 12 : 14;
+    const fontSize = size === 'small' ? FONT_SIZE.sm : FONT_SIZE.base;
 
     const strValue = value !== null && value !== undefined ? String(value) : '';
     const displayLabel = strValue
@@ -97,7 +98,7 @@ function NativeSelect({
                 >
                     {displayLabel ?? placeholder ?? ''}
                 </span>
-                <DownOutlined style={{ fontSize: 10, color: token.colorTextQuaternary, flexShrink: 0 }} />
+                <DownOutlined style={{ fontSize: FONT_SIZE.xxs, color: token.colorTextQuaternary, flexShrink: 0 }} />
             </div>
             {/* Invisible native <select> covering the entire area */}
             <select

@@ -5,17 +5,17 @@ import {
 } from 'antd';
 import { BellOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { EmptyState } from '../../components/EmptyState';
+import { EmptyState } from '../../components/common/EmptyState';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import type { BudgetTemplate, BudgetTemplateRequest, MonthlySummaryResponse } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
-import { BudgetTemplateModal } from './BudgetTemplateModal';
+import { BudgetTemplateModal } from '../../components/modals/BudgetTemplateModal';
 import { BudgetAlertsDrawer } from './BudgetAlertsDrawer';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import { PageHeader } from '../../components/PageHeader';
-import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_WARNING } from '../../theme/tokens';
+import { PageHeader } from '../../components/common/PageHeader';
+import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_WARNING, FONT_SIZE, SPACING } from '../../theme/tokens';
 import type { AppOutletContext } from '../../types/outletContext';
 
 const { Text } = Typography;
@@ -110,10 +110,10 @@ export const BudgetsPage = () => {
         return (
             <div style={{ minWidth: 160 }}>
                 <Flex justify="space-between" style={{ marginBottom: 2 }}>
-                    <Text style={{ fontSize: 12 }}>
+                    <Text style={{ fontSize: FONT_SIZE.sm }}>
                         {s.spent.toFixed(2)} / {s.limit.toFixed(2)} €
                     </Text>
-                    <Text style={{ fontSize: 12, color: progressColor(s.percentageUsed) }}>
+                    <Text style={{ fontSize: FONT_SIZE.sm, color: progressColor(s.percentageUsed) }}>
                         {s.percentageUsed.toFixed(0)}%
                     </Text>
                 </Flex>
@@ -124,7 +124,7 @@ export const BudgetsPage = () => {
                     strokeColor={progressColor(s.percentageUsed)}
                     aria-label={`${t('budgets.spent')}: ${s.percentageUsed.toFixed(0)}%`}
                 />
-                <Text type="secondary" style={{ fontSize: 11 }}>
+                <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
                     {t('budgets.remaining')}: {s.remaining.toFixed(2)} €
                 </Text>
             </div>
@@ -220,7 +220,7 @@ export const BudgetsPage = () => {
                     renderItem={(record) => (
                         <Card
                             size="small"
-                            style={{ marginBottom: 12 }}
+                            style={{ marginBottom: SPACING.sm }}
                             actions={[
                                 <Button
                                     key="alerts"
@@ -248,14 +248,14 @@ export const BudgetsPage = () => {
                                 </Popconfirm>,
                             ]}
                         >
-                            <Flex justify="space-between" align="flex-start" style={{ marginBottom: 8 }}>
+                            <Flex justify="space-between" align="flex-start" style={{ marginBottom: SPACING.xs }}>
                                 <Flex vertical gap={4} style={{ flex: 1, minWidth: 0 }}>
                                     <Typography.Text strong>{record.categoryName}</Typography.Text>
                                     <Typography.Text type="secondary">
                                         {record.budgetLimit.toFixed(2)} € · <Tag style={{ margin: 0 }}>{recurrenceLabel(record.recurrenceType)}</Tag>
                                     </Typography.Text>
                                 </Flex>
-                                <Switch checked={record.active} size="small" disabled style={{ marginLeft: 8, flexShrink: 0 }} />
+                                <Switch checked={record.active} size="small" disabled style={{ marginLeft: SPACING.xs, flexShrink: 0 }} />
                             </Flex>
                             {renderProgress(record.categoryId)}
                         </Card>

@@ -1,28 +1,30 @@
 import { Column, Line, Pie } from '@ant-design/charts';
-import { Empty, Flex, Typography } from 'antd';
+import { Flex, theme, Typography } from 'antd';
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { BarData, LineData } from '../../hooks/useDashboardData';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT } from '../../theme/tokens';
+import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT, FONT_SIZE, RADIUS } from '../../theme/tokens';
+import { EmptyState } from '../common/EmptyState';
+import type { GlobalToken } from 'antd/es/theme/interface';
 
 export { TrendDualChart } from './TrendDualChart';
 
-const TooltipGlobalStyles = ({ isDark }: { isDark: boolean }) => (
+const TooltipGlobalStyles = ({ token }: { token: GlobalToken }) => (
     <style>{`
         .g2-tooltip {
-            background-color: ${isDark ? '#1f1f1f' : '#ffffff'} !important;
-            color: ${isDark ? '#ffffff' : '#000000'} !important;
-            box-shadow: 0 3px 6px -4px rgba(0,0,0,0.48), 0 6px 16px 0 rgba(0,0,0,0.32), 0 9px 28px 8px rgba(0,0,0,0.2) !important;
+            background-color: ${token.colorBgElevated} !important;
+            color: ${token.colorText} !important;
+            box-shadow: ${token.boxShadowSecondary} !important;
         }
         .g2-tooltip * {
-            color: ${isDark ? '#ffffff' : '#000000'} !important;
+            color: ${token.colorText} !important;
         }
         .g2-tooltip-title {
-            color: ${isDark ? '#ffffff' : '#000000'} !important;
+            color: ${token.colorText} !important;
         }
         .g2-tooltip-list-item-label {
-             color: ${isDark ? 'rgba(255, 255, 255, 0.85)' : 'rgba(0, 0, 0, 0.65)'} !important;
+             color: ${token.colorTextSecondary} !important;
         }
     `}</style>
 );
@@ -39,7 +41,8 @@ export const GenericPieChart = ({ data, centerLabel }: PieChartProps) => {
     const { t } = useTranslation();
     const { preferences } = usePreferences();
     const isDark = preferences.theme === 'dark';
-    if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
+    const { token } = theme.useToken();
+    if (!data || data.length === 0) return <EmptyState description={t('charts.noData')} />;
 
     const total = data.reduce((sum, d) => sum + d.value, 0);
     const enriched = data.map(d => ({
@@ -63,11 +66,11 @@ export const GenericPieChart = ({ data, centerLabel }: PieChartProps) => {
         },
         statistic: {
             title: {
-                style: { fontSize: '12px', color: isDark ? 'rgba(255,255,255,0.65)' : 'rgba(0,0,0,0.55)' },
+                style: { fontSize: `${FONT_SIZE.sm}px`, color: token.colorTextSecondary },
                 content: centerLabel ?? t('reports.total'),
             },
             content: {
-                style: { fontSize: '18px', fontWeight: 600, color: isDark ? '#fff' : '#000' },
+                style: { fontSize: `${FONT_SIZE.xxl}px`, fontWeight: 600, color: token.colorText },
                 content: formatCurrency(total),
             },
         },
@@ -75,7 +78,7 @@ export const GenericPieChart = ({ data, centerLabel }: PieChartProps) => {
 
     return (
         <>
-            <TooltipGlobalStyles isDark={isDark} />
+            <TooltipGlobalStyles token={token} />
             <Pie {...config} />
         </>
     );
@@ -89,7 +92,8 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
     const { t } = useTranslation();
     const { preferences } = usePreferences();
     const isDark = preferences.theme === 'dark';
-    if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
+    const { token } = theme.useToken();
+    if (!data || data.length === 0) return <EmptyState description={t('charts.noData')} />;
 
     const config = {
         data,
@@ -99,10 +103,10 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
         isGroup: true,
         seriesField: 'type',
         theme: isDark ? 'dark' : undefined,
-        columnStyle: { radius: [2, 2, 0, 0] },
+        columnStyle: { radius: [RADIUS.xs, RADIUS.xs, 0, 0] },
         legend: { position: 'top-left' as const },
-        xAxis: { label: { style: { fill: isDark ? '#ffffff' : '#000000' } } },
-        yAxis: { label: { style: { fill: isDark ? '#ffffff' : '#000000' } } },
+        xAxis: { label: { style: { fill: token.colorText } } },
+        yAxis: { label: { style: { fill: token.colorText } } },
         // Traduce le chiavi stabili IN/OUT nelle label localizzate per legenda e tooltip
         meta: {
             type: {
@@ -113,7 +117,7 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
 
     return (
         <>
-            <TooltipGlobalStyles isDark={isDark} />
+            <TooltipGlobalStyles token={token} />
             <Column {...config} />
         </>
     );
@@ -142,6 +146,7 @@ interface ComparisonRowProps {
 
 const ComparisonRow = ({ label, current, previous, color, deltaIsBad, prevLabel, currLabel }: ComparisonRowProps) => {
     const { Text } = Typography;
+    const { token } = theme.useToken();
     const max = Math.max(current, previous, 1);
     const delta = current - previous;
     const pct = previous === 0 ? (current > 0 ? 100 : 0) : ((current - previous) / previous) * 100;
@@ -153,10 +158,10 @@ const ComparisonRow = ({ label, current, previous, color, deltaIsBad, prevLabel,
         <div>
             <Flex justify="space-between" align="center" style={{ marginBottom: 6 }}>
                 <Text strong>{label}</Text>
-                <Text style={{ color: deltaColor, fontSize: 13 }}>
-                    <DeltaIcon style={{ fontSize: 11, marginRight: 4 }} />
+                <Text style={{ color: deltaColor, fontSize: FONT_SIZE.md }}>
+                    <DeltaIcon style={{ fontSize: FONT_SIZE.xs, marginRight: 4 }} />
                     {deltaPositive ? '+' : ''}{fmtEur(delta)}
-                    <Text type="secondary" style={{ fontSize: 11, marginLeft: 6 }}>
+                    <Text type="secondary" style={{ fontSize: FONT_SIZE.xs, marginLeft: 6 }}>
                         ({deltaPositive ? '+' : ''}{pct.toFixed(1)}%)
                     </Text>
                 </Text>
@@ -164,20 +169,20 @@ const ComparisonRow = ({ label, current, previous, color, deltaIsBad, prevLabel,
             <Flex vertical gap={4}>
                 <div>
                     <Flex justify="space-between" style={{ marginBottom: 2 }}>
-                        <Text type="secondary" style={{ fontSize: 11 }}>{prevLabel}</Text>
-                        <Text type="secondary" style={{ fontSize: 11 }}>{fmtEur(previous)}</Text>
+                        <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>{prevLabel}</Text>
+                        <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>{fmtEur(previous)}</Text>
                     </Flex>
-                    <div style={{ height: 8, backgroundColor: 'rgba(128,128,128,0.15)', borderRadius: 4, overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${(previous / max) * 100}%`, backgroundColor: '#bfbfbf', borderRadius: 4 }} />
+                    <div style={{ height: 8, backgroundColor: token.colorFillSecondary, borderRadius: RADIUS.sm, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${(previous / max) * 100}%`, backgroundColor: token.colorTextQuaternary, borderRadius: RADIUS.sm }} />
                     </div>
                 </div>
                 <div>
                     <Flex justify="space-between" style={{ marginBottom: 2 }}>
-                        <Text style={{ fontSize: 11 }}>{currLabel}</Text>
-                        <Text style={{ fontSize: 11, fontWeight: 600 }}>{fmtEur(current)}</Text>
+                        <Text style={{ fontSize: FONT_SIZE.xs }}>{currLabel}</Text>
+                        <Text style={{ fontSize: FONT_SIZE.xs, fontWeight: 600 }}>{fmtEur(current)}</Text>
                     </Flex>
-                    <div style={{ height: 8, backgroundColor: 'rgba(128,128,128,0.15)', borderRadius: 4, overflow: 'hidden' }}>
-                        <div style={{ height: '100%', width: `${(current / max) * 100}%`, backgroundColor: color, borderRadius: 4 }} />
+                    <div style={{ height: 8, backgroundColor: token.colorFillSecondary, borderRadius: RADIUS.sm, overflow: 'hidden' }}>
+                        <div style={{ height: '100%', width: `${(current / max) * 100}%`, backgroundColor: color, borderRadius: RADIUS.sm }} />
                     </div>
                 </div>
             </Flex>
@@ -249,7 +254,8 @@ export const NetBalanceLineChart = ({ data }: LineChartProps) => {
     const { t } = useTranslation();
     const { preferences } = usePreferences();
     const isDark = preferences.theme === 'dark';
-    if (!data || data.length === 0) return <Empty description={t('charts.noData')} />;
+    const { token } = theme.useToken();
+    if (!data || data.length === 0) return <EmptyState description={t('charts.noData')} />;
 
     const config = {
         data,
@@ -267,14 +273,14 @@ export const NetBalanceLineChart = ({ data }: LineChartProps) => {
         xAxis: {
             label: {
                 style: {
-                    fill: isDark ? '#ffffff' : '#000000',
+                    fill: token.colorText,
                 },
             },
         },
         yAxis: {
             label: {
                 style: {
-                    fill: isDark ? '#ffffff' : '#000000',
+                    fill: token.colorText,
                 },
             },
         },
@@ -282,7 +288,7 @@ export const NetBalanceLineChart = ({ data }: LineChartProps) => {
 
     return (
         <>
-            <TooltipGlobalStyles isDark={isDark} />
+            <TooltipGlobalStyles token={token} />
             <Line {...config} />
         </>
     );

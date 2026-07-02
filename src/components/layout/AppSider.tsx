@@ -31,7 +31,7 @@ import type { Account } from '../../types/api';
 import { getCurrencySymbol } from '../../utils/currency';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { SIDER_BG, SIDER_TEXT_PRIMARY, SIDER_TEXT_SECONDARY } from '../../theme/tokens';
+import { FONT_SIZE, SIDER_BG, SIDER_TEXT_PRIMARY, SIDER_TEXT_SECONDARY, SPACING } from '../../theme/tokens';
 import { NAV_ITEMS } from './navItems';
 
 const { Sider } = Layout;
@@ -253,20 +253,20 @@ export const AppSider = ({
             }}
         >
             {isMobile && !collapsed && (
-                <Flex justify="space-between" align="center" style={{ padding: '16px', background: siderBg }}>
+                <Flex justify="space-between" align="center" style={{ padding: `${SPACING.md}px`, background: siderBg }}>
                     <Title level={4} style={{ color: siderTextPrimary, margin: 0 }}>{t('common.menu')}</Title>
                     <Button
                         type="text"
-                        icon={<MenuFoldOutlined style={{ color: siderTextPrimary, fontSize: '20px' }} />}
+                        icon={<MenuFoldOutlined style={{ color: siderTextPrimary, fontSize: `${FONT_SIZE.xxxl}px` }} />}
                         onClick={() => setCollapsed(true)}
                         size="large"
                     />
                 </Flex>
             )}
             {!isMobile && (
-                <div style={{ height: '32px', margin: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ height: '32px', margin: `${SPACING.md}px`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <img src="/pwa-192x192.png" alt={t('app.name')} width="32" height="32" style={{ height: '32px', width: '32px' }} />
-                    <Title level={4} style={{ color: siderTextPrimary, margin: '0 0 0 10px', fontSize: '18px' }}>{t('app.name')}</Title>
+                    <Title level={4} style={{ color: siderTextPrimary, margin: '0 0 0 10px', fontSize: `${FONT_SIZE.xxl}px` }}>{t('app.name')}</Title>
                 </div>
             )}
             <Menu
@@ -283,8 +283,8 @@ export const AppSider = ({
                     }
                 }))}
             />
-            <Flex vertical style={{ padding: '0 8px' }}>
-                <Flex justify="space-between" align="center" style={{ padding: '16px 16px 8px' }}>
+            <Flex vertical style={{ padding: `0 ${SPACING.xs}px` }}>
+                <Flex justify="space-between" align="center" style={{ padding: `${SPACING.md}px ${SPACING.md}px ${SPACING.xs}px` }}>
                     <Title level={5} style={{ color: siderTextSecondary, margin: 0 }}>{t('nav.accounts')}</Title>
                     <Flex gap="small">
                         {hasSyncableAccounts && (
@@ -299,7 +299,7 @@ export const AppSider = ({
                         <Button icon={<PlusOutlined />} size="small" onClick={onOpenCreateAccount} aria-label={t('accounts.newAccount')} />
                     </Flex>
                 </Flex>
-                <div style={{ padding: '0 16px 16px' }}>
+                <div style={{ padding: `0 ${SPACING.md}px ${SPACING.md}px` }}>
                     <Statistic
                         title={<Text style={{ color: siderTextSecondary }}>{t('accounts.totalBalance')}</Text>}
                         value={totalBalance}

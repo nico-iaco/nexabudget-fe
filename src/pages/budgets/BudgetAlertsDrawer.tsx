@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-    App, Button, Drawer, Empty, Flex, Form, InputNumber,
+    App, Button, Drawer, Flex, Form, InputNumber,
     Popconfirm, Switch, Table
 } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
@@ -9,6 +9,8 @@ import dayjs from 'dayjs';
 import * as api from '../../services/api';
 import type { BudgetAlert, BudgetTemplate } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
+import { EmptyState } from '../../components/common/EmptyState';
+import { SPACING } from '../../theme/tokens';
 
 interface Props {
     open: boolean;
@@ -128,7 +130,7 @@ export const BudgetAlertsDrawer = ({ open, onClose, budget }: Props) => {
                 layout="inline"
                 onFinish={handleAddAlert}
                 initialValues={{ active: true }}
-                style={{ marginBottom: 16 }}
+                style={{ marginBottom: SPACING.md }}
             >
                 <Form.Item name="thresholdPercentage" rules={[{ required: true, message: t('budgets.alerts.thresholdRequired') }]}>
                     <InputNumber min={1} max={100} addonAfter="%" placeholder="80" style={{ width: 120 }} parser={(value) => value?.replace(',', '.') as any} />
@@ -142,7 +144,7 @@ export const BudgetAlertsDrawer = ({ open, onClose, budget }: Props) => {
             </Form>
 
             {alerts.length === 0 && !loading ? (
-                <Empty description={t('budgets.alerts.emptyList')} />
+                <EmptyState description={t('budgets.alerts.emptyList')} />
             ) : (
                 <Table
                     columns={columns}
@@ -154,7 +156,7 @@ export const BudgetAlertsDrawer = ({ open, onClose, budget }: Props) => {
                 />
             )}
 
-            <Flex justify="flex-end" style={{ marginTop: 16 }}>
+            <Flex justify="flex-end" style={{ marginTop: SPACING.md }}>
                 <Button onClick={onClose}>{t('common.close')}</Button>
             </Flex>
         </Drawer>

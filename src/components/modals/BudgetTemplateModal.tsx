@@ -1,8 +1,9 @@
 import { Button, Form, InputNumber, Modal, Switch } from 'antd';
-import { SafeSelect } from '../../components/SafeSelect';
+import { SafeSelect } from '../common/SafeSelect';
 import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BudgetTemplate, BudgetTemplateRequest, Category } from '../../types/api';
+import { SPACING } from '../../theme/tokens';
 
 interface Props {
     open: boolean;
@@ -44,7 +45,7 @@ export const BudgetTemplateModal = ({ open, onCancel, onFinish, editing, categor
             onCancel={onCancel}
             footer={null}
         >
-            <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: 24 }}>
+            <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: SPACING.lg }}>
                 <Form.Item name="categoryId" label={t('budgets.category')} rules={[{ required: true, message: t('budgets.categoryRequired') }]}>
                     <SafeSelect placeholder={t('budgets.categoryRequired')}>
                         {categories.map(c => (

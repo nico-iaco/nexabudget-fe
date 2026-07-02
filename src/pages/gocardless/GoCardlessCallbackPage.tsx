@@ -6,7 +6,7 @@ import {BankOutlined, ReloadOutlined, ArrowRightOutlined} from '@ant-design/icon
 import {useTranslation} from 'react-i18next';
 import * as api from '../../services/api';
 import type {Account, GoCardlessBankDetails, GoCardlessLinkedStatus} from '../../types/api';
-import {COLOR_ACCENT} from '../../theme/tokens';
+import {COLOR_ACCENT, FONT_SIZE, RADIUS, SPACING} from '../../theme/tokens';
 import {getCurrencySymbol} from '../../utils/currency';
 import type { AppOutletContext } from '../../types/outletContext';
 
@@ -155,7 +155,7 @@ export const GoCardlessCallbackPage = () => {
             <Flex
                 justify="center"
                 align="center"
-                style={{minHeight: '100vh', padding: '24px'}}
+                style={{minHeight: '100vh', padding: SPACING.lg}}
             >
                 <Card style={{maxWidth: 600, width: '100%'}}>
                     <Alert
@@ -167,7 +167,7 @@ export const GoCardlessCallbackPage = () => {
                     <Button
                         type="primary"
                         onClick={() => navigate('/transactions')}
-                        style={{marginTop: 16}}
+                        style={{marginTop: SPACING.md}}
                         block
                     >
                         {t('gocardlessCallback.backToTransactions')}
@@ -182,17 +182,17 @@ export const GoCardlessCallbackPage = () => {
         const titleKey = `gocardlessCallback.${linkedStatus}Title` as const;
         const descKey = `gocardlessCallback.${linkedStatus}Description` as const;
         return (
-            <Flex justify="center" align="center" style={{minHeight: '100vh', padding: '24px'}}>
+            <Flex justify="center" align="center" style={{minHeight: '100vh', padding: SPACING.lg}}>
                 <Card style={{maxWidth: 600, width: '100%'}}>
                     <Alert
                         message={t(titleKey)}
                         description={t(descKey)}
                         type="warning"
                         showIcon
-                        style={{marginBottom: 16}}
+                        style={{marginBottom: SPACING.md}}
                     />
                     {statusReason && (
-                        <Text type="secondary" style={{display: 'block', marginBottom: 16}}>
+                        <Text type="secondary" style={{display: 'block', marginBottom: SPACING.md}}>
                             {statusReason}
                         </Text>
                     )}
@@ -218,14 +218,14 @@ export const GoCardlessCallbackPage = () => {
     // --- Stato pending: autenticazione avviata ma non completata ---
     if (linkedStatus === 'pending') {
         return (
-            <Flex justify="center" align="center" style={{minHeight: '100vh', padding: '24px'}}>
+            <Flex justify="center" align="center" style={{minHeight: '100vh', padding: SPACING.lg}}>
                 <Card style={{maxWidth: 600, width: '100%'}}>
                     <Alert
                         message={t('gocardlessCallback.pendingTitle')}
                         description={t('gocardlessCallback.pendingDescription')}
                         type="info"
                         showIcon
-                        style={{marginBottom: 16}}
+                        style={{marginBottom: SPACING.md}}
                     />
                     <Flex gap="small">
                         <Button onClick={() => navigate('/transactions')} style={{flex: 1}}>
@@ -248,7 +248,7 @@ export const GoCardlessCallbackPage = () => {
     // --- Stato unknown / non riconosciuto ---
     if (linkedStatus === 'unknown' || (linkedStatus !== 'linked' && linkedStatus !== null)) {
         return (
-            <Flex justify="center" align="center" style={{minHeight: '100vh', padding: '24px'}}>
+            <Flex justify="center" align="center" style={{minHeight: '100vh', padding: SPACING.lg}}>
                 <Card style={{maxWidth: 600, width: '100%'}}>
                     <Alert
                         message={t('gocardlessCallback.unknownTitle')}
@@ -259,7 +259,7 @@ export const GoCardlessCallbackPage = () => {
                     <Button
                         type="primary"
                         onClick={() => navigate('/transactions')}
-                        style={{marginTop: 16}}
+                        style={{marginTop: SPACING.md}}
                         block
                     >
                         {t('gocardlessCallback.backToTransactions')}
@@ -271,7 +271,7 @@ export const GoCardlessCallbackPage = () => {
 
     // --- Stato linked: selezione conto ---
     return (
-        <Flex justify="center" align="center" style={{minHeight: '100vh', padding: '24px'}}>
+        <Flex justify="center" align="center" style={{minHeight: '100vh', padding: SPACING.lg}}>
                 <Card
                     style={{maxWidth: 800, width: '100%'}}
                     title={
@@ -288,7 +288,7 @@ export const GoCardlessCallbackPage = () => {
                         description={t('gocardlessCallback.selectAccountDescription')}
                         type="info"
                         showIcon
-                        style={{marginBottom: 24}}
+                        style={{marginBottom: SPACING.lg}}
                     />
 
                     <List
@@ -298,12 +298,12 @@ export const GoCardlessCallbackPage = () => {
                                 onClick={() => handleSelectAccount(account.account_id)}
                                 style={{
                                     cursor: 'pointer',
-                                    padding: '16px',
+                                    padding: SPACING.md,
                                     border: selectedAccountId === account.account_id
                                         ? `2px solid ${COLOR_ACCENT}`
                                         : `1px solid ${token.colorBorder}`,
-                                    borderRadius: '8px',
-                                    marginBottom: '12px',
+                                    borderRadius: RADIUS.lg,
+                                    marginBottom: SPACING.sm,
                                     backgroundColor: selectedAccountId === account.account_id
                                         ? token.controlItemBgActive
                                         : token.colorBgContainer,
@@ -319,12 +319,12 @@ export const GoCardlessCallbackPage = () => {
                                                 width: '48px',
                                                 height: '48px',
                                                 objectFit: 'contain',
-                                                borderRadius: '8px'
+                                                borderRadius: RADIUS.lg
                                             }}
                                         />
                                     )}
                                     <Flex vertical gap="small" style={{flex: 1}}>
-                                        <Text strong style={{fontSize: '16px'}}>
+                                        <Text strong style={{fontSize: FONT_SIZE.xl}}>
                                             {account.institution.name || t('gocardlessCallback.bankUnknown')}
                                         </Text>
                                         {account.name && (
@@ -333,7 +333,7 @@ export const GoCardlessCallbackPage = () => {
                                             </Text>
                                         )}
                                     </Flex>
-                                    <BankOutlined style={{fontSize: '24px', color: COLOR_ACCENT}}/>
+                                    <BankOutlined style={{fontSize: FONT_SIZE.display, color: COLOR_ACCENT}}/>
                                 </Flex>
                             </List.Item>
                         )}
@@ -346,7 +346,7 @@ export const GoCardlessCallbackPage = () => {
                                 description={t('gocardlessCallback.balanceWarningDescription')}
                                 type="warning"
                                 showIcon
-                                style={{marginTop: 24, marginBottom: 16}}
+                                style={{marginTop: SPACING.lg, marginBottom: SPACING.md}}
                             />
                             <Form.Item
                                 label={t('gocardlessCallback.currentBalanceLabel')}
@@ -365,7 +365,7 @@ export const GoCardlessCallbackPage = () => {
                         </>
                     )}
 
-                    <Flex gap="small" style={{marginTop: 24}}>
+                    <Flex gap="small" style={{marginTop: SPACING.lg}}>
                         <Button onClick={() => navigate('/transactions')} style={{flex: 1}}>
                             {t('common.cancel')}
                         </Button>

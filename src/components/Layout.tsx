@@ -28,6 +28,7 @@ import { useAccountSync } from '../hooks/useAccountSync';
 import { useGoCardlessLink } from '../hooks/useGoCardlessLink';
 import { useConfirm } from '../hooks/useConfirm';
 import type { AppOutletContext } from '../types/outletContext';
+import { RADIUS, SPACING } from '../theme/tokens';
 
 const { Content } = AntLayout;
 
@@ -171,10 +172,10 @@ export const Layout = () => {
                     position: 'absolute',
                     top: -40,
                     left: 0,
-                    padding: '8px 16px',
+                    padding: `${SPACING.xs}px ${SPACING.md}px`,
                     background: colorBgContainer,
                     zIndex: 9999,
-                    borderRadius: '0 0 4px 0',
+                    borderRadius: `0 0 ${RADIUS.sm}px 0`,
                     fontWeight: 600,
                     textDecoration: 'none',
                     transition: 'top 0.1s',
@@ -219,7 +220,7 @@ export const Layout = () => {
                     />
                     <Content
                         style={{
-                            margin: isMobile ? '16px 8px' : '24px 16px',
+                            margin: isMobile ? `${SPACING.md}px ${SPACING.xs}px` : `${SPACING.lg}px ${SPACING.md}px`,
                             minHeight: 280,
                             overflow: 'auto',
                         }}
@@ -227,10 +228,10 @@ export const Layout = () => {
                         <main
                             id="main"
                             style={{
-                                padding: isMobile ? 12 : 24,
+                                padding: isMobile ? SPACING.sm : SPACING.lg,
                                 paddingBottom: isSmallMobile
                                     ? 'calc(72px + env(safe-area-inset-bottom, 0px))'
-                                    : isMobile ? 12 : 24,
+                                    : isMobile ? SPACING.sm : SPACING.lg,
                                 minHeight: 280,
                                 background: colorBgContainer,
                                 borderRadius: borderRadiusLG,

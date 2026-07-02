@@ -12,6 +12,7 @@ import * as api from '../../services/api';
 import type { ChatSession } from '../../types/api';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -197,12 +198,12 @@ export const ChatPage = () => {
 
     // Altezza del container: usa 100dvh (dynamic viewport height, si aggiorna con la tastiera iOS)
     // con fallback a 100vh per browser che non supportano dvh.
-    const contentPadding = isMobile ? 12 : 24;
+    const contentPadding = isMobile ? SPACING.sm : SPACING.lg;
     const containerMargin = isSmallMobile
-        ? '-12px -12px 0 -12px'
+        ? `-${SPACING.sm}px -${SPACING.sm}px 0 -${SPACING.sm}px`
         : isMobile
-            ? '-12px'
-            : '-24px';
+            ? `-${SPACING.sm}px`
+            : `-${SPACING.lg}px`;
 
     // dvh si aggiorna quando la tastiera virtuale si apre/chiude (iOS 15.4+, Android Chrome).
     // Questo è il fix corretto per "l'input si nasconde sotto la tastiera".
@@ -214,7 +215,7 @@ export const ChatPage = () => {
 
     const sidebarContent = (
         <Flex vertical style={{ height: '100%', overflow: 'hidden' }}>
-            <div style={{ padding: '12px', flexShrink: 0 }}>
+            <div style={{ padding: SPACING.sm, flexShrink: 0 }}>
                 <Button
                     type="primary"
                     icon={<PlusOutlined />}
@@ -229,10 +230,10 @@ export const ChatPage = () => {
                 {sessions.length === 0 ? (
                     <Text
                         style={{
-                            padding: '16px',
+                            padding: SPACING.md,
                             display: 'block',
                             color: token.colorTextSecondary,
-                            fontSize: 12,
+                            fontSize: FONT_SIZE.sm,
                             textAlign: 'center',
                         }}
                     >
@@ -245,12 +246,12 @@ export const ChatPage = () => {
                         renderItem={session => (
                             <List.Item
                                 style={{
-                                    padding: isMobile ? '12px 10px' : '8px 10px',
+                                    padding: isMobile ? `${SPACING.sm}px 10px` : `${SPACING.xs}px 10px`,
                                     cursor: 'pointer',
                                     background: activeSessionId === session.id
                                         ? token.colorPrimaryBg
                                         : 'transparent',
-                                    borderRadius: 6,
+                                    borderRadius: RADIUS.md,
                                     margin: '2px 6px',
                                     borderBottom: 'none',
                                     transition: 'background 0.15s',
@@ -286,7 +287,7 @@ export const ChatPage = () => {
                                     title={
                                         <Text
                                             style={{
-                                                fontSize: 13,
+                                                fontSize: FONT_SIZE.md,
                                                 fontWeight: activeSessionId === session.id ? 600 : 400,
                                                 overflow: 'hidden',
                                                 textOverflow: 'ellipsis',
@@ -300,7 +301,7 @@ export const ChatPage = () => {
                                         </Text>
                                     }
                                     description={
-                                        <Text style={{ fontSize: 11, color: token.colorTextTertiary }}>
+                                        <Text style={{ fontSize: FONT_SIZE.xs, color: token.colorTextTertiary }}>
                                             {dayjs(session.updatedAt).format('DD/MM/YY HH:mm')}
                                         </Text>
                                     }
@@ -362,7 +363,7 @@ export const ChatPage = () => {
                         align="center"
                         gap="small"
                         style={{
-                            padding: '0 8px',
+                            padding: `0 ${SPACING.xs}px`,
                             height: 48,
                             borderBottom: `1px solid ${token.colorBorderSecondary}`,
                             flexShrink: 0,
@@ -376,11 +377,11 @@ export const ChatPage = () => {
                             style={{ minWidth: 40, minHeight: 40 }}
                         />
                         <Flex align="center" gap={6} style={{ flex: 1, minWidth: 0 }}>
-                            <RobotOutlined style={{ fontSize: 15, color: token.colorPrimary, flexShrink: 0 }} />
+                            <RobotOutlined style={{ fontSize: FONT_SIZE.lg, color: token.colorPrimary, flexShrink: 0 }} />
                             <Text
                                 strong
                                 style={{
-                                    fontSize: 14,
+                                    fontSize: FONT_SIZE.base,
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
                                     whiteSpace: 'nowrap',
@@ -429,8 +430,8 @@ export const ChatPage = () => {
                                     maxWidth: 340,
                                     whiteSpace: 'pre-line',
                                     lineHeight: 1.6,
-                                    fontSize: isMobile ? 13 : 14,
-                                    padding: '0 8px',
+                                    fontSize: isMobile ? FONT_SIZE.md : FONT_SIZE.base,
+                                    padding: `0 ${SPACING.xs}px`,
                                 }}
                             >
                                 {t('chat.emptyState')}
@@ -441,7 +442,7 @@ export const ChatPage = () => {
                                 wrap="wrap"
                                 gap={8}
                                 justify="center"
-                                style={{ maxWidth: 360, padding: '0 8px' }}
+                                style={{ maxWidth: 360, padding: `0 ${SPACING.xs}px` }}
                             >
                                 {SUGGESTION_KEYS.map(key => {
                                     const label = t(key, { defaultValue: '' });
@@ -454,9 +455,9 @@ export const ChatPage = () => {
                                             disabled={sending}
                                             style={{
                                                 borderRadius: 20,
-                                                fontSize: 12,
+                                                fontSize: FONT_SIZE.sm,
                                                 height: 'auto',
-                                                padding: '6px 12px',
+                                                padding: `6px ${SPACING.sm}px`,
                                                 whiteSpace: 'normal',
                                                 textAlign: 'center',
                                                 lineHeight: 1.4,
@@ -501,14 +502,14 @@ export const ChatPage = () => {
                                                     : '16px 16px 16px 4px',
                                                 boxShadow: token.boxShadowSecondary,
                                                 lineHeight: 1.55,
-                                                fontSize: isMobile ? 15 : 14,
+                                                fontSize: isMobile ? FONT_SIZE.lg : FONT_SIZE.base,
                                                 wordBreak: 'break-word',
                                             }}
                                         >
                                             {msg.isLoading ? (
                                                 <Flex align="center" gap={8}>
                                                     <Spin size="small" />
-                                                    <Text style={{ color: token.colorTextSecondary, fontSize: 13 }}>
+                                                    <Text style={{ color: token.colorTextSecondary, fontSize: FONT_SIZE.md }}>
                                                         NexaBot…
                                                     </Text>
                                                 </Flex>
@@ -529,13 +530,13 @@ export const ChatPage = () => {
                                                 wrap="wrap"
                                                 style={{ marginTop: 4, paddingLeft: 4 }}
                                             >
-                                                <Text style={{ fontSize: 10, color: token.colorTextTertiary }}>
+                                                <Text style={{ fontSize: FONT_SIZE.xxs, color: token.colorTextTertiary }}>
                                                     {t('chat.toolsUsed')}:
                                                 </Text>
                                                 {msg.toolsUsed.map(tool => (
                                                     <Tag
                                                         key={tool}
-                                                        style={{ fontSize: 10, margin: 0, padding: '0 5px', lineHeight: '18px' }}
+                                                        style={{ fontSize: FONT_SIZE.xxs, margin: 0, padding: '0 5px', lineHeight: '18px' }}
                                                     >
                                                         {tool}
                                                     </Tag>
@@ -545,7 +546,7 @@ export const ChatPage = () => {
 
                                         <Text
                                             style={{
-                                                fontSize: 11,
+                                                fontSize: FONT_SIZE.xs,
                                                 color: token.colorTextQuaternary,
                                                 marginTop: 3,
                                                 paddingLeft: 4,
@@ -565,7 +566,7 @@ export const ChatPage = () => {
                 {/* Input area */}
                 <div
                     style={{
-                        padding: isMobile ? '8px 10px' : '12px 16px',
+                        padding: isMobile ? `${SPACING.xs}px 10px` : `${SPACING.sm}px ${SPACING.md}px`,
                         borderTop: `1px solid ${token.colorBorderSecondary}`,
                         flexShrink: 0,
                         // Garantisce che l'area input stia sopra la tastiera su iOS
@@ -586,7 +587,7 @@ export const ChatPage = () => {
                             // enterkeyhint="send" mostra il tasto "Invia" sulla tastiera iOS/Android
                             // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             enterKeyHint="send"
-                            style={{ flex: 1, resize: 'none', minHeight: 'unset', fontSize: isMobile ? 16 : 14 }}
+                            style={{ flex: 1, resize: 'none', minHeight: 'unset', fontSize: isMobile ? FONT_SIZE.xl : FONT_SIZE.base }}
                         />
                         <Button
                             type="primary"

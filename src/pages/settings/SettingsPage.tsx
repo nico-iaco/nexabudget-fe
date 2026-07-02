@@ -1,5 +1,5 @@
 import {App, Card, Divider, Form, Input, Radio, Space, Typography} from 'antd';
-import { SafeSelect } from '../../components/SafeSelect';
+import { SafeSelect } from '../../components/common/SafeSelect';
 import {useTranslation} from 'react-i18next';
 import {usePreferences} from '../../contexts/PreferencesContext';
 import {useAuth} from '../../contexts/AuthContext';
@@ -8,7 +8,7 @@ import {useState} from 'react';
 import {ApiKeysCard} from './ApiKeysCard';
 import {CategoriesCard} from './CategoriesCard';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import { PageHeader } from '../../components/PageHeader';
+import { PageHeader } from '../../components/common/PageHeader';
 import { SPACING } from '../../theme/tokens';
 
 const { Text } = Typography;
@@ -99,7 +99,7 @@ export const SettingsPage = () => {
 
             <Card title={t('settings.serverTitle')}>
                 <Text type="secondary">{t('settings.serverPlaceholder')}</Text>
-                <Divider style={{ margin: '16px 0' }} />
+                <Divider style={{ margin: `${SPACING.md}px 0` }} />
                 <Form
                     layout="vertical"
                     initialValues={{

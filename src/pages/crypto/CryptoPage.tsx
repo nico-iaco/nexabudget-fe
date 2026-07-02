@@ -7,10 +7,10 @@ import {useBreakpoints} from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import type {CryptoAsset, PortfolioValueResponse} from '../../types/api';
 import {PortfolioSummary} from '../../components/PortfolioSummary';
-import {BinanceKeysModal} from '../../components/BinanceKeysModal';
-import {CoinbaseKeysModal} from '../../components/CoinbaseKeysModal';
-import {ManualHoldingModal} from '../../components/ManualHoldingModal';
-import {PageHeader} from '../../components/PageHeader';
+import {BinanceKeysModal} from '../../components/modals/BinanceKeysModal';
+import {CoinbaseKeysModal} from '../../components/modals/CoinbaseKeysModal';
+import {ManualHoldingModal} from '../../components/modals/ManualHoldingModal';
+import {PageHeader} from '../../components/common/PageHeader';
 
 export const CryptoPage: React.FC = () => {
     const { t } = useTranslation();

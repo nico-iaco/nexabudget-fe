@@ -5,6 +5,7 @@ import { theme, Typography } from 'antd';
 import { WarningOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { EmptyState } from './EmptyState';
+import { SPACING } from '../../theme/tokens';
 
 const { Text } = Typography;
 
@@ -39,7 +40,7 @@ export const RouteErrorFallback = ({ error, onReset, compact = false }: RouteErr
             <EmptyState
                 image={<WarningOutlined style={{ fontSize: 48, color: token.colorWarning }} />}
                 description={description}
-                style={{ marginTop: compact ? 0 : 48 }}
+                style={{ marginTop: compact ? 0 : SPACING.xxl }}
                 actions={
                     onReset
                         ? [

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Button, Empty, Flex, Space } from 'antd';
+import { SPACING } from '../../theme/tokens';
 
 interface EmptyStateAction {
     label: string;
@@ -25,7 +26,7 @@ export const EmptyState = ({ description, image, actions = [], style }: EmptySta
         <Empty
             image={image ?? Empty.PRESENTED_IMAGE_SIMPLE}
             description={description}
-            style={{ marginTop: 48, ...style }}
+            style={{ marginTop: SPACING.xxl, ...style }}
         >
             {actions.length > 0 && (
                 <Flex justify="center">

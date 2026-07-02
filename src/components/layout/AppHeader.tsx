@@ -2,6 +2,7 @@ import { type RefObject } from 'react';
 import {Button, Layout, theme, Typography} from 'antd';
 import {LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
+import { FONT_SIZE, SHADOW, SPACING } from '../../theme/tokens';
 
 const { Header } = Layout;
 const { Title } = Typography;
@@ -22,7 +23,7 @@ export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout, toggleR
 
     return (
         <Header style={{
-            padding: isMobile ? '0 12px' : '0 16px',
+            padding: isMobile ? `0 ${SPACING.sm}px` : `0 ${SPACING.md}px`,
             background: colorBgContainer,
             display: 'flex',
             justifyContent: 'space-between',
@@ -30,18 +31,18 @@ export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout, toggleR
             position: 'sticky',
             top: 0,
             zIndex: 1000,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+            boxShadow: SHADOW.header
         }}>
             <Button
                 ref={toggleRef}
                 type="text"
                 icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
                 onClick={() => setCollapsed(!collapsed)}
-                style={{ fontSize: '16px', width: 64, height: 64 }}
+                style={{ fontSize: `${FONT_SIZE.xl}px`, width: 64, height: 64 }}
                 aria-label={t('common.menu')}
                 aria-expanded={!collapsed}
             />
-            <Title level={1} style={{ margin: 0, fontSize: isMobile ? '20px' : '24px' }}>
+            <Title level={1} style={{ margin: 0, fontSize: isMobile ? `${FONT_SIZE.xxxl}px` : `${FONT_SIZE.display}px` }}>
                 {/* Gradient applicato allo span interno per evitare conflitti con gli stili AntD di Typography.Title */}
                 <span
                     style={{

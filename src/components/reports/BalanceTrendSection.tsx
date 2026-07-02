@@ -4,11 +4,9 @@ import {
     Card,
     Col,
     DatePicker,
-    Empty,
     Flex,
     Row,
     Skeleton,
-    Statistic,
     Table,
     Typography,
 } from 'antd';
@@ -22,8 +20,10 @@ import { AxiosError } from 'axios';
 import * as api from '../../services/api';
 import type { BalanceTrendItem, BalanceTrendResponse } from '../../types/api';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { COLOR_ACCENT, COLOR_NEGATIVE, COLOR_POSITIVE, SPACING } from '../../theme/tokens';
-import { DatePresetPicker } from '../DatePresetPicker';
+import { COLOR_ACCENT, COLOR_NEGATIVE, COLOR_POSITIVE, SPACING, FONT_SIZE } from '../../theme/tokens';
+import { DatePresetPicker } from '../common/DatePresetPicker';
+import { EmptyState } from '../common/EmptyState';
+import { StatCard } from '../common/StatCard';
 
 const BalanceTrendChart = lazy(() =>
     import('./BalanceTrendChart').then(m => ({ default: m.BalanceTrendChart })),
@@ -201,7 +201,7 @@ export const BalanceTrendSection = () => {
     return (
         <Card title={cardTitle} extra={isSmallMobile ? undefined : desktopDatePicker}>
             {!isValidRange && (
-                <Empty description={t('reports.balanceTrend.invalidRange')} />
+                <EmptyState description={t('reports.balanceTrend.invalidRange')} />
             )}
 
             {isValidRange && isLoading && (
@@ -219,49 +219,46 @@ export const BalanceTrendSection = () => {
                 <>
                     <Row gutter={[SPACING.md, SPACING.md]}>
                         <Col xs={24} sm={8}>
-                            <Card size="small">
-                                <Statistic
-                                    title={t('reports.balanceTrend.openingBalance')}
-                                    value={opening}
-                                    precision={2}
-                                    valueStyle={{ color: COLOR_ACCENT }}
-                                    formatter={(val) => currencyFmt.format(Number(val))}
-                                />
-                            </Card>
+                            <StatCard
+                                size="small"
+                                title={t('reports.balanceTrend.openingBalance')}
+                                value={opening}
+                                precision={2}
+                                color={COLOR_ACCENT}
+                                formatter={(val) => currencyFmt.format(Number(val))}
+                            />
                         </Col>
                         <Col xs={24} sm={8}>
-                            <Card size="small">
-                                <Statistic
-                                    title={t('reports.balanceTrend.closingBalanceFinal')}
-                                    value={closing}
-                                    precision={2}
-                                    valueStyle={{ color: closing >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE }}
-                                    formatter={(val) => currencyFmt.format(Number(val))}
-                                />
-                            </Card>
+                            <StatCard
+                                size="small"
+                                title={t('reports.balanceTrend.closingBalanceFinal')}
+                                value={closing}
+                                precision={2}
+                                color={closing >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE}
+                                formatter={(val) => currencyFmt.format(Number(val))}
+                            />
                         </Col>
                         <Col xs={24} sm={8}>
-                            <Card size="small">
-                                <Statistic
-                                    title={t('reports.balanceTrend.change')}
-                                    value={absChange}
-                                    precision={2}
-                                    valueStyle={{ color: changeColor }}
-                                    prefix={changePositive ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                                    formatter={(val) => signedCurrencyFmt.format(Number(val))}
-                                />
-                                {pctChange !== null && (
-                                    <Text style={{ color: changeColor, fontSize: 12 }}>
+                            <StatCard
+                                size="small"
+                                title={t('reports.balanceTrend.change')}
+                                value={absChange}
+                                precision={2}
+                                color={changeColor}
+                                prefix={changePositive ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+                                formatter={(val) => signedCurrencyFmt.format(Number(val))}
+                                footer={pctChange !== null && (
+                                    <Text style={{ color: changeColor, fontSize: FONT_SIZE.sm }}>
                                         {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(2)}%
                                     </Text>
                                 )}
-                            </Card>
+                            />
                         </Col>
                     </Row>
 
                     <div style={{ marginTop: SPACING.lg, opacity: isFetching ? 0.7 : 1, transition: 'opacity 0.15s' }}>
                         {items.length === 0 ? (
-                            <Empty description={t('charts.noData')} />
+                            <EmptyState description={t('charts.noData')} />
                         ) : (
                             <>
                                 <Suspense fallback={<Skeleton active paragraph={{ rows: 8 }} />}>

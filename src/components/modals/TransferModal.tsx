@@ -3,7 +3,8 @@ import dayjs, {type Dayjs} from 'dayjs';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {Account} from '../../types/api';
-import { SafeSelect } from '../SafeSelect';
+import { SafeSelect } from '../common/SafeSelect';
+import { SPACING } from '../../theme/tokens';
 
 const { Option } = SafeSelect;
 
@@ -54,7 +55,7 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts, loading = fa
                 form={form}
                 layout="vertical"
                 onFinish={onFinish}
-                style={{ marginTop: 24 }}
+                style={{ marginTop: SPACING.lg }}
                 initialValues={{ transferDate: dayjs() }}
             >
                 <Form.Item
@@ -90,7 +91,7 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts, loading = fa
                         message={t('transfers.multiCurrencyHint')}
                         type="info"
                         showIcon
-                        style={{ marginBottom: 16 }}
+                        style={{ marginBottom: SPACING.md }}
                     />
                 )}
                 <Form.Item

@@ -1,8 +1,8 @@
 import React, {useEffect, useState} from 'react';
 import {App, Button, Form, Input, InputNumber, Modal} from 'antd';
 import {useTranslation} from 'react-i18next';
-import {addManualHolding, updateManualHolding} from '../services/api';
-import type {CryptoAsset, ManualHoldingsRequest, UpdateCryptoAsset} from '../types/api';
+import {addManualHolding, updateManualHolding} from '../../services/api';
+import type {CryptoAsset, ManualHoldingsRequest, UpdateCryptoAsset} from '../../types/api';
 
 interface ManualHoldingModalProps {
     open: boolean;
