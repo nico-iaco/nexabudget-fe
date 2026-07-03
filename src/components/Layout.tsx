@@ -50,8 +50,8 @@ export const Layout = () => {
     } = theme.useToken();
 
     // --- Hook dati ---
-    const { accounts, totalBalance, fetchAccounts, isLoading: loadingAccounts } = useAccounts();
-    const { categories, fetchCategories } = useCategories();
+    const { accounts, totalBalance, fetchAccounts, isLoading: loadingAccounts, isError: isAccountsError, refetch: refetchAccounts } = useAccounts();
+    const { categories, fetchCategories, isError: isCategoriesError, refetch: refetchCategories } = useCategories();
 
     // --- Hook azioni CRUD ---
     const {
@@ -103,6 +103,39 @@ export const Layout = () => {
         window.addEventListener('pwa-update-available', handler);
         return () => window.removeEventListener('pwa-update-available', handler);
     }, [notification, t]);
+
+    // Banner errore fetch account/categorie — dati usati da sidebar, form transazioni e dashboard
+    useEffect(() => {
+        if (isAccountsError) {
+            notification.error({
+                message: t('common.loadAccountsErrorTitle'),
+                description: t('common.loadAccountsErrorDescription'),
+                btn: (
+                    <Button type="primary" size="small" onClick={() => refetchAccounts()}>
+                        {t('common.retry')}
+                    </Button>
+                ),
+                placement: 'bottomRight',
+                key: 'accounts-fetch-error',
+            });
+        }
+    }, [isAccountsError, notification, refetchAccounts, t]);
+
+    useEffect(() => {
+        if (isCategoriesError) {
+            notification.error({
+                message: t('common.loadCategoriesErrorTitle'),
+                description: t('common.loadCategoriesErrorDescription'),
+                btn: (
+                    <Button type="primary" size="small" onClick={() => refetchCategories()}>
+                        {t('common.retry')}
+                    </Button>
+                ),
+                placement: 'bottomRight',
+                key: 'categories-fetch-error',
+            });
+        }
+    }, [isCategoriesError, notification, refetchCategories, t]);
 
     // Chiudi il drawer mobile con Escape
     useEffect(() => {

@@ -33,6 +33,11 @@ const resources = {
                 menu: 'Menu',
                 total: 'Totale',
                 actions: 'Azioni',
+                retry: 'Riprova',
+                loadAccountsErrorTitle: 'Errore nel caricamento dei conti',
+                loadAccountsErrorDescription: 'Non è stato possibile caricare i conti. Riprova.',
+                loadCategoriesErrorTitle: 'Errore nel caricamento delle categorie',
+                loadCategoriesErrorDescription: 'Non è stato possibile caricare le categorie. Riprova.',
                 closeMenu: 'Chiudi menu'
             },
             nav: {
@@ -181,6 +186,7 @@ const resources = {
             dashboard: {
                 title: 'Dashboard',
                 empty: 'Nessuna transazione trovata per il periodo selezionato.',
+                loadError: 'Alcuni dati della dashboard non sono stati caricati correttamente.',
                 emptyNoAccounts: 'Nessun conto trovato. Crea il tuo primo conto per iniziare.',
                 emptyCtaAccount: 'Crea un conto',
                 emptyCtaBankLink: 'Collega una banca',
@@ -258,6 +264,7 @@ const resources = {
             transactions: {
                 titleAll: 'Tutte le Transazioni',
                 titleAccount: 'Transazioni per {{account}}',
+                emptyDescription: 'Nessuna transazione trovata. Aggiungi la tua prima transazione per iniziare.',
                 data: 'Data',
                 description: 'Descrizione',
                 account: 'Conto',
@@ -357,6 +364,7 @@ const resources = {
                 accountLabelFallback: 'Conto',
                 deleteError: "Errore durante l'eliminazione della transazione",
                 saveError: 'Errore durante il salvataggio della transazione',
+                loadError: 'Errore durante il caricamento delle transazioni',
                 exchangeRateHint: 'da {{originalAmount}} {{originalCurrency}} @ {{exchangeRate}}',
                 deleteConfirm: 'Sei sicuro di voler spostare questa transazione nel cestino?',
                 syncing: 'Sincronizzazione...',
@@ -727,6 +735,11 @@ const resources = {
                 menu: 'Menu',
                 total: 'Total',
                 actions: 'Actions',
+                retry: 'Retry',
+                loadAccountsErrorTitle: 'Error loading accounts',
+                loadAccountsErrorDescription: 'Failed to load accounts. Please try again.',
+                loadCategoriesErrorTitle: 'Error loading categories',
+                loadCategoriesErrorDescription: 'Failed to load categories. Please try again.',
                 closeMenu: 'Close menu'
             },
             nav: {
@@ -875,6 +888,7 @@ const resources = {
             dashboard: {
                 title: 'Dashboard',
                 empty: 'No transactions found for the selected period.',
+                loadError: 'Some dashboard data failed to load.',
                 emptyNoAccounts: 'No accounts found. Create your first account to get started.',
                 emptyCtaAccount: 'Create an account',
                 emptyCtaBankLink: 'Link a bank',
@@ -952,6 +966,7 @@ const resources = {
             transactions: {
                 titleAll: 'All Transactions',
                 titleAccount: 'Transactions for {{account}}',
+                emptyDescription: 'No transactions found. Add your first transaction to get started.',
                 data: 'Date',
                 description: 'Description',
                 account: 'Account',
@@ -1051,6 +1066,7 @@ const resources = {
                 accountLabelFallback: 'Account',
                 deleteError: 'Error deleting transaction',
                 saveError: 'Error saving transaction',
+                loadError: 'Error loading transactions',
                 exchangeRateHint: 'from {{originalAmount}} {{originalCurrency}} @ {{exchangeRate}}',
                 deleteConfirm: 'Are you sure you want to move this transaction to the trash?',
                 syncing: 'Syncing...',

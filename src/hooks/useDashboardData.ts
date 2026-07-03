@@ -1,7 +1,8 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
+import { message } from 'antd';
 import * as api from '../services/api';
 import { SERIES_INCOME, SERIES_EXPENSE } from '../theme/tokens';
 import type {
@@ -50,6 +51,7 @@ interface DashboardQueryResult {
     proj: MonthlyProjectionResponse | null;
     crypto: PortfolioValueResponse | null;
     budgets: MonthlySummaryResponse[];
+    partialErrors: string[];
 }
 
 const EMPTY_TREND: MonthlyTrendResponse = { currency: 'EUR', items: [] };
@@ -68,18 +70,23 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
             const startDate = startKey ?? now.startOf('year').format('YYYY-MM-DD');
             const endDate = endKey ?? now.endOf('year').format('YYYY-MM-DD');
 
-            const safe = <T,>(p: Promise<{ data: T }>, fallback: T): Promise<T> =>
-                p.then(r => r.data ?? fallback).catch(() => fallback);
+            const partialErrors: string[] = [];
+            const safe = <T,>(p: Promise<{ data: T }>, fallback: T, label: string): Promise<T> =>
+                p.then(r => r.data ?? fallback).catch(err => {
+                    console.error(`[dashboard] failed to load ${label}`, err);
+                    partialErrors.push(label);
+                    return fallback;
+                });
 
             const EMPTY_BREAKDOWN = { startDate, endDate, currency: 'EUR', totalIncome: 0, totalExpense: 0, grandTotal: 0, categories: [] };
 
             const [comp, trend, breakdown, proj, crypto, budgets] = await Promise.all([
-                safe(api.getMonthComparison(now.year(), now.month() + 1), null),
-                safe(api.getMonthlyTrend(trendMonths), EMPTY_TREND),
-                safe(api.getCategoryBreakdown(startDate, endDate), EMPTY_BREAKDOWN),
-                safe(api.getMonthlyProjection(), null),
-                safe(api.getPortfolioValue('EUR'), null),
-                safe(api.getBudgetMonthlySummary(now.format('YYYY-MM-DD')), []),
+                safe(api.getMonthComparison(now.year(), now.month() + 1), null, 'monthComparison'),
+                safe(api.getMonthlyTrend(trendMonths), EMPTY_TREND, 'monthlyTrend'),
+                safe(api.getCategoryBreakdown(startDate, endDate), EMPTY_BREAKDOWN, 'categoryBreakdown'),
+                safe(api.getMonthlyProjection(), null, 'monthlyProjection'),
+                safe(api.getPortfolioValue('EUR'), null, 'portfolioValue'),
+                safe(api.getBudgetMonthlySummary(now.format('YYYY-MM-DD')), [], 'budgetSummary'),
             ]);
 
             const categories = Array.isArray(breakdown?.categories) ? breakdown.categories : [];
@@ -94,10 +101,20 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
                 proj,
                 crypto,
                 budgets: Array.isArray(budgets) ? budgets : [],
+                partialErrors,
             };
         },
         placeholderData: keepPreviousData,
     });
+
+    const lastReportedErrorsRef = useRef<string[] | null>(null);
+    useEffect(() => {
+        const partialErrors = data?.partialErrors;
+        if (partialErrors && partialErrors.length > 0 && lastReportedErrorsRef.current !== partialErrors) {
+            lastReportedErrorsRef.current = partialErrors;
+            message.error(t('dashboard.loadError'));
+        }
+    }, [data?.partialErrors, t]);
 
     const monthComparison = data?.comp ?? null;
     const trendResponse = data?.trend ?? EMPTY_TREND;

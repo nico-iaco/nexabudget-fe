@@ -246,7 +246,6 @@ export const DatePresetPicker = ({
             flexShrink: 0,
             cursor: disabled ? 'not-allowed' : 'pointer',
             border: '1.5px solid transparent',
-            outline: 'none',
             transition: 'background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s',
             WebkitTapHighlightColor: 'transparent',
             userSelect: 'none',

@@ -43,6 +43,7 @@ import { usePageTitle } from '../../hooks/usePageTitle';
 import { TransactionCard } from '../../components/TransactionCard';
 import { TransactionImportModal } from '../../components/modals/TransactionImportModal';
 import { PageHeader } from '../../components/common/PageHeader';
+import { EmptyState } from '../../components/common/EmptyState';
 import { getCurrencySymbol } from '../../utils/currency';
 import { COLOR_POSITIVE, COLOR_NEGATIVE, FONT_SIZE, RADIUS, SHADOW, SPACING } from '../../theme/tokens';
 import { useConfirm } from '../../hooks/useConfirm';
@@ -346,7 +347,10 @@ export const TransactionsPage = () => {
                 }
                 setTotalTransactions(response.data.page.totalElements);
             })
-            .catch(console.error)
+            .catch(error => {
+                console.error("Failed to fetch transactions", error);
+                message.error(t('transactions.loadError'));
+            })
             .finally(() => setLoading(false));
     };
 
@@ -658,6 +662,14 @@ export const TransactionsPage = () => {
                     <List
                         loading={loading}
                         dataSource={processedTransactions}
+                        locale={{
+                            emptyText: (
+                                <EmptyState
+                                    description={t('transactions.emptyDescription')}
+                                    actions={[{ label: t('transactions.newTransaction'), onClick: handleOpenCreateModal }]}
+                                />
+                            ),
+                        }}
                         renderItem={item => (
                             <TransactionCard
                                 transaction={item}
@@ -695,6 +707,8 @@ export const TransactionsPage = () => {
                     onChange={handleTableChange}
                     size={'small'}
                     tableLayout="fixed"
+                    scroll={{ x: 'max-content' }}
+                    locale={{ emptyText: <EmptyState description={t('transactions.emptyDescription')} /> }}
                     pagination={{
                         current: currentPage,
                         pageSize,
@@ -720,6 +734,8 @@ export const TransactionsPage = () => {
                 onChange={handleTableChange}
                 size={'small'}
                 tableLayout="fixed"
+                scroll={{ x: 'max-content' }}
+                locale={{ emptyText: <EmptyState description={t('transactions.emptyDescription')} /> }}
                 pagination={{
                     current: currentPage,
                     pageSize,

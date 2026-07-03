@@ -128,9 +128,9 @@ export const CategoriesCard = () => {
                     return (
                         <Tooltip title={t('settings.categories.defaultLocked')}>
                             <Space>
-                                <Button type="text" icon={<EditOutlined />} disabled />
-                                <Button type="text" icon={<BranchesOutlined />} disabled />
-                                <Button type="text" danger icon={<DeleteOutlined />} disabled />
+                                <Button type="text" icon={<EditOutlined />} disabled aria-label={t('settings.categories.editCategory')} />
+                                <Button type="text" icon={<BranchesOutlined />} disabled aria-label={t('settings.categories.mergeCategory')} />
+                                <Button type="text" danger icon={<DeleteOutlined />} disabled aria-label={t('common.delete')} />
                             </Space>
                         </Tooltip>
                     );
@@ -144,6 +144,7 @@ export const CategoriesCard = () => {
                                 icon={<EditOutlined />}
                                 onClick={() => openEditModal(record)}
                                 disabled={isBusy}
+                                aria-label={t('settings.categories.editCategory')}
                             />
                         </Tooltip>
                         <Tooltip title={canMerge ? t('settings.categories.mergeCategory') : t('settings.categories.mergeNoTargets')}>
@@ -152,6 +153,7 @@ export const CategoriesCard = () => {
                                 icon={<BranchesOutlined />}
                                 onClick={() => openMergeModal(record)}
                                 disabled={isBusy || !canMerge}
+                                aria-label={t('settings.categories.mergeCategory')}
                             />
                         </Tooltip>
                         <Popconfirm
@@ -161,7 +163,7 @@ export const CategoriesCard = () => {
                             cancelText={t('common.no')}
                             okButtonProps={{ danger: true }}
                         >
-                            <Button type="text" danger icon={<DeleteOutlined />} loading={isBusy} />
+                            <Button type="text" danger icon={<DeleteOutlined />} loading={isBusy} aria-label={t('common.delete')} />
                         </Popconfirm>
                     </Space>
                 );

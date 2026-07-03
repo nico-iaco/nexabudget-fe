@@ -149,7 +149,7 @@ export const ApiKeysCard = () => {
             key: 'actions',
             render: (_: any, record: ApiKeyResponse) => (
                 <Space>
-                    <Button type="text" icon={<EditOutlined />} onClick={() => openEditModal(record)} />
+                    <Button type="text" icon={<EditOutlined />} onClick={() => openEditModal(record)} aria-label={t('common.edit')} />
                     <Popconfirm
                         title={t('settings.apiKeys.deleteConfirm')}
                         onConfirm={() => handleDelete(record.id)}
@@ -157,7 +157,7 @@ export const ApiKeysCard = () => {
                         cancelText={t('common.no')}
                         okButtonProps={{ danger: true }}
                     >
-                        <Button type="text" danger icon={<DeleteOutlined />} />
+                        <Button type="text" danger icon={<DeleteOutlined />} aria-label={t('common.delete')} />
                     </Popconfirm>
                 </Space>
             )

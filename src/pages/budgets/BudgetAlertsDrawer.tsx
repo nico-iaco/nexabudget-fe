@@ -112,7 +112,7 @@ export const BudgetAlertsDrawer = ({ open, onClose, budget }: Props) => {
                     cancelText={t('common.cancel')}
                     okButtonProps={{ danger: true }}
                 >
-                    <Button danger icon={<DeleteOutlined />} size="small" />
+                    <Button danger icon={<DeleteOutlined />} size="small" aria-label={t('common.delete')} />
                 </Popconfirm>
             ),
         },
