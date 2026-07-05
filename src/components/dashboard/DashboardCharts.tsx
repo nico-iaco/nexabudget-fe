@@ -4,7 +4,7 @@ import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import type { BarData, LineData } from '../../hooks/useDashboardData';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT, FONT_SIZE, RADIUS } from '../../theme/tokens';
+import { FONT_SIZE, RADIUS, getSemanticColors } from '../../theme/tokens';
 import { EmptyState } from '../common/EmptyState';
 import type { GlobalToken } from 'antd/es/theme/interface';
 
@@ -147,11 +147,13 @@ interface ComparisonRowProps {
 const ComparisonRow = ({ label, current, previous, color, deltaIsBad, prevLabel, currLabel }: ComparisonRowProps) => {
     const { Text } = Typography;
     const { token } = theme.useToken();
+    const { preferences } = usePreferences();
+    const semantic = getSemanticColors(preferences.theme === 'dark');
     const max = Math.max(current, previous, 1);
     const delta = current - previous;
     const pct = previous === 0 ? (current > 0 ? 100 : 0) : ((current - previous) / previous) * 100;
     const deltaPositive = delta >= 0;
-    const deltaColor = (deltaIsBad ? deltaPositive : !deltaPositive) ? COLOR_NEGATIVE : COLOR_POSITIVE;
+    const deltaColor = (deltaIsBad ? deltaPositive : !deltaPositive) ? semantic.negative : semantic.positive;
     const DeltaIcon = deltaPositive ? ArrowUpOutlined : ArrowDownOutlined;
 
     return (
@@ -194,6 +196,8 @@ export const ComparisonBars = ({
     currentIncome, previousIncome, currentExpense, previousExpense,
 }: ComparisonBarsProps) => {
     const { t } = useTranslation();
+    const { preferences } = usePreferences();
+    const semantic = getSemanticColors(preferences.theme === 'dark');
     const prevLabel = t('reports.previousMonth');
     const currLabel = t('reports.currentMonth');
 
@@ -203,7 +207,7 @@ export const ComparisonBars = ({
                 label={t('reports.typeIn')}
                 current={currentIncome}
                 previous={previousIncome}
-                color={COLOR_POSITIVE}
+                color={semantic.positive}
                 deltaIsBad={false}
                 prevLabel={prevLabel}
                 currLabel={currLabel}
@@ -212,7 +216,7 @@ export const ComparisonBars = ({
                 label={t('reports.typeOut')}
                 current={currentExpense}
                 previous={previousExpense}
-                color={COLOR_NEGATIVE}
+                color={semantic.negative}
                 deltaIsBad={true}
                 prevLabel={prevLabel}
                 currLabel={currLabel}
@@ -227,7 +231,9 @@ interface SparklineProps {
     height?: number;
 }
 
-export const Sparkline = ({ values, color = COLOR_ACCENT, height = 32 }: SparklineProps) => {
+export const Sparkline = ({ values, color, height = 32 }: SparklineProps) => {
+    const { token } = theme.useToken();
+    const resolvedColor = color ?? token.colorPrimary;
     if (!values || values.length < 2) return null;
     const w = 100;
     const min = Math.min(...values);
@@ -240,8 +246,8 @@ export const Sparkline = ({ values, color = COLOR_ACCENT, height = 32 }: Sparkli
     const areaPoints = `0,${height} ${points} ${w},${height}`;
     return (
         <svg width="100%" height={height} viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" style={{ display: 'block', marginTop: 8 }}>
-            <polygon points={areaPoints} fill={color} fillOpacity={0.18} />
-            <polyline points={points} fill="none" stroke={color} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+            <polygon points={areaPoints} fill={resolvedColor} fillOpacity={0.18} />
+            <polyline points={points} fill="none" stroke={resolvedColor} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
         </svg>
     );
 };

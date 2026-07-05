@@ -22,7 +22,7 @@ export default defineConfig(({ mode }) => {
                     name: 'NexaBudget',
                     short_name: 'NexaBudget',
                     description: 'Gestisci le tue finanze personali con facilità',
-                    theme_color: '#1890ff',
+                    theme_color: '#1f7dcf',
                     background_color: '#ffffff',
                     display: 'standalone',
                     scope: '/',

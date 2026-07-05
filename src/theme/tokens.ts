@@ -1,17 +1,49 @@
-// Brand / primary colour — used as ConfigProvider seed and for chart accents.
-// Change this single value to re-skin the whole app.
-export const BRAND_PRIMARY = '#1677ff';
+// Theme-aware brand primary (NexaBudget Redesign palette). Use the oklch
+// strings for raw CSS (gradients, custom backgrounds) — the browser renders
+// them natively. Use the _HEX variants for AntD's `colorPrimary` token:
+// AntD derives hover/active/bg shades via a color library that doesn't parse
+// oklch() and silently falls back to black, so the seed must be hex/rgb.
+export const PRIMARY_LIGHT = 'oklch(58% 0.15 250)';
+export const PRIMARY_DARK = 'oklch(70% 0.14 250)';
+export const PRIMARY_LIGHT_HEX = '#1f7dcf';
+export const PRIMARY_DARK_HEX = '#53a3f2';
 
-// Semantic colors (used in charts and contexts where theme tokens aren't available)
-export const COLOR_POSITIVE = '#3f8600';
-export const COLOR_NEGATIVE = '#cf1322';
-export const COLOR_ACCENT = '#1677ff';
-export const COLOR_WARNING = '#faad14';
+// Theme-aware semantic palette (NexaBudget Redesign). Light/dark pairs —
+// pick the one matching the active PreferencesContext theme.
+export const SEMANTIC = {
+    positive: { light: 'oklch(45% 0.15 155)', dark: 'oklch(75% 0.15 155)' },
+    negative: { light: 'oklch(55% 0.19 25)', dark: 'oklch(68% 0.18 25)' },
+    warning: { light: 'oklch(60% 0.14 55)', dark: 'oklch(65% 0.14 55)' },
+} as const;
+
+/** Pick the semantic color set matching the active PreferencesContext theme. */
+export const getSemanticColors = (isDark: boolean) => ({
+    positive: isDark ? SEMANTIC.positive.dark : SEMANTIC.positive.light,
+    negative: isDark ? SEMANTIC.negative.dark : SEMANTIC.negative.light,
+    warning: isDark ? SEMANTIC.warning.dark : SEMANTIC.warning.light,
+});
+
+// Brand gradients (logo mark, balance/KPI panels).
+export const GRADIENT_BRAND = `linear-gradient(135deg, ${PRIMARY_LIGHT}, oklch(66% 0.15 200))`;
+export const GRADIENT_BRAND_DARK = `linear-gradient(135deg, ${PRIMARY_DARK}, oklch(75% 0.13 200))`;
+export const GRADIENT_BALANCE = `linear-gradient(135deg, ${PRIMARY_LIGHT}, oklch(52% 0.16 270))`;
+export const GRADIENT_BALANCE_DARK = 'linear-gradient(135deg, oklch(45% 0.13 255), oklch(38% 0.14 270))';
+
+// Auth pages (Login/Register) full-bleed backdrop.
+export const AUTH_BG_LIGHT = 'linear-gradient(160deg, oklch(97% 0.015 250), #eef0f3)';
+export const AUTH_BG_DARK = 'linear-gradient(160deg, oklch(18% 0.012 260), oklch(14% 0.01 260))';
+
+// Typography — heading/number face vs. body face (NexaBudget Redesign).
+export const FONT_HEADING = "'Manrope', system-ui, sans-serif";
+export const FONT_BODY = "'Inter', system-ui, sans-serif";
 
 // Sider dark-mode text colours (always-dark sidebar variant).
 export const SIDER_TEXT_PRIMARY = 'rgba(255, 255, 255, 0.85)';
 export const SIDER_TEXT_SECONDARY = 'rgba(255, 255, 255, 0.65)';
-export const SIDER_BG = '#001529';
+
+// Dark-mode shell surfaces (NexaBudget Redesign — replaces the navy SIDER_BG).
+export const SURFACE_DARK = 'oklch(19% 0.012 260)';
+export const SURFACE_DARK_BORDER = 'oklch(26% 0.012 260)';
 
 // Bar-chart series keys — kept as stable identifiers so colour-mapping
 // doesn't depend on translated label strings.
@@ -54,6 +86,8 @@ export const RADIUS = {
     sm: 4,
     md: 6,
     lg: RADIUS_BASE,
+    card: 14,
+    panel: 16,
     pill: 100,
 } as const;
 

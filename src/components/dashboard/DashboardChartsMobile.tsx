@@ -1,7 +1,8 @@
 import { Flex, Progress, theme, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { BarData } from '../../hooks/useDashboardData';
-import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT, SERIES_INCOME, FONT_SIZE, RADIUS } from '../../theme/tokens';
+import { SERIES_INCOME, FONT_SIZE, RADIUS, getSemanticColors } from '../../theme/tokens';
+import { usePreferences } from '../../contexts/PreferencesContext';
 import { EmptyState } from '../common/EmptyState';
 
 export { TrendDualChart } from './TrendDualChart';
@@ -61,6 +62,8 @@ interface BarChartProps {
 
 export const TrendBarChart = ({ data }: BarChartProps) => {
     const { t } = useTranslation();
+    const { preferences } = usePreferences();
+    const semantic = getSemanticColors(preferences.theme === 'dark');
     if (!data || data.length === 0) return <EmptyState description={t('charts.noData')} />;
 
     const months = [...new Set(data.map(d => d.month))];
@@ -68,7 +71,7 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
 
     // Colore basato sulla chiave stabile SERIES_INCOME/EXPENSE — non sulla stringa tradotta
     const colorFor = (type: string) =>
-        type === SERIES_INCOME ? COLOR_POSITIVE : COLOR_NEGATIVE;
+        type === SERIES_INCOME ? semantic.positive : semantic.negative;
 
     // Etichetta leggibile dall'utente nella lingua corrente
     const labelFor = (type: string) =>
@@ -139,6 +142,8 @@ export const ComparisonBars = ({
 }: ComparisonBarsProps) => {
     const { t } = useTranslation();
     const { token } = theme.useToken();
+    const { preferences } = usePreferences();
+    const semantic = getSemanticColors(preferences.theme === 'dark');
     const max = Math.max(currentIncome, previousIncome, currentExpense, previousExpense, 1);
 
     const Row = ({ label, current, previous, color }: { label: string; current: number; previous: number; color: string }) => (
@@ -164,12 +169,12 @@ export const ComparisonBars = ({
                     <Text style={{ fontSize: FONT_SIZE.xs }}>{t('reports.previousMonth')}</Text>
                 </Flex>
                 <Flex gap={4} align="center">
-                    <div style={{ width: 8, height: 8, backgroundColor: COLOR_ACCENT, borderRadius: RADIUS.xs }} />
+                    <div style={{ width: 8, height: 8, backgroundColor: token.colorPrimary, borderRadius: RADIUS.xs }} />
                     <Text style={{ fontSize: FONT_SIZE.xs }}>{t('reports.currentMonth')}</Text>
                 </Flex>
             </Flex>
-            <Row label={t('reports.typeIn')} current={currentIncome} previous={previousIncome} color={COLOR_POSITIVE} />
-            <Row label={t('reports.typeOut')} current={currentExpense} previous={previousExpense} color={COLOR_NEGATIVE} />
+            <Row label={t('reports.typeIn')} current={currentIncome} previous={previousIncome} color={semantic.positive} />
+            <Row label={t('reports.typeOut')} current={currentExpense} previous={previousExpense} color={semantic.negative} />
         </Flex>
     );
 };
@@ -180,7 +185,9 @@ interface SparklineProps {
     height?: number;
 }
 
-export const Sparkline = ({ values, color = COLOR_ACCENT, height = 32 }: SparklineProps) => {
+export const Sparkline = ({ values, color, height = 32 }: SparklineProps) => {
+    const { token } = theme.useToken();
+    const resolvedColor = color ?? token.colorPrimary;
     if (!values || values.length < 2) return null;
     const w = 100;
     const min = Math.min(...values);
@@ -193,8 +200,8 @@ export const Sparkline = ({ values, color = COLOR_ACCENT, height = 32 }: Sparkli
     const areaPoints = `0,${height} ${points} ${w},${height}`;
     return (
         <svg width="100%" height={height} viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" style={{ display: 'block' }}>
-            <polygon points={areaPoints} fill={color} fillOpacity={0.18} />
-            <polyline points={points} fill="none" stroke={color} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
+            <polygon points={areaPoints} fill={resolvedColor} fillOpacity={0.18} />
+            <polyline points={points} fill="none" stroke={resolvedColor} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
         </svg>
     );
 };

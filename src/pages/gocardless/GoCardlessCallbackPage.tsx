@@ -6,7 +6,7 @@ import {BankOutlined, ReloadOutlined, ArrowRightOutlined} from '@ant-design/icon
 import {useTranslation} from 'react-i18next';
 import * as api from '../../services/api';
 import type {Account, GoCardlessBankDetails, GoCardlessLinkedStatus} from '../../types/api';
-import {COLOR_ACCENT, FONT_SIZE, RADIUS, SPACING} from '../../theme/tokens';
+import {FONT_SIZE, RADIUS, SPACING} from '../../theme/tokens';
 import {getCurrencySymbol} from '../../utils/currency';
 import type { AppOutletContext } from '../../types/outletContext';
 
@@ -300,7 +300,7 @@ export const GoCardlessCallbackPage = () => {
                                     cursor: 'pointer',
                                     padding: SPACING.md,
                                     border: selectedAccountId === account.account_id
-                                        ? `2px solid ${COLOR_ACCENT}`
+                                        ? `2px solid ${token.colorPrimary}`
                                         : `1px solid ${token.colorBorder}`,
                                     borderRadius: RADIUS.lg,
                                     marginBottom: SPACING.sm,
@@ -333,7 +333,7 @@ export const GoCardlessCallbackPage = () => {
                                             </Text>
                                         )}
                                     </Flex>
-                                    <BankOutlined style={{fontSize: FONT_SIZE.display, color: COLOR_ACCENT}}/>
+                                    <BankOutlined style={{fontSize: FONT_SIZE.display, color: token.colorPrimary}}/>
                                 </Flex>
                             </List.Item>
                         )}

@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Flex, theme, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import { COLOR_ACCENT, COLOR_NEGATIVE, COLOR_POSITIVE, FONT_SIZE, RADIUS, SHADOW } from '../../theme/tokens';
+import { FONT_SIZE, RADIUS, SHADOW, getSemanticColors } from '../../theme/tokens';
+import { usePreferences } from '../../contexts/PreferencesContext';
 import { EmptyState } from '../common/EmptyState';
 
 const { Text } = Typography;
@@ -31,6 +32,8 @@ const formatTickShort = (v: number): string => {
 export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Props) => {
     const { t } = useTranslation();
     const { token } = theme.useToken();
+    const { preferences } = usePreferences();
+    const semantic = getSemanticColors(preferences.theme === 'dark');
 
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerW, setContainerW] = useState(0);
@@ -117,7 +120,7 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
         <div ref={containerRef}>
             <Flex gap={16} style={{ marginBottom: 6 }} wrap>
                 <Flex align="center" gap={6}>
-                    <span style={{ display: 'inline-block', width: 14, height: 2, backgroundColor: COLOR_ACCENT }} />
+                    <span style={{ display: 'inline-block', width: 14, height: 2, backgroundColor: token.colorPrimary }} />
                     <Text style={{ fontSize: FONT_SIZE.sm }}>{t('reports.balanceTrend.closingBalance')}</Text>
                 </Flex>
             </Flex>
@@ -170,8 +173,8 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
                         />
                     )}
 
-                    <path d={areaPath} fill={COLOR_ACCENT} opacity={0.12} />
-                    <polyline points={polyline} fill="none" stroke={COLOR_ACCENT} strokeWidth={2} />
+                    <path d={areaPath} fill={token.colorPrimary} opacity={0.12} />
+                    <polyline points={polyline} fill="none" stroke={token.colorPrimary} strokeWidth={2} />
 
                     {points.map((p, i) => (
                         <circle
@@ -179,7 +182,7 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
                             cx={xCenter(i)}
                             cy={yToPx(p.closingBalance)}
                             r={hoverIdx === i ? 4.5 : 2.5}
-                            fill={COLOR_ACCENT}
+                            fill={token.colorPrimary}
                         />
                     ))}
 
@@ -241,8 +244,8 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
                                     color: hoverPoint.monthlyNet === 0
                                         ? undefined
                                         : hoverPoint.monthlyNet > 0
-                                            ? COLOR_POSITIVE
-                                            : COLOR_NEGATIVE,
+                                            ? semantic.positive
+                                            : semantic.negative,
                                 }}
                             >
                                 {signedCurrencyFmt.format(hoverPoint.monthlyNet)}

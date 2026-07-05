@@ -6,7 +6,8 @@ import dayjs from 'dayjs';
 import {useTranslation} from 'react-i18next';
 import type {Transaction} from '../types/api';
 import { getCurrencySymbol } from '../utils/currency';
-import { COLOR_POSITIVE, COLOR_NEGATIVE, FONT_SIZE, SPACING } from '../theme/tokens';
+import { FONT_SIZE, SPACING, getSemanticColors } from '../theme/tokens';
+import { usePreferences } from '../contexts/PreferencesContext';
 import { haptic } from '../utils/haptic';
 
 const { Text } = Typography;
@@ -21,8 +22,10 @@ interface TransactionCardProps {
 
 const TransactionCardInner = ({ transaction, currency = 'EUR', onEdit, onDelete, onConvertToTransfer }: TransactionCardProps) => {
     const { t } = useTranslation();
+    const { preferences } = usePreferences();
+    const semantic = getSemanticColors(preferences.theme === 'dark');
     const isIncome = transaction.type === 'IN';
-    const amountColor = isIncome ? COLOR_POSITIVE : COLOR_NEGATIVE;
+    const amountColor = isIncome ? semantic.positive : semantic.negative;
     const typeLabel = isIncome ? t('transactions.typeIn') : t('transactions.typeOut');
     const currencySymbol = getCurrencySymbol(currency);
 

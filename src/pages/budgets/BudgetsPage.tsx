@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
-    App, Button, Card, Flex, List, Popconfirm, Progress, Switch, Table, Tag, Typography
+    App, Button, Card, Col, Flex, Popconfirm, Progress, Row, Skeleton, Switch, Tag, Typography, theme
 } from 'antd';
 import { BellOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -9,22 +9,17 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import type { BudgetTemplate, BudgetTemplateRequest, MonthlySummaryResponse } from '../../types/api';
-import type { ColumnsType } from 'antd/es/table';
 import { BudgetTemplateModal } from '../../components/modals/BudgetTemplateModal';
 import { BudgetAlertsDrawer } from './BudgetAlertsDrawer';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { PageHeader } from '../../components/common/PageHeader';
-import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_WARNING, FONT_SIZE, SPACING } from '../../theme/tokens';
+import { Fab } from '../../components/common/Fab';
+import { usePreferences } from '../../contexts/PreferencesContext';
+import { FONT_SIZE, SPACING, getSemanticColors } from '../../theme/tokens';
 import type { AppOutletContext } from '../../types/outletContext';
 
 const { Text } = Typography;
-
-const progressColor = (pct: number): string => {
-    if (pct >= 100) return COLOR_NEGATIVE;
-    if (pct >= 75) return COLOR_WARNING;
-    return COLOR_POSITIVE;
-};
 
 export const BudgetsPage = () => {
     const { t } = useTranslation();
@@ -32,6 +27,15 @@ export const BudgetsPage = () => {
     usePageTitle(t('budgets.title'));
     const { categories } = useOutletContext<AppOutletContext>();
     const { isSmallMobile: isMobile } = useBreakpoints();
+    const { preferences } = usePreferences();
+    const { token } = theme.useToken();
+    const semantic = getSemanticColors(preferences.theme === 'dark');
+
+    const progressColor = (pct: number): string => {
+        if (pct >= 100) return semantic.negative;
+        if (pct >= 75) return semantic.warning;
+        return semantic.positive;
+    };
 
     const [budgets, setBudgets] = useState<BudgetTemplate[]>([]);
     const [summaries, setSummaries] = useState<MonthlySummaryResponse[]>([]);
@@ -108,12 +112,12 @@ export const BudgetsPage = () => {
         if (!s) return <Text type="secondary">{t('budgets.noMonthlyData')}</Text>;
         const pct = Math.min(s.percentageUsed, 100);
         return (
-            <div style={{ minWidth: 160 }}>
+            <div>
                 <Flex justify="space-between" style={{ marginBottom: 2 }}>
                     <Text style={{ fontSize: FONT_SIZE.sm }}>
                         {s.spent.toFixed(2)} / {s.limit.toFixed(2)} €
                     </Text>
-                    <Text style={{ fontSize: FONT_SIZE.sm, color: progressColor(s.percentageUsed) }}>
+                    <Text style={{ fontSize: FONT_SIZE.sm, color: progressColor(s.percentageUsed), fontWeight: 700 }}>
                         {s.percentageUsed.toFixed(0)}%
                     </Text>
                 </Flex>
@@ -131,146 +135,99 @@ export const BudgetsPage = () => {
         );
     };
 
-    const columns: ColumnsType<BudgetTemplate> = [
-        {
-            title: t('budgets.category'),
-            dataIndex: 'categoryName',
-            key: 'categoryName',
-        },
-        {
-            title: t('budgets.limit'),
-            dataIndex: 'budgetLimit',
-            key: 'budgetLimit',
-            render: (v: number) => `${v.toFixed(2)} €`,
-            sorter: (a, b) => a.budgetLimit - b.budgetLimit,
-        },
-        {
-            title: t('budgets.monthlyProgress'),
-            key: 'monthlyProgress',
-            render: (_: unknown, record: BudgetTemplate) => renderProgress(record.categoryId),
-        },
-        {
-            title: t('budgets.recurrence'),
-            dataIndex: 'recurrenceType',
-            key: 'recurrenceType',
-            render: (v: BudgetTemplate['recurrenceType']) => <Tag>{recurrenceLabel(v)}</Tag>,
-        },
-        {
-            title: t('budgets.active'),
-            dataIndex: 'active',
-            key: 'active',
-            render: (v: boolean) => <Switch checked={v} size="small" disabled />,
-        },
-        {
-            title: t('common.actions'),
-            key: 'actions',
-            render: (_: unknown, record: BudgetTemplate) => (
-                <Flex gap="small">
-                    <Button
-                        icon={<BellOutlined />}
-                        size="small"
-                        onClick={() => setAlertsBudget(record)}
-                        aria-label={t('budgets.manageAlerts')}
-                    />
-                    <Button
-                        icon={<EditOutlined />}
-                        size="small"
-                        onClick={() => { setEditing(record); setIsModalOpen(true); }}
-                        aria-label={t('common.edit')}
-                    />
-                    <Popconfirm
-                        title={t('budgets.deleteConfirm')}
-                        onConfirm={() => handleDelete(record.id)}
-                        okText={t('common.delete')}
-                        cancelText={t('common.cancel')}
-                        okButtonProps={{ danger: true }}
-                    >
-                        <Button danger icon={<DeleteOutlined />} size="small" aria-label={t('common.delete')} />
-                    </Popconfirm>
+    const renderBudgetCard = (record: BudgetTemplate) => (
+        <Card size="small" style={{ height: '100%' }}>
+            <Flex justify="space-between" align="flex-start" style={{ marginBottom: SPACING.sm }}>
+                <Flex vertical gap={2} style={{ flex: 1, minWidth: 0 }}>
+                    <Text strong style={{ fontSize: FONT_SIZE.base }}>{record.categoryName}</Text>
+                    <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
+                        {record.budgetLimit.toFixed(2)} €
+                    </Text>
                 </Flex>
-            ),
-        },
-    ];
+                <Flex align="center" gap={SPACING.xs}>
+                    <Tag style={{ margin: 0, borderRadius: 6 }}>{recurrenceLabel(record.recurrenceType)}</Tag>
+                    <Switch checked={record.active} size="small" disabled />
+                </Flex>
+            </Flex>
+
+            {renderProgress(record.categoryId)}
+
+            <Flex justify="flex-end" gap={6} style={{ marginTop: SPACING.sm }}>
+                <Button
+                    icon={<BellOutlined />}
+                    size="small"
+                    style={{ background: token.colorFillTertiary, border: 'none' }}
+                    onClick={() => setAlertsBudget(record)}
+                    aria-label={t('budgets.manageAlerts')}
+                />
+                <Button
+                    icon={<EditOutlined />}
+                    size="small"
+                    style={{ background: token.colorFillTertiary, border: 'none' }}
+                    onClick={() => { setEditing(record); setIsModalOpen(true); }}
+                    aria-label={t('common.edit')}
+                />
+                <Popconfirm
+                    title={t('budgets.deleteConfirm')}
+                    onConfirm={() => handleDelete(record.id)}
+                    okText={t('common.delete')}
+                    cancelText={t('common.cancel')}
+                    okButtonProps={{ danger: true }}
+                >
+                    <Button danger icon={<DeleteOutlined />} size="small" aria-label={t('common.delete')} />
+                </Popconfirm>
+            </Flex>
+        </Card>
+    );
 
     return (
         <>
             <PageHeader
                 title={t('budgets.title')}
                 actions={
-                    <Button
-                        type="primary"
-                        icon={<PlusOutlined />}
-                        onClick={() => { setEditing(null); setIsModalOpen(true); }}
-                        block={isMobile}
-                    >
-                        {t('budgets.newBudget')}
-                    </Button>
+                    // Su small-mobile la creazione avviene tramite il FAB (come da mockup);
+                    // qui resta solo per desktop/tablet dove non c'è un FAB.
+                    !isMobile && (
+                        <Button
+                            type="primary"
+                            icon={<PlusOutlined />}
+                            onClick={() => { setEditing(null); setIsModalOpen(true); }}
+                        >
+                            {t('budgets.newBudget')}
+                        </Button>
+                    )
                 }
             />
 
-            {!loading && budgets.length === 0 ? (
+            {isMobile && (
+                <Fab
+                    icon={<PlusOutlined />}
+                    onClick={() => { setEditing(null); setIsModalOpen(true); }}
+                    aria-label={t('budgets.newBudget')}
+                />
+            )}
+
+            {loading ? (
+                <Row gutter={[16, 16]}>
+                    {[1, 2, 3].map(i => (
+                        <Col key={i} xs={24} sm={isMobile ? 24 : 12} lg={8}>
+                            <Card size="small"><Skeleton active paragraph={{ rows: 3 }} /></Card>
+                        </Col>
+                    ))}
+                </Row>
+            ) : budgets.length === 0 ? (
                 <EmptyState
                     description={t('budgets.emptyList')}
                     actions={[{ label: t('budgets.emptyListCta'), onClick: () => { setEditing(null); setIsModalOpen(true); } }]}
                 />
-            ) : isMobile ? (
-                <List
-                    dataSource={budgets}
-                    loading={loading}
-                    renderItem={(record) => (
-                        <Card
-                            size="small"
-                            style={{ marginBottom: SPACING.sm }}
-                            actions={[
-                                <Button
-                                    key="alerts"
-                                    type="text"
-                                    icon={<BellOutlined />}
-                                    onClick={() => setAlertsBudget(record)}
-                                    aria-label={t('budgets.manageAlerts')}
-                                />,
-                                <Button
-                                    key="edit"
-                                    type="text"
-                                    icon={<EditOutlined />}
-                                    onClick={() => { setEditing(record); setIsModalOpen(true); }}
-                                    aria-label={t('common.edit')}
-                                />,
-                                <Popconfirm
-                                    key="delete"
-                                    title={t('budgets.deleteConfirm')}
-                                    onConfirm={() => handleDelete(record.id)}
-                                    okText={t('common.delete')}
-                                    cancelText={t('common.cancel')}
-                                    okButtonProps={{ danger: true }}
-                                >
-                                    <Button danger type="text" icon={<DeleteOutlined />} aria-label={t('common.delete')} />
-                                </Popconfirm>,
-                            ]}
-                        >
-                            <Flex justify="space-between" align="flex-start" style={{ marginBottom: SPACING.xs }}>
-                                <Flex vertical gap={4} style={{ flex: 1, minWidth: 0 }}>
-                                    <Typography.Text strong>{record.categoryName}</Typography.Text>
-                                    <Typography.Text type="secondary">
-                                        {record.budgetLimit.toFixed(2)} € · <Tag style={{ margin: 0 }}>{recurrenceLabel(record.recurrenceType)}</Tag>
-                                    </Typography.Text>
-                                </Flex>
-                                <Switch checked={record.active} size="small" disabled style={{ marginLeft: SPACING.xs, flexShrink: 0 }} />
-                            </Flex>
-                            {renderProgress(record.categoryId)}
-                        </Card>
-                    )}
-                />
             ) : (
-                <Table
-                    columns={columns}
-                    dataSource={budgets}
-                    rowKey="id"
-                    loading={loading}
-                    size="small"
-                    scroll={{ x: 'max-content' }}
-                    pagination={{ defaultPageSize: 20, showSizeChanger: false }}
-                />
+                <Row gutter={[16, 16]}>
+                    {budgets.map(record => (
+                        <Col key={record.id} xs={24} sm={isMobile ? 24 : 12} lg={8}>
+                            {renderBudgetCard(record)}
+                        </Col>
+                    ))}
+                </Row>
             )}
 
             <BudgetTemplateModal

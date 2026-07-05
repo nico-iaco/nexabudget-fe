@@ -31,8 +31,19 @@ import type { Account } from '../../types/api';
 import { getCurrencySymbol } from '../../utils/currency';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { FONT_SIZE, SIDER_BG, SIDER_TEXT_PRIMARY, SIDER_TEXT_SECONDARY, SPACING } from '../../theme/tokens';
+import {
+    FONT_HEADING,
+    FONT_SIZE,
+    GRADIENT_BALANCE,
+    GRADIENT_BALANCE_DARK,
+    SIDER_TEXT_PRIMARY,
+    SIDER_TEXT_SECONDARY,
+    SPACING,
+    SURFACE_DARK,
+    SURFACE_DARK_BORDER,
+} from '../../theme/tokens';
 import { NAV_ITEMS } from './navItems';
+import { AppLogo } from '../common/AppLogo';
 
 const { Sider } = Layout;
 const { Title, Text } = Typography;
@@ -110,9 +121,10 @@ export const AppSider = ({
     // In light mode il sider usa il colore di sfondo del layout (chiaro); in dark rimane scuro.
     const isDark = preferences.theme === 'dark';
     const siderMenuTheme = isDark ? 'dark' : 'light';
-    const siderBg = isDark ? SIDER_BG : token.colorBgContainer;
+    const siderBg = isDark ? SURFACE_DARK : token.colorBgContainer;
     const siderTextPrimary = isDark ? SIDER_TEXT_PRIMARY : token.colorText;
     const siderTextSecondary = isDark ? SIDER_TEXT_SECONDARY : token.colorTextSecondary;
+    const balanceGradient = isDark ? GRADIENT_BALANCE_DARK : GRADIENT_BALANCE;
 
     const handleMenuClick = useCallback((path: string) => {
         const targetPath = selectedKeys.includes(path) ? '/transactions' : path;
@@ -249,6 +261,7 @@ export const AppSider = ({
                 zIndex: isMobile ? 1001 : 900,
                 overflowY: 'auto',
                 background: siderBg,
+                borderRight: `1px solid ${isDark ? SURFACE_DARK_BORDER : token.colorBorderSecondary}`,
                 ...(isMobile ? { width: '100%' } : {})
             }}
         >
@@ -265,8 +278,8 @@ export const AppSider = ({
             )}
             {!isMobile && (
                 <div style={{ height: '32px', margin: `${SPACING.md}px`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src="/pwa-192x192.png" alt={t('app.name')} width="32" height="32" style={{ height: '32px', width: '32px' }} />
-                    <Title level={4} style={{ color: siderTextPrimary, margin: '0 0 0 10px', fontSize: `${FONT_SIZE.xxl}px` }}>{t('app.name')}</Title>
+                    <AppLogo size={28} />
+                    <Title level={4} style={{ color: siderTextPrimary, margin: '0 0 0 10px', fontFamily: FONT_HEADING, fontWeight: 800, fontSize: `${FONT_SIZE.xxl}px` }}>{t('app.name')}</Title>
                 </div>
             )}
             <Menu
@@ -299,14 +312,32 @@ export const AppSider = ({
                         <Button icon={<PlusOutlined />} size="small" onClick={onOpenCreateAccount} aria-label={t('accounts.newAccount')} />
                     </Flex>
                 </Flex>
-                <div style={{ padding: `0 ${SPACING.md}px ${SPACING.md}px` }}>
-                    <Statistic
-                        title={<Text style={{ color: siderTextSecondary }}>{t('accounts.totalBalance')}</Text>}
-                        value={totalBalance}
-                        precision={2}
-                        valueStyle={{ color: siderTextPrimary }}
-                        suffix={getCurrencySymbol(auth?.defaultCurrency || 'EUR')}
-                    />
+                <div style={{ margin: `0 ${SPACING.sm}px ${SPACING.sm}px` }}>
+                    <div
+                        style={{
+                            background: balanceGradient,
+                            borderRadius: 12,
+                            padding: `${SPACING.sm}px ${SPACING.sm + 1}px`,
+                        }}
+                    >
+                        <Statistic
+                            title={
+                                <Text style={{
+                                    color: 'rgba(255,255,255,0.85)',
+                                    fontSize: FONT_SIZE.xs,
+                                    fontWeight: 600,
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '0.3px',
+                                }}>
+                                    {t('accounts.totalBalance')}
+                                </Text>
+                            }
+                            value={totalBalance}
+                            precision={2}
+                            valueStyle={{ color: '#fff', fontFamily: FONT_HEADING, fontWeight: 800, fontSize: FONT_SIZE.xxl }}
+                            suffix={getCurrencySymbol(auth?.defaultCurrency || 'EUR')}
+                        />
+                    </div>
                 </div>
             </Flex>
             {loading ? <Spin style={{ padding: '20px' }} /> :

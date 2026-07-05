@@ -1,22 +1,19 @@
 // src/pages/auth/RegisterPage.tsx
 import {LockOutlined, MailOutlined, UserOutlined} from '@ant-design/icons';
-import {Alert, Button, Card, Form, Input, Layout, theme, Typography} from 'antd';
+import {Alert, Button, Form, Input} from 'antd';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
 import {Link, useNavigate} from 'react-router-dom';
 import * as api from '../../services/api';
 import type {UserRequest} from '../../types/api';
-import {SHADOW, SPACING} from '../../theme/tokens';
-
-const { Title } = Typography;
-const { Content } = Layout;
+import {SPACING} from '../../theme/tokens';
+import {AuthCard} from '../../components/common/AuthCard';
 
 export const RegisterPage = () => {
     const { t } = useTranslation();
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    const { token: { colorBgLayout } } = theme.useToken();
 
     const onFinish = async (values: UserRequest) => {
         setLoading(true);
@@ -33,53 +30,36 @@ export const RegisterPage = () => {
     };
 
     return (
-        <Layout style={{ minHeight: '100vh', background: colorBgLayout }}>
-            <Content style={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                padding: `${SPACING.lg}px ${SPACING.md}px`
-            }}>
-                <Card style={{
-                    width: '100%',
-                    maxWidth: 400,
-                    boxShadow: SHADOW.card
-                }}>
-                    <div style={{ display: 'flex', justifyContent: 'center', marginBottom: SPACING.lg }}>
-                        <img src="/pwa-192x192.png?v=2" alt={t('app.name')} width="64" height="64" style={{ width: '64px', height: '64px' }} />
-                    </div>
-                    <Title level={2} style={{ textAlign: 'center', marginBottom: SPACING.lg }}>{t('auth.signUp')}</Title>
-                    {error && <Alert message={error} type="error" showIcon style={{ marginBottom: SPACING.lg }} />}
-                    <Form name="register" onFinish={onFinish} autoComplete="off" size="large">
-                        <Form.Item
-                            name="username"
-                            rules={[{ required: true, message: t('auth.usernameRequired') }]}
-                        >
-                            <Input prefix={<UserOutlined />} placeholder={t('auth.username')} aria-label={t('auth.username')} />
-                        </Form.Item>
-                        <Form.Item
-                            name="email"
-                            rules={[{ required: true, message: t('auth.emailRequired'), type: 'email' }]}
-                        >
-                            <Input prefix={<MailOutlined />} placeholder={t('auth.email')} aria-label={t('auth.email')} />
-                        </Form.Item>
-                        <Form.Item
-                            name="password"
-                            rules={[{ required: true, message: t('auth.passwordRequired') }]}
-                        >
-                            <Input.Password prefix={<LockOutlined />} placeholder={t('auth.password')} aria-label={t('auth.password')} />
-                        </Form.Item>
-                        <Form.Item>
-                            <Button type="primary" htmlType="submit" loading={loading} style={{ width: '100%' }}>
-                                {t('auth.registerButton')}
-                            </Button>
-                        </Form.Item>
-                    </Form>
-                    <div style={{ textAlign: 'center' }}>
-                        {t('auth.haveAccount')} <Link to="/login">{t('auth.signInNow')}</Link>
-                    </div>
-                </Card>
-            </Content>
-        </Layout>
+        <AuthCard title={t('auth.signUp')} subtitle={t('app.name')}>
+            {error && <Alert message={error} type="error" showIcon style={{ marginBottom: SPACING.lg }} />}
+            <Form name="register" onFinish={onFinish} autoComplete="off" size="large">
+                <Form.Item
+                    name="username"
+                    rules={[{ required: true, message: t('auth.usernameRequired') }]}
+                >
+                    <Input prefix={<UserOutlined />} placeholder={t('auth.username')} aria-label={t('auth.username')} />
+                </Form.Item>
+                <Form.Item
+                    name="email"
+                    rules={[{ required: true, message: t('auth.emailRequired'), type: 'email' }]}
+                >
+                    <Input prefix={<MailOutlined />} placeholder={t('auth.email')} aria-label={t('auth.email')} />
+                </Form.Item>
+                <Form.Item
+                    name="password"
+                    rules={[{ required: true, message: t('auth.passwordRequired') }]}
+                >
+                    <Input.Password prefix={<LockOutlined />} placeholder={t('auth.password')} aria-label={t('auth.password')} />
+                </Form.Item>
+                <Form.Item>
+                    <Button type="primary" htmlType="submit" loading={loading} style={{ width: '100%' }}>
+                        {t('auth.registerButton')}
+                    </Button>
+                </Form.Item>
+            </Form>
+            <div style={{ textAlign: 'center' }}>
+                {t('auth.haveAccount')} <Link to="/login">{t('auth.signInNow')}</Link>
+            </div>
+        </AuthCard>
     );
 };

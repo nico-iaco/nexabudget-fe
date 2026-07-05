@@ -1,8 +1,9 @@
 import { type RefObject } from 'react';
-import {Button, Layout, theme, Typography} from 'antd';
+import {Avatar, Button, Flex, Layout, theme, Typography} from 'antd';
 import {LogoutOutlined, MenuFoldOutlined, MenuUnfoldOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
-import { FONT_SIZE, SHADOW, SPACING } from '../../theme/tokens';
+import { useAuth } from '../../contexts/AuthContext';
+import { FONT_HEADING, FONT_SIZE, SHADOW, SPACING } from '../../theme/tokens';
 
 const { Header } = Layout;
 const { Title } = Typography;
@@ -17,9 +18,15 @@ interface AppHeaderProps {
 
 export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout, toggleRef }: AppHeaderProps) => {
     const { t } = useTranslation();
+    const { auth } = useAuth();
     const {
         token: { colorBgContainer, colorPrimary, colorPrimaryActive },
     } = theme.useToken();
+    const initials = (auth?.username || '?').slice(0, 2).toUpperCase();
+
+    // Il titolo della pagina vive solo nel PageHeader di ogni pagina (heading
+    // grande nel corpo) — l'header globale mostra il brand per evitare di
+    // ripetere lo stesso testo due volte (in piccolo qui, in grande sotto).
 
     return (
         <Header style={{
@@ -46,8 +53,8 @@ export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout, toggleR
                 {/* Gradient applicato allo span interno per evitare conflitti con gli stili AntD di Typography.Title */}
                 <span
                     style={{
-                        fontFamily: "'Segoe UI', 'Roboto', 'Helvetica Neue', sans-serif",
-                        fontWeight: 700,
+                        fontFamily: FONT_HEADING,
+                        fontWeight: 800,
                         color: colorPrimary,
                         background: `linear-gradient(135deg, ${colorPrimary} 0%, ${colorPrimaryActive} 100%)`,
                         WebkitBackgroundClip: 'text',
@@ -59,9 +66,22 @@ export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout, toggleR
                     {t('app.name')}
                 </span>
             </Title>
-            <Button type="primary" icon={<LogoutOutlined />} onClick={onLogout} aria-label={t('common.logout')}>
-                {!isMobile && t('common.logout')}
-            </Button>
+            <Flex align="center" gap={SPACING.sm}>
+                <Avatar
+                    size={32}
+                    style={{
+                        background: colorPrimary,
+                        fontFamily: FONT_HEADING,
+                        fontWeight: 700,
+                        fontSize: FONT_SIZE.sm,
+                    }}
+                >
+                    {initials}
+                </Avatar>
+                <Button type="primary" icon={<LogoutOutlined />} onClick={onLogout} aria-label={t('common.logout')}>
+                    {!isMobile && t('common.logout')}
+                </Button>
+            </Flex>
         </Header>
     );
 };

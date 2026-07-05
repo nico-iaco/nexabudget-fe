@@ -8,11 +8,15 @@ import type { DeletedAccount, Transaction } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
+import { usePreferences } from '../../contexts/PreferencesContext';
+import { getSemanticColors } from '../../theme/tokens';
 
 export const TrashPage = () => {
     const { t } = useTranslation();
     const { message } = App.useApp();
     usePageTitle(t('trash.title'));
+    const { preferences } = usePreferences();
+    const semantic = getSemanticColors(preferences.theme === 'dark');
 
     const [deletedTransactions, setDeletedTransactions] = useState<Transaction[]>([]);
     const [deletedAccounts, setDeletedAccounts] = useState<DeletedAccount[]>([]);
@@ -99,7 +103,7 @@ export const TrashPage = () => {
             dataIndex: 'amount',
             key: 'amount',
             render: (amount: number, record: Transaction) => (
-                <span style={{ color: record.type === 'IN' ? 'green' : 'red' }}>
+                <span style={{ color: record.type === 'IN' ? semantic.positive : semantic.negative }}>
                     {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} €
                 </span>
             ),

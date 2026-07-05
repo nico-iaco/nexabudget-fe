@@ -6,7 +6,7 @@ import { Layout } from './components/Layout';
 import { Suspense, lazy, type ReactNode } from 'react';
 import type { JSX } from 'react';
 import { usePreferences } from './contexts/PreferencesContext';
-import { BRAND_PRIMARY, RADIUS_BASE } from './theme/tokens';
+import { FONT_BODY, PRIMARY_DARK_HEX, PRIMARY_LIGHT_HEX, RADIUS, RADIUS_BASE } from './theme/tokens';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { RouteErrorFallback } from './components/common/RouteErrorFallback';
 
@@ -133,15 +133,35 @@ const router = createBrowserRouter([
 
 function App() {
     const { preferences } = usePreferences();
-    const algorithm = preferences.theme === 'dark' ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm;
+    const isDark = preferences.theme === 'dark';
+    const algorithm = isDark ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm;
 
     return (
         <ConfigProvider
             theme={{
                 algorithm,
                 token: {
-                    colorPrimary: BRAND_PRIMARY,
+                    colorPrimary: isDark ? PRIMARY_DARK_HEX : PRIMARY_LIGHT_HEX,
                     borderRadius: RADIUS_BASE,
+                    borderRadiusLG: RADIUS.card,
+                    fontFamily: FONT_BODY,
+                },
+                components: {
+                    Card: {
+                        borderRadiusLG: RADIUS.card,
+                    },
+                    Button: {
+                        borderRadius: 10,
+                        controlHeight: 38,
+                    },
+                    Menu: {
+                        itemBorderRadius: 9,
+                        itemHeight: 38,
+                        itemMarginInline: 8,
+                    },
+                    Modal: {
+                        borderRadiusLG: RADIUS.card,
+                    },
                 },
             }}
             getPopupContainer={(triggerNode) => {

@@ -1,4 +1,5 @@
-import {App, Card, Divider, Form, Input, Radio, Space, Typography} from 'antd';
+import {App, Card, Divider, Flex, Form, Input, Typography, theme} from 'antd';
+import { CheckCircleFilled } from '@ant-design/icons';
 import { SafeSelect } from '../../components/common/SafeSelect';
 import {useTranslation} from 'react-i18next';
 import {usePreferences} from '../../contexts/PreferencesContext';
@@ -20,6 +21,7 @@ export const SettingsPage = () => {
     const { preferences, setLanguage, setTheme, setServerSettings } = usePreferences();
     const { auth, updateUser } = useAuth();
     const [updatingParams, setUpdatingParams] = useState(false);
+    const { token } = theme.useToken();
 
     const handleUpdateCurrency = async (newCurrency: string) => {
         try {
@@ -63,19 +65,48 @@ export const SettingsPage = () => {
             </Card>
 
             <Card title={t('settings.appearanceTitle')} style={{ marginBottom: SPACING.md }}>
-                <Form layout="vertical">
-                    <Form.Item label={t('settings.theme')}>
-                        <Radio.Group
-                            value={preferences.theme}
-                            onChange={(e) => setTheme(e.target.value)}
-                        >
-                            <Space direction="vertical">
-                                <Radio value="light">{t('settings.themeLight')}</Radio>
-                                <Radio value="dark">{t('settings.themeDark')}</Radio>
-                            </Space>
-                        </Radio.Group>
-                    </Form.Item>
-                </Form>
+                <Flex gap={SPACING.sm}>
+                    {([
+                        { value: 'light' as const, label: t('settings.themeLight'), swatchBg: '#fff', swatchBorder: '#ecedf0' },
+                        { value: 'dark' as const, label: t('settings.themeDark'), swatchBg: '#1a1d29', swatchBorder: '#1a1d29' },
+                    ]).map(opt => {
+                        const selected = preferences.theme === opt.value;
+                        return (
+                            <div
+                                key={opt.value}
+                                role="radio"
+                                aria-checked={selected}
+                                tabIndex={0}
+                                onClick={() => setTheme(opt.value)}
+                                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setTheme(opt.value); }}
+                                style={{
+                                    flex: 1,
+                                    cursor: 'pointer',
+                                    borderRadius: 11,
+                                    padding: 10,
+                                    textAlign: 'center',
+                                    border: `2px solid ${selected ? token.colorPrimary : token.colorBorderSecondary}`,
+                                    background: selected ? token.colorPrimaryBg : 'transparent',
+                                }}
+                            >
+                                <div style={{
+                                    width: '100%',
+                                    height: 40,
+                                    borderRadius: 7,
+                                    marginBottom: 8,
+                                    background: opt.swatchBg,
+                                    border: `1px solid ${opt.swatchBorder}`,
+                                }} />
+                                <Flex align="center" justify="center" gap={4}>
+                                    {selected && <CheckCircleFilled style={{ color: token.colorPrimary, fontSize: 12 }} />}
+                                    <Typography.Text strong={selected} style={{ color: selected ? token.colorPrimary : token.colorTextSecondary, fontSize: 13 }}>
+                                        {opt.label}
+                                    </Typography.Text>
+                                </Flex>
+                            </div>
+                        );
+                    })}
+                </Flex>
             </Card>
 
             <Card title={t('settings.languageTitle')} style={{ marginBottom: SPACING.md }}>

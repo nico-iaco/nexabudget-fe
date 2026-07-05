@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { App, Button, Card, Popconfirm, Space, Table, Tag, Tooltip } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
-import { BranchesOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
+import { App, Card, Dropdown, Flex, Tag, theme, Tooltip } from 'antd';
+import { BranchesOutlined, DeleteOutlined, EditOutlined, LoadingOutlined, LockOutlined, PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useOutletContext } from 'react-router-dom';
 import axios from 'axios';
@@ -9,12 +8,15 @@ import type { Category, CategoryRequest } from '../../types/api';
 import { createCategory, deleteCategory, mergeCategoryInto, updateCategory } from '../../services/api';
 import { CategoryFormModal } from '../../components/modals/CategoryFormModal';
 import { CategoryMergeModal } from '../../components/modals/CategoryMergeModal';
+import { useConfirm } from '../../hooks/useConfirm';
 import type { AppOutletContext } from '../../types/outletContext';
-import { SPACING } from '../../theme/tokens';
+import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 export const CategoriesCard = () => {
     const { t } = useTranslation();
     const { message } = App.useApp();
+    const confirm = useConfirm();
+    const { token } = theme.useToken();
     const { categories, fetchCategories } = useOutletContext<AppOutletContext>();
 
     const [formModalOpen, setFormModalOpen] = useState(false);
@@ -69,17 +71,25 @@ export const CategoriesCard = () => {
         }
     };
 
-    const handleDelete = async (record: Category) => {
-        setRowBusyId(record.id);
-        try {
-            await deleteCategory(record.id);
-            message.success(t('settings.categories.deletedSuccess'));
-            fetchCategories();
-        } catch (error) {
-            message.error(t('settings.categories.deleteError'));
-        } finally {
-            setRowBusyId(null);
-        }
+    const handleDelete = (record: Category) => {
+        confirm({
+            title: t('settings.categories.deleteConfirm'),
+            danger: true,
+            okText: t('common.delete'),
+            cancelText: t('common.cancel'),
+            onOk: async () => {
+                setRowBusyId(record.id);
+                try {
+                    await deleteCategory(record.id);
+                    message.success(t('settings.categories.deletedSuccess'));
+                    fetchCategories();
+                } catch {
+                    message.error(t('settings.categories.deleteError'));
+                } finally {
+                    setRowBusyId(null);
+                }
+            },
+        });
     };
 
     const handleMergeConfirm = async (targetId: string) => {
@@ -103,93 +113,99 @@ export const CategoriesCard = () => {
         [categories]
     );
 
-    const columns: ColumnsType<Category> = [
-        {
-            title: t('settings.categories.name'),
-            dataIndex: 'name',
-            key: 'name',
-        },
-        {
-            title: t('settings.categories.type'),
-            key: 'type',
-            width: 160,
-            render: (_, record) =>
-                record.isDefault
-                    ? <Tag>{t('settings.categories.typeDefault')}</Tag>
-                    : <Tag color="blue">{t('settings.categories.typeCustom')}</Tag>,
-        },
-        {
-            title: t('settings.categories.actions'),
-            key: 'actions',
-            width: 160,
-            render: (_, record) => {
-                const isBusy = rowBusyId === record.id;
-                if (record.isDefault) {
-                    return (
-                        <Tooltip title={t('settings.categories.defaultLocked')}>
-                            <Space>
-                                <Button type="text" icon={<EditOutlined />} disabled aria-label={t('settings.categories.editCategory')} />
-                                <Button type="text" icon={<BranchesOutlined />} disabled aria-label={t('settings.categories.mergeCategory')} />
-                                <Button type="text" danger icon={<DeleteOutlined />} disabled aria-label={t('common.delete')} />
-                            </Space>
-                        </Tooltip>
-                    );
-                }
-                const canMerge = userCategoriesCount > 1;
-                return (
-                    <Space>
-                        <Tooltip title={t('settings.categories.editCategory')}>
-                            <Button
-                                type="text"
-                                icon={<EditOutlined />}
-                                onClick={() => openEditModal(record)}
-                                disabled={isBusy}
-                                aria-label={t('settings.categories.editCategory')}
-                            />
-                        </Tooltip>
-                        <Tooltip title={canMerge ? t('settings.categories.mergeCategory') : t('settings.categories.mergeNoTargets')}>
-                            <Button
-                                type="text"
-                                icon={<BranchesOutlined />}
-                                onClick={() => openMergeModal(record)}
-                                disabled={isBusy || !canMerge}
-                                aria-label={t('settings.categories.mergeCategory')}
-                            />
-                        </Tooltip>
-                        <Popconfirm
-                            title={t('settings.categories.deleteConfirm')}
-                            onConfirm={() => handleDelete(record)}
-                            okText={t('common.yes')}
-                            cancelText={t('common.no')}
-                            okButtonProps={{ danger: true }}
-                        >
-                            <Button type="text" danger icon={<DeleteOutlined />} loading={isBusy} aria-label={t('common.delete')} />
-                        </Popconfirm>
-                    </Space>
-                );
-            }
-        }
-    ];
+    const pillBaseStyle = {
+        margin: 0,
+        borderRadius: RADIUS.pill,
+        padding: `6px 14px`,
+        fontSize: FONT_SIZE.md,
+        border: 'none',
+        background: token.colorFillTertiary,
+        color: token.colorText,
+    };
 
     return (
-        <Card
-            title={t('settings.categories.cardTitle')}
-            extra={
-                <Button type="primary" icon={<PlusOutlined />} onClick={openCreateModal}>
+        <Card title={t('settings.categories.cardTitle')} style={{ marginBottom: SPACING.md }}>
+            <Flex wrap="wrap" gap={8}>
+                {sortedCategories.length === 0 && (
+                    <span style={{ color: token.colorTextSecondary, fontSize: FONT_SIZE.sm }}>
+                        {t('settings.categories.emptyList')}
+                    </span>
+                )}
+
+                {sortedCategories.map(cat => {
+                    const isBusy = rowBusyId === cat.id;
+
+                    if (cat.isDefault) {
+                        return (
+                            <Tooltip key={cat.id} title={t('settings.categories.defaultLocked')}>
+                                <Tag style={{ ...pillBaseStyle, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'default' }}>
+                                    {cat.name}
+                                    <LockOutlined style={{ fontSize: FONT_SIZE.xs, color: token.colorTextTertiary }} />
+                                </Tag>
+                            </Tooltip>
+                        );
+                    }
+
+                    const canMerge = userCategoriesCount > 1;
+                    return (
+                        <Dropdown
+                            key={cat.id}
+                            trigger={['click']}
+                            menu={{
+                                items: [
+                                    {
+                                        key: 'edit',
+                                        icon: <EditOutlined />,
+                                        label: t('settings.categories.editCategory'),
+                                        onClick: () => openEditModal(cat),
+                                    },
+                                    {
+                                        key: 'merge',
+                                        icon: <BranchesOutlined />,
+                                        label: canMerge ? t('settings.categories.mergeCategory') : t('settings.categories.mergeNoTargets'),
+                                        disabled: !canMerge,
+                                        onClick: () => openMergeModal(cat),
+                                    },
+                                    { type: 'divider' },
+                                    {
+                                        key: 'delete',
+                                        icon: <DeleteOutlined />,
+                                        label: t('common.delete'),
+                                        danger: true,
+                                        onClick: () => handleDelete(cat),
+                                    },
+                                ],
+                            }}
+                        >
+                            <Tag style={{ ...pillBaseStyle, display: 'inline-flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                                {cat.name}
+                                {isBusy && <LoadingOutlined style={{ fontSize: FONT_SIZE.xs }} />}
+                            </Tag>
+                        </Dropdown>
+                    );
+                })}
+
+                <Tag
+                    onClick={openCreateModal}
+                    style={{
+                        margin: 0,
+                        borderRadius: RADIUS.pill,
+                        padding: '6px 14px',
+                        fontSize: FONT_SIZE.md,
+                        background: 'transparent',
+                        border: `1px dashed ${token.colorBorder}`,
+                        color: token.colorTextSecondary,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                    }}
+                >
+                    <PlusOutlined style={{ fontSize: FONT_SIZE.xs }} />
                     {t('settings.categories.newCategory')}
-                </Button>
-            }
-            style={{ marginBottom: SPACING.md }}
-        >
-            <Table<Category>
-                dataSource={sortedCategories}
-                columns={columns}
-                rowKey="id"
-                pagination={false}
-                locale={{ emptyText: t('settings.categories.emptyList') }}
-                scroll={{ x: 600 }}
-                size="middle"
-            />
+                </Tag>
+            </Flex>
+
             {formModalOpen && (
                 <CategoryFormModal
                     open={formModalOpen}

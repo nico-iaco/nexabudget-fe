@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Flex, theme, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import type { TrendPoint } from '../../hooks/useDashboardData';
-import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_ACCENT, FONT_SIZE, RADIUS, SHADOW } from '../../theme/tokens';
+import { FONT_SIZE, RADIUS, SHADOW, getSemanticColors } from '../../theme/tokens';
+import { usePreferences } from '../../contexts/PreferencesContext';
 import { EmptyState } from '../common/EmptyState';
 
 const { Text } = Typography;
@@ -34,6 +35,8 @@ const TooltipRow = ({ label, value, color }: { label: string; value: number; col
 export const TrendDualChart = ({ points, height = 280 }: Props) => {
     const { t } = useTranslation();
     const { token } = theme.useToken();
+    const { preferences } = usePreferences();
+    const semantic = getSemanticColors(preferences.theme === 'dark');
 
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerW, setContainerW] = useState(0);
@@ -109,15 +112,15 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
             {/* Legend */}
             <Flex gap={16} style={{ marginBottom: 6 }} wrap>
                 <Flex align="center" gap={6}>
-                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: RADIUS.xs, backgroundColor: COLOR_POSITIVE }} />
+                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: RADIUS.xs, backgroundColor: semantic.positive }} />
                     <Text style={{ fontSize: FONT_SIZE.sm }}>{incomeLabel}</Text>
                 </Flex>
                 <Flex align="center" gap={6}>
-                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: RADIUS.xs, backgroundColor: COLOR_NEGATIVE }} />
+                    <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: RADIUS.xs, backgroundColor: semantic.negative }} />
                     <Text style={{ fontSize: FONT_SIZE.sm }}>{expenseLabel}</Text>
                 </Flex>
                 <Flex align="center" gap={6}>
-                    <span style={{ display: 'inline-block', width: 14, height: 2, backgroundColor: COLOR_ACCENT }} />
+                    <span style={{ display: 'inline-block', width: 14, height: 2, backgroundColor: token.colorPrimary }} />
                     <Text style={{ fontSize: FONT_SIZE.sm }}>{netLabel}</Text>
                 </Flex>
             </Flex>
@@ -171,7 +174,7 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
                                     y={incomeY}
                                     width={BAR_W}
                                     height={Math.max(zeroY - incomeY, 1)}
-                                    fill={COLOR_POSITIVE}
+                                    fill={semantic.positive}
                                     rx={RADIUS.xs}
                                 />
                                 <rect
@@ -179,7 +182,7 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
                                     y={expenseY}
                                     width={BAR_W}
                                     height={Math.max(zeroY - expenseY, 1)}
-                                    fill={COLOR_NEGATIVE}
+                                    fill={semantic.negative}
                                     rx={RADIUS.xs}
                                 />
                             </g>
@@ -190,7 +193,7 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
                     <polyline
                         points={points.map((p, i) => `${xCenter(i)},${yToPx(p.net)}`).join(' ')}
                         fill="none"
-                        stroke={COLOR_ACCENT}
+                        stroke={token.colorPrimary}
                         strokeWidth={2}
                     />
                     {points.map((p, i) => (
@@ -199,7 +202,7 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
                             cx={xCenter(i)}
                             cy={yToPx(p.net)}
                             r={hoverIdx === i ? 4 : 2.5}
-                            fill={COLOR_ACCENT}
+                            fill={token.colorPrimary}
                         />
                     ))}
 
@@ -252,9 +255,9 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
                         }}
                     >
                         <div style={{ fontWeight: 600, marginBottom: 4 }}>{hoverPoint.month}</div>
-                        <TooltipRow label={incomeLabel} value={hoverPoint.income} color={COLOR_POSITIVE} />
-                        <TooltipRow label={expenseLabel} value={hoverPoint.expense} color={COLOR_NEGATIVE} />
-                        <TooltipRow label={netLabel} value={hoverPoint.net} color={COLOR_ACCENT} />
+                        <TooltipRow label={incomeLabel} value={hoverPoint.income} color={semantic.positive} />
+                        <TooltipRow label={expenseLabel} value={hoverPoint.expense} color={semantic.negative} />
+                        <TooltipRow label={netLabel} value={hoverPoint.net} color={token.colorPrimary} />
                     </div>
                 )}
             </div>

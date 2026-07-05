@@ -28,7 +28,8 @@ import type {
     ImportResultResponse,
 } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
-import { COLOR_NEGATIVE, COLOR_POSITIVE } from '../../theme/tokens';
+import { getSemanticColors } from '../../theme/tokens';
+import { usePreferences } from '../../contexts/PreferencesContext';
 import { getCurrencySymbol } from '../../utils/currency';
 
 const { Text } = Typography;
@@ -57,6 +58,8 @@ export const TransactionImportModal = ({
     onImported,
 }: TransactionImportModalProps) => {
     const { t } = useTranslation();
+    const { preferences } = usePreferences();
+    const semantic = getSemanticColors(preferences.theme === 'dark');
 
     const [importStep, setImportStep] = useState(0);
     const [importFormat, setImportFormat] = useState<ImportFileFormat>('CSV');
@@ -201,7 +204,7 @@ export const TransactionImportModal = ({
             dataIndex: 'amount',
             key: 'amount',
             render: (value: number, record) => (
-                <span style={{ color: record.type === 'IN' ? COLOR_POSITIVE : COLOR_NEGATIVE }}>
+                <span style={{ color: record.type === 'IN' ? semantic.positive : semantic.negative }}>
                     {value.toFixed(2)} {getCurrencySymbol(currency ?? 'EUR')}
                 </span>
             ),

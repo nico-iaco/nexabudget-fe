@@ -253,7 +253,7 @@ export const DatePresetPicker = ({
         if (disabled)
             return { ...base, background: token.colorFillTertiary, color: token.colorTextDisabled, cursor: 'not-allowed' };
         if (active)
-            return { ...base, background: token.colorPrimary, color: '#fff', boxShadow: `0 2px 8px ${token.colorPrimaryBorder}` };
+            return { ...base, background: token.colorPrimary, color: token.colorTextLightSolid, boxShadow: `0 2px 8px ${token.colorPrimaryBorder}` };
         if (hovered)
             return { ...base, background: token.colorFillSecondary, color: token.colorText, borderColor: token.colorBorderSecondary };
         return { ...base, background: 'transparent', color: token.colorTextSecondary, borderColor: token.colorBorderSecondary };

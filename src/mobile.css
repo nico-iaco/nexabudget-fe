@@ -397,7 +397,7 @@
 
 /* Focus-visible globale: ring coerente su tutti gli elementi interattivi */
 :focus-visible {
-    outline: 2px solid var(--ant-color-primary, #1677ff);
+    outline: 2px solid var(--ant-color-primary, #1f7dcf);
     outline-offset: 2px;
     border-radius: 2px;
 }

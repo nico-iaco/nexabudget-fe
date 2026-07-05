@@ -1,7 +1,7 @@
 // src/pages/chat/ChatPage.tsx
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { App, Button, Drawer, Flex, List, Popconfirm, Spin, Tag, Typography, theme } from 'antd';
-import { DeleteOutlined, EditOutlined, MenuOutlined, PlusOutlined, RobotOutlined, SendOutlined } from '@ant-design/icons';
+import { DeleteOutlined, MenuOutlined, PlusOutlined, RobotOutlined, SendOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
 import { useTranslation } from 'react-i18next';
@@ -12,7 +12,7 @@ import * as api from '../../services/api';
 import type { ChatSession } from '../../types/api';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
+import { FONT_HEADING, FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -324,11 +324,12 @@ export const ChatPage = () => {
                 borderRadius: token.borderRadiusLG,
             }}
         >
-            {/* Desktop sidebar */}
+            {/* Desktop sidebar — cronologia conversazioni, sfondo leggermente distinto dal pannello principale */}
             {!isMobile && (
                 <div
                     style={{
                         width: 248,
+                        background: token.colorFillAlter,
                         borderRight: `1px solid ${token.colorBorderSecondary}`,
                         display: 'flex',
                         flexDirection: 'column',
@@ -357,47 +358,66 @@ export const ChatPage = () => {
             {/* Main chat area */}
             <Flex vertical style={{ flex: 1, overflow: 'hidden' }}>
 
-                {/* Mobile toolbar — hamburger + titolo sessione + bottone nuova chat */}
+                {/* Desktop: barra titolo conversazione attiva (🤖 + nome chat), come da mockup */}
+                {!isMobile && (
+                    <Flex
+                        align="center"
+                        gap={8}
+                        style={{
+                            padding: `0 ${SPACING.md}px`,
+                            height: 52,
+                            borderBottom: `1px solid ${token.colorBorderSecondary}`,
+                            flexShrink: 0,
+                        }}
+                    >
+                        <RobotOutlined style={{ fontSize: FONT_SIZE.lg, color: token.colorPrimary }} />
+                        <Text
+                            strong
+                            style={{
+                                fontFamily: FONT_HEADING,
+                                fontSize: FONT_SIZE.base,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
+                            {activeSession?.title ?? t('chat.title')}
+                        </Text>
+                    </Flex>
+                )}
+
+                {/* Mobile: barra cronologia/nuova chat sotto l'header globale — la pagina attiva
+                    è già mostrata dall'header dell'app, qui restano solo le azioni sessione */}
                 {isMobile && (
                     <Flex
                         align="center"
-                        gap="small"
+                        justify="space-between"
                         style={{
                             padding: `0 ${SPACING.xs}px`,
-                            height: 48,
+                            height: 38,
+                            background: token.colorFillAlter,
                             borderBottom: `1px solid ${token.colorBorderSecondary}`,
                             flexShrink: 0,
                         }}
                     >
                         <Button
                             type="text"
+                            size="small"
                             icon={<MenuOutlined />}
                             onClick={() => setSidebarOpen(true)}
-                            aria-label={t('chat.sessionListTitle')}
-                            style={{ minWidth: 40, minHeight: 40 }}
-                        />
-                        <Flex align="center" gap={6} style={{ flex: 1, minWidth: 0 }}>
-                            <RobotOutlined style={{ fontSize: FONT_SIZE.lg, color: token.colorPrimary, flexShrink: 0 }} />
-                            <Text
-                                strong
-                                style={{
-                                    fontSize: FONT_SIZE.base,
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                    whiteSpace: 'nowrap',
-                                }}
-                            >
-                                {activeSession?.title ?? t('chat.title')}
-                            </Text>
-                        </Flex>
+                            style={{ color: token.colorTextSecondary, fontSize: FONT_SIZE.sm, minHeight: 32 }}
+                        >
+                            {t('chat.sessionListTitle')}
+                        </Button>
                         <Button
                             type="text"
-                            icon={<EditOutlined />}
+                            size="small"
+                            icon={<PlusOutlined />}
                             onClick={handleNewChat}
-                            aria-label={t('chat.newChat')}
-                            style={{ minWidth: 40, minHeight: 40, flexShrink: 0 }}
-                            title={t('chat.newChat')}
-                        />
+                            style={{ color: token.colorPrimary, fontWeight: 700, fontSize: FONT_SIZE.sm, minHeight: 32 }}
+                        >
+                            {t('chat.newChat')}
+                        </Button>
                     </Flex>
                 )}
 
@@ -407,6 +427,7 @@ export const ChatPage = () => {
                         flex: 1,
                         overflowY: 'auto',
                         padding: contentPadding,
+                        background: isMobile ? token.colorFillQuaternary : undefined,
                         WebkitOverflowScrolling: 'touch',
                     } as React.CSSProperties}
                 >
@@ -495,7 +516,7 @@ export const ChatPage = () => {
                                                 background: msg.role === 'USER'
                                                     ? token.colorPrimary
                                                     : token.colorBgElevated,
-                                                color: msg.role === 'USER' ? '#fff' : token.colorText,
+                                                color: msg.role === 'USER' ? token.colorTextLightSolid : token.colorText,
                                                 padding: isMobile ? '10px 13px' : '10px 14px',
                                                 borderRadius: msg.role === 'USER'
                                                     ? '16px 16px 4px 16px'

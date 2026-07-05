@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { App, Card, Button, DatePicker, Typography, Spin, Space, Flex } from 'antd';
+import { App, Card, Button, DatePicker, Typography, Spin, Space, Flex, theme } from 'antd';
 import { RobotOutlined, DownloadOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -8,7 +8,12 @@ import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { COLOR_ACCENT, RADIUS, SPACING } from '../../theme/tokens';
+import { RADIUS, SPACING } from '../../theme/tokens';
+
+const AI_CARD_GRADIENT_LIGHT = 'linear-gradient(135deg, oklch(96% 0.02 260), oklch(93% 0.03 250))';
+const AI_CARD_GRADIENT_DARK = 'linear-gradient(135deg, oklch(24% 0.02 260), oklch(28% 0.03 250))';
+const AI_CARD_BORDER_LIGHT = 'oklch(88% 0.03 250)';
+const AI_CARD_BORDER_DARK = 'oklch(32% 0.03 250)';
 import { DatePresetPicker } from '../common/DatePresetPicker';
 
 const { RangePicker } = DatePicker;
@@ -25,6 +30,7 @@ export const AiAnalysisCard: React.FC = () => {
     const { t } = useTranslation();
     const { message } = App.useApp();
     const { preferences } = usePreferences();
+    const { token } = theme.useToken();
     const isMobile = useMediaQuery('(max-width: 768px)');
     
     // By default, let's select "lastMonth" as a nice starting point, but user starts with null null originally.
@@ -146,13 +152,21 @@ export const AiAnalysisCard: React.FC = () => {
         }
     };
 
+    const isDark = preferences.theme === 'dark';
+
     return (
-        <Card title={
-            <Space>
-                <RobotOutlined style={{ color: COLOR_ACCENT }} />
-                <span>{t('dashboard.aiAnalysis.title')}</span>
-            </Space>
-        }>
+        <Card
+            style={{
+                background: isDark ? AI_CARD_GRADIENT_DARK : AI_CARD_GRADIENT_LIGHT,
+                borderColor: isDark ? AI_CARD_BORDER_DARK : AI_CARD_BORDER_LIGHT,
+            }}
+            title={
+                <Space>
+                    <RobotOutlined style={{ color: token.colorPrimary }} />
+                    <span>{t('dashboard.aiAnalysis.title')}</span>
+                </Space>
+            }
+        >
             <Space direction="vertical" style={{ width: '100%' }}>
                 <Text type="secondary">
                     {t('dashboard.aiAnalysis.description')}
@@ -216,7 +230,7 @@ export const AiAnalysisCard: React.FC = () => {
                 )}
 
                 {result && !loading && (
-                    <div style={{ marginTop: SPACING.md, padding: SPACING.md, backgroundColor: 'rgba(0,0,0,0.02)', borderRadius: RADIUS.lg }}>
+                    <div style={{ marginTop: SPACING.md, padding: SPACING.md, backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)', borderRadius: RADIUS.lg }}>
                         <Flex justify="flex-end" style={{ marginBottom: SPACING.md }}>
                             <Button type="default" icon={<DownloadOutlined />} onClick={handleDownload}>
                                 {t('dashboard.aiAnalysis.downloadReport')}

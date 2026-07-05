@@ -2,6 +2,7 @@ import { Button, Result } from 'antd';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { usePageTitle } from '../hooks/usePageTitle';
+import { AppLogo } from '../components/common/AppLogo';
 
 export const NotFoundPage = () => {
     const { t } = useTranslation();
@@ -10,7 +11,11 @@ export const NotFoundPage = () => {
 
     return (
         <Result
-            status="404"
+            icon={
+                <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <AppLogo size={64} radius={16} />
+                </div>
+            }
             title="404"
             subTitle={t('common.notFound', { defaultValue: 'La pagina che stai cercando non esiste.' })}
             extra={

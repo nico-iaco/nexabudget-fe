@@ -45,7 +45,8 @@ import { TransactionImportModal } from '../../components/modals/TransactionImpor
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { getCurrencySymbol } from '../../utils/currency';
-import { COLOR_POSITIVE, COLOR_NEGATIVE, FONT_SIZE, RADIUS, SHADOW, SPACING } from '../../theme/tokens';
+import { FONT_SIZE, RADIUS, SHADOW, SPACING, getSemanticColors } from '../../theme/tokens';
+import { usePreferences } from '../../contexts/PreferencesContext';
 import { useConfirm } from '../../hooks/useConfirm';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
@@ -94,6 +95,8 @@ export const TransactionsPage = () => {
 
     const [form] = Form.useForm<FormValues>();
     const { isSmallMobile: isMobile } = useBreakpoints();
+    const { preferences } = usePreferences();
+    const semantic = getSemanticColors(preferences.theme === 'dark');
 
     usePageTitle(accountId
         ? accounts.find(a => a.id === accountId)?.name ?? t('nav.transactions')
@@ -573,7 +576,7 @@ export const TransactionsPage = () => {
             render: (amount: number, record: Transaction) => {
                 const sym = getCurrencySymbol(accounts.find(a => a.id === record.accountId)?.currency ?? 'EUR');
                 return (<span>
-                    <span style={{ color: record.type === 'IN' ? COLOR_POSITIVE : COLOR_NEGATIVE }}>
+                    <span style={{ color: record.type === 'IN' ? semantic.positive : semantic.negative }}>
                         {record.type === 'IN'
                             ? <ArrowUpOutlined aria-hidden="true" />
                             : <ArrowDownOutlined aria-hidden="true" />}

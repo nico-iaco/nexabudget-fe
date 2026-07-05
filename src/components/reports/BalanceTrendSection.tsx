@@ -9,6 +9,7 @@ import {
     Skeleton,
     Table,
     Typography,
+    theme,
 } from 'antd';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import type { ColumnsType } from 'antd/es/table';
@@ -20,7 +21,7 @@ import { AxiosError } from 'axios';
 import * as api from '../../services/api';
 import type { BalanceTrendItem, BalanceTrendResponse } from '../../types/api';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { COLOR_ACCENT, COLOR_NEGATIVE, COLOR_POSITIVE, SPACING, FONT_SIZE } from '../../theme/tokens';
+import { SPACING, FONT_SIZE, getSemanticColors } from '../../theme/tokens';
 import { DatePresetPicker } from '../common/DatePresetPicker';
 import { EmptyState } from '../common/EmptyState';
 import { StatCard } from '../common/StatCard';
@@ -72,6 +73,8 @@ export const BalanceTrendSection = () => {
     const { preferences } = usePreferences();
     const { message } = App.useApp();
     const { isSmallMobile } = useBreakpoints();
+    const { token } = theme.useToken();
+    const semantic = getSemanticColors(preferences.theme === 'dark');
 
     const locale = preferences.language === 'en' ? 'en-US' : 'it-IT';
 
@@ -128,7 +131,7 @@ export const BalanceTrendSection = () => {
     const absChange = closing - opening;
     const pctChange = opening !== 0 ? (absChange / Math.abs(opening)) * 100 : null;
     const changePositive = absChange >= 0;
-    const changeColor = changePositive ? COLOR_POSITIVE : COLOR_NEGATIVE;
+    const changeColor = changePositive ? semantic.positive : semantic.negative;
 
     const chartPoints = useMemo(
         () => items.map(it => ({
@@ -153,7 +156,7 @@ export const BalanceTrendSection = () => {
             key: 'monthlyNet',
             align: 'right',
             render: (v: number) => (
-                <Text style={{ color: v < 0 ? COLOR_NEGATIVE : undefined }}>
+                <Text style={{ color: v < 0 ? semantic.negative : undefined }}>
                     {signedCurrencyFmt.format(v)}
                 </Text>
             ),
@@ -224,7 +227,7 @@ export const BalanceTrendSection = () => {
                                 title={t('reports.balanceTrend.openingBalance')}
                                 value={opening}
                                 precision={2}
-                                color={COLOR_ACCENT}
+                                color={token.colorPrimary}
                                 formatter={(val) => currencyFmt.format(Number(val))}
                             />
                         </Col>
@@ -234,7 +237,7 @@ export const BalanceTrendSection = () => {
                                 title={t('reports.balanceTrend.closingBalanceFinal')}
                                 value={closing}
                                 precision={2}
-                                color={closing >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE}
+                                color={closing >= 0 ? semantic.positive : semantic.negative}
                                 formatter={(val) => currencyFmt.format(Number(val))}
                             />
                         </Col>

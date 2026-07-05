@@ -30,7 +30,8 @@ import * as api from '../../services/api';
 import type { CategoryBreakdownItem, MonthComparisonResponse, MonthlySummaryResponse } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
-import { COLOR_POSITIVE, COLOR_NEGATIVE, COLOR_WARNING, COLOR_ACCENT, SPACING, FONT_SIZE } from '../../theme/tokens';
+import { usePreferences } from '../../contexts/PreferencesContext';
+import { PRIMARY_LIGHT_HEX, PRIMARY_DARK_HEX, SPACING, FONT_SIZE, GRADIENT_BALANCE, GRADIENT_BALANCE_DARK, getSemanticColors } from '../../theme/tokens';
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { StatCard } from '../../components/common/StatCard';
@@ -54,6 +55,10 @@ export const DashboardPage = () => {
     const navigate = useNavigate();
     const { transactionRefreshKey, accounts, onOpenCreateAccount } = useOutletContext<AppOutletContext>();
     const isMobile = useMediaQuery('(max-width: 768px)');
+    const { preferences } = usePreferences();
+    const isDark = preferences.theme === 'dark';
+    const semantic = getSemanticColors(isDark);
+    const balanceGradient = isDark ? GRADIENT_BALANCE_DARK : GRADIENT_BALANCE;
 
     usePageTitle(t('dashboard.title'));
 
@@ -110,13 +115,13 @@ export const DashboardPage = () => {
     ];
 
     const budgetProgressColor = (pct: number): string => {
-        if (pct >= 100) return COLOR_NEGATIVE;
-        if (pct >= 75) return COLOR_WARNING;
-        return COLOR_POSITIVE;
+        if (pct >= 100) return semantic.negative;
+        if (pct >= 75) return semantic.warning;
+        return semantic.positive;
     };
 
     const renderBudgetSummaryItem = (item: MonthlySummaryResponse) => (
-        <Col key={item.budgetId} xs={24} sm={12} lg={8}>
+        <Col key={item.budgetId} xs={24}>
             <div style={{ marginBottom: 4 }}>
                 <Flex justify="space-between" align="center">
                     <Text strong style={{ fontSize: FONT_SIZE.md }}>{item.categoryName}</Text>
@@ -237,12 +242,12 @@ export const DashboardPage = () => {
                                 title={t('dashboard.netBalance')}
                                 value={netBalance}
                                 precision={2}
-                                color={netBalance >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE}
+                                gradient={balanceGradient}
                                 prefix={netBalance >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
                                 suffix="€"
                                 footer={
                                     <Suspense fallback={null}>
-                                        <Sparkline values={netSparkline} color={netBalance >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE} />
+                                        <Sparkline values={netSparkline} color="rgba(255,255,255,0.55)" />
                                     </Suspense>
                                 }
                             />
@@ -252,12 +257,12 @@ export const DashboardPage = () => {
                                 title={t('dashboard.totalIncome')}
                                 value={totalIncome}
                                 precision={2}
-                                color={COLOR_POSITIVE}
+                                color={semantic.positive}
                                 prefix={<ArrowUpOutlined />}
                                 suffix="€"
                                 footer={
                                     <Suspense fallback={null}>
-                                        <Sparkline values={incomeSparkline} color={COLOR_POSITIVE} />
+                                        <Sparkline values={incomeSparkline} color={semantic.positive} />
                                     </Suspense>
                                 }
                             />
@@ -267,7 +272,7 @@ export const DashboardPage = () => {
                                 title={t('dashboard.totalExpenses')}
                                 value={totalExpenses}
                                 precision={2}
-                                color={COLOR_NEGATIVE}
+                                color={semantic.negative}
                                 prefix={<ArrowDownOutlined />}
                                 suffix="€"
                                 footer={
@@ -281,7 +286,7 @@ export const DashboardPage = () => {
                                             </div>
                                         )}
                                         <Suspense fallback={null}>
-                                            <Sparkline values={expenseSparkline} color={COLOR_NEGATIVE} />
+                                            <Sparkline values={expenseSparkline} color={semantic.negative} />
                                         </Suspense>
                                     </>
                                 }
@@ -293,7 +298,7 @@ export const DashboardPage = () => {
                                     title={t('dashboard.cryptoPortfolio')}
                                     value={portfolioValue.totalValue}
                                     precision={2}
-                                    color={COLOR_ACCENT}
+                                    color={isDark ? PRIMARY_DARK_HEX : PRIMARY_LIGHT_HEX}
                                     prefix={portfolioValue.currency === 'EUR' ? '€' : '$'}
                                 />
                             </Col>
@@ -307,136 +312,171 @@ export const DashboardPage = () => {
                         </Col>
                     </Row>
 
-                    {/* Panoramica Budget del Mese */}
-                    {budgetSummary.length > 0 && (
-                        <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
-                            <Col xs={24}>
-                                <Card title={t('dashboard.budgetSummary.title')}>
-                                    <Row gutter={[16, 16]}>
-                                        {budgetSummary.map(renderBudgetSummaryItem)}
-                                    </Row>
-                                </Card>
-                            </Col>
-                        </Row>
-                    )}
-
-                    {/* Proiezione + Confronto mese affiancati */}
+                    {/* Bento: analytics a sinistra, budget + proiezione + confronto a destra */}
                     <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
-                        {projection && (
-                            <Col xs={24} lg={12}>
-                                <Card title={t('dashboard.projection')} style={{ height: '100%' }}>
-                                    <Row gutter={[16, 8]} align="middle">
-                                        <Col xs={12} sm={8}>
-                                            <Statistic title={t('reports.projectedIncome')} value={projection.projectedMonthlyIncome} precision={2} valueStyle={{ color: COLOR_POSITIVE, fontSize: '16px' }} suffix="€" />
-                                        </Col>
-                                        <Col xs={12} sm={8}>
-                                            <Statistic title={t('reports.projectedExpense')} value={projection.projectedMonthlyExpense} precision={2} valueStyle={{ color: COLOR_NEGATIVE, fontSize: '16px' }} suffix="€" />
-                                        </Col>
-                                        <Col xs={12} sm={8}>
-                                            <Statistic
-                                                title={t('reports.projectedSavings')}
-                                                value={projection.projectedMonthlySavings}
-                                                precision={2}
-                                                valueStyle={{ color: projection.projectedMonthlySavings >= 0 ? COLOR_POSITIVE : COLOR_NEGATIVE, fontSize: '16px' }}
-                                                suffix="€"
-                                            />
-                                        </Col>
-                                        <Col xs={24}>
-                                            <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
-                                                {t('dashboard.projectionDay', { elapsed: projection.daysElapsed, total: projection.daysInMonth })}
-                                            </Text>
-                                            <Progress aria-label={t('dashboard.projectionDay', { elapsed: projection.daysElapsed, total: projection.daysInMonth })} percent={Math.round((projection.daysElapsed / projection.daysInMonth) * 100)} size="small" />
-                                        </Col>
-                                    </Row>
-                                </Card>
-                            </Col>
-                        )}
-                        <Col xs={24} lg={projection ? 12 : 24}>
-                            <Card
-                                title={t('reports.comparison')}
-                                style={{ height: '100%' }}
-                                extra={
-                                    <DatePicker.MonthPicker
-                                        value={comparisonMonth}
-                                        onChange={m => { if (m) setComparisonMonth(m); }}
-                                        getPopupContainer={trigger => trigger.parentElement ?? document.body}
-                                       
+                        <Col xs={24} lg={15}>
+                            <Flex vertical gap={16}>
+                                <Card title={t('reports.categoryBreakdown')}>
+                                    <Tabs
+                                        items={[
+                                            {
+                                                key: 'OUT',
+                                                label: t('reports.typeOut'),
+                                                children: (
+                                                    <Row gutter={[16, 16]}>
+                                                        <Col xs={24} md={10}>
+                                                            <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} />}>
+                                                                <GenericPieChart data={expensesByCategory} />
+                                                            </Suspense>
+                                                        </Col>
+                                                        <Col xs={24} md={14}>
+                                                            <Table
+                                                                columns={breakdownColumns}
+                                                                dataSource={expenseBreakdown}
+                                                                rowKey={(record) => record.categoryId ?? 'uncategorized'}
+                                                                size="small"
+                                                                pagination={false}
+                                                                locale={{ emptyText: <EmptyState description={t('charts.noData')} /> }}
+                                                            />
+                                                        </Col>
+                                                    </Row>
+                                                ),
+                                            },
+                                            {
+                                                key: 'IN',
+                                                label: t('reports.typeIn'),
+                                                children: (
+                                                    <Row gutter={[16, 16]}>
+                                                        <Col xs={24} md={10}>
+                                                            <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} />}>
+                                                                <GenericPieChart data={incomeByCategory} />
+                                                            </Suspense>
+                                                        </Col>
+                                                        <Col xs={24} md={14}>
+                                                            <Table
+                                                                columns={breakdownColumns}
+                                                                dataSource={incomeBreakdown}
+                                                                rowKey={(record) => record.categoryId ?? 'uncategorized'}
+                                                                size="small"
+                                                                pagination={false}
+                                                                locale={{ emptyText: <EmptyState description={t('charts.noData')} /> }}
+                                                            />
+                                                        </Col>
+                                                    </Row>
+                                                ),
+                                            },
+                                        ]}
                                     />
-                                }
-                            >
-                                {loadingComparison ? (
-                                    <Skeleton active paragraph={{ rows: 2 }} />
-                                ) : customComparison ? (
-                                    <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
-                                        <ComparisonBars
-                                            currentIncome={customComparison.currentMonth?.income ?? 0}
-                                            previousIncome={customComparison.previousMonth?.income ?? 0}
-                                            currentExpense={customComparison.currentMonth?.expense ?? 0}
-                                            previousExpense={customComparison.previousMonth?.expense ?? 0}
-                                        />
-                                    </Suspense>
-                                ) : (
-                                    <EmptyState description={t('charts.noData')} />
-                                )}
-                            </Card>
-                        </Col>
-                    </Row>
+                                </Card>
 
-                    {/* Pie charts + tabella breakdown */}
-                    <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
-                        <Col xs={24}>
-                            <Card title={t('reports.categoryBreakdown')}>
-                                <Tabs
-                                    items={[
-                                        {
-                                            key: 'OUT',
-                                            label: t('reports.typeOut'),
-                                            children: (
-                                                <Row gutter={[16, 16]}>
-                                                    <Col xs={24} md={10}>
-                                                        <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} />}>
-                                                            <GenericPieChart data={expensesByCategory} />
-                                                        </Suspense>
-                                                    </Col>
-                                                    <Col xs={24} md={14}>
-                                                        <Table
-                                                            columns={breakdownColumns}
-                                                            dataSource={expenseBreakdown}
-                                                            rowKey={(record) => record.categoryId ?? 'uncategorized'}
-                                                            size="small"
-                                                            pagination={false}
-                                                            locale={{ emptyText: <EmptyState description={t('charts.noData')} /> }}
-                                                        />
-                                                    </Col>
-                                                </Row>
-                                            ),
-                                        },
-                                        {
-                                            key: 'IN',
-                                            label: t('reports.typeIn'),
-                                            children: (
-                                                <Row gutter={[16, 16]}>
-                                                    <Col xs={24} md={10}>
-                                                        <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} />}>
-                                                            <GenericPieChart data={incomeByCategory} />
-                                                        </Suspense>
-                                                    </Col>
-                                                    <Col xs={24} md={14}>
-                                                        <Table
-                                                            columns={breakdownColumns}
-                                                            dataSource={incomeBreakdown}
-                                                            rowKey={(record) => record.categoryId ?? 'uncategorized'}
-                                                            size="small"
-                                                            pagination={false}
-                                                            locale={{ emptyText: <EmptyState description={t('charts.noData')} /> }}
-                                                        />
-                                                    </Col>
-                                                </Row>
-                                            ),
-                                        },
-                                    ]}
-                                />
-                            </Card>
+                                <Card
+                                    title={t('dashboard.monthlyTrend')}
+                                    {...(!isMobile && {
+                                        extra: (
+                                            <Flex gap="small" align="center">
+                                                <Text type="secondary">{t('reports.trendMonths')}:</Text>
+                                                <Select
+                                                    value={trendMonths}
+                                                    onChange={setTrendMonths}
+                                                    size="small"
+                                                    style={{ width: 110 }}
+                                                    options={[
+                                                        { value: 6, label: t('reports.months6') },
+                                                        { value: 12, label: t('reports.months12') },
+                                                        { value: 24, label: t('reports.months24') },
+                                                    ]}
+                                                    getPopupContainer={trigger => trigger.parentElement ?? document.body}
+                                                />
+                                            </Flex>
+                                        )
+                                    })}
+                                >
+                                    {isMobile && (
+                                        <Flex justify="flex-end" gap={6} style={{ marginBottom: SPACING.xs }}>
+                                            {[6, 12, 24].map(m => (
+                                                <Button
+                                                    key={m}
+                                                    size="small"
+                                                    type={trendMonths === m ? 'primary' : 'default'}
+                                                    onClick={() => setTrendMonths(m)}
+                                                >
+                                                    {t(`reports.months${m}`)}
+                                                </Button>
+                                            ))}
+                                        </Flex>
+                                    )}
+                                    <Suspense fallback={<Skeleton active paragraph={{ rows: 8 }} />}>
+                                        <TrendDualChart points={trendPoints} />
+                                    </Suspense>
+                                </Card>
+                            </Flex>
+                        </Col>
+
+                        <Col xs={24} lg={9}>
+                            <Flex vertical gap={16}>
+                                {budgetSummary.length > 0 && (
+                                    <Card title={t('dashboard.budgetSummary.title')}>
+                                        <Row gutter={[16, 16]}>
+                                            {budgetSummary.map(renderBudgetSummaryItem)}
+                                        </Row>
+                                    </Card>
+                                )}
+
+                                {projection && (
+                                    <Card title={t('dashboard.projection')}>
+                                        <Row gutter={[16, 8]} align="middle">
+                                            <Col xs={12} sm={8}>
+                                                <Statistic title={t('reports.projectedIncome')} value={projection.projectedMonthlyIncome} precision={2} valueStyle={{ color: semantic.positive, fontSize: '16px' }} suffix="€" />
+                                            </Col>
+                                            <Col xs={12} sm={8}>
+                                                <Statistic title={t('reports.projectedExpense')} value={projection.projectedMonthlyExpense} precision={2} valueStyle={{ color: semantic.negative, fontSize: '16px' }} suffix="€" />
+                                            </Col>
+                                            <Col xs={12} sm={8}>
+                                                <Statistic
+                                                    title={t('reports.projectedSavings')}
+                                                    value={projection.projectedMonthlySavings}
+                                                    precision={2}
+                                                    valueStyle={{ color: projection.projectedMonthlySavings >= 0 ? semantic.positive : semantic.negative, fontSize: '16px' }}
+                                                    suffix="€"
+                                                />
+                                            </Col>
+                                            <Col xs={24}>
+                                                <Text type="secondary" style={{ display: 'block', marginBottom: 4 }}>
+                                                    {t('dashboard.projectionDay', { elapsed: projection.daysElapsed, total: projection.daysInMonth })}
+                                                </Text>
+                                                <Progress aria-label={t('dashboard.projectionDay', { elapsed: projection.daysElapsed, total: projection.daysInMonth })} percent={Math.round((projection.daysElapsed / projection.daysInMonth) * 100)} size="small" />
+                                            </Col>
+                                        </Row>
+                                    </Card>
+                                )}
+
+                                <Card
+                                    title={t('reports.comparison')}
+                                    extra={
+                                        <DatePicker.MonthPicker
+                                            value={comparisonMonth}
+                                            onChange={m => { if (m) setComparisonMonth(m); }}
+                                            getPopupContainer={trigger => trigger.parentElement ?? document.body}
+                                            size="small"
+                                        />
+                                    }
+                                >
+                                    {loadingComparison ? (
+                                        <Skeleton active paragraph={{ rows: 2 }} />
+                                    ) : customComparison ? (
+                                        <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
+                                            <ComparisonBars
+                                                currentIncome={customComparison.currentMonth?.income ?? 0}
+                                                previousIncome={customComparison.previousMonth?.income ?? 0}
+                                                currentExpense={customComparison.currentMonth?.expense ?? 0}
+                                                previousExpense={customComparison.previousMonth?.expense ?? 0}
+                                            />
+                                        </Suspense>
+                                    ) : (
+                                        <EmptyState description={t('charts.noData')} />
+                                    )}
+                                </Card>
+                            </Flex>
                         </Col>
                     </Row>
 
@@ -444,52 +484,6 @@ export const DashboardPage = () => {
                     <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
                         <Col xs={24}>
                             <BalanceTrendSection />
-                        </Col>
-                    </Row>
-
-                    {/* Andamento mensile */}
-                    <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
-                        <Col xs={24}>
-                            <Card
-                                title={t('dashboard.monthlyTrend')}
-                                {...(!isMobile && {
-                                    extra: (
-                                        <Flex gap="small" align="center">
-                                            <Text type="secondary">{t('reports.trendMonths')}:</Text>
-                                            <Select
-                                                value={trendMonths}
-                                                onChange={setTrendMonths}
-                                                size="small"
-                                                style={{ width: 110 }}
-                                                options={[
-                                                    { value: 6, label: t('reports.months6') },
-                                                    { value: 12, label: t('reports.months12') },
-                                                    { value: 24, label: t('reports.months24') },
-                                                ]}
-                                                getPopupContainer={trigger => trigger.parentElement ?? document.body}
-                                            />
-                                        </Flex>
-                                    )
-                                })}
-                            >
-                                {isMobile && (
-                                    <Flex justify="flex-end" gap={6} style={{ marginBottom: SPACING.xs }}>
-                                        {[6, 12, 24].map(m => (
-                                            <Button
-                                                key={m}
-                                                size="small"
-                                                type={trendMonths === m ? 'primary' : 'default'}
-                                                onClick={() => setTrendMonths(m)}
-                                            >
-                                                {t(`reports.months${m}`)}
-                                            </Button>
-                                        ))}
-                                    </Flex>
-                                )}
-                                <Suspense fallback={<Skeleton active paragraph={{ rows: 8 }} />}>
-                                    <TrendDualChart points={trendPoints} />
-                                </Suspense>
-                            </Card>
                         </Col>
                     </Row>
                 </>

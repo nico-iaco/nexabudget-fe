@@ -1,10 +1,11 @@
 import React, {useMemo} from 'react';
-import {Button, Card, Col, Collapse, List, Popconfirm, Row, Table, Tag, Typography, Flex} from 'antd';
+import {Button, Card, Col, Collapse, List, Popconfirm, Row, Table, Tag, Typography, Flex, theme} from 'antd';
 import {DeleteOutlined, EditOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import type {CryptoAsset, PortfolioValueResponse} from '../types/api.ts';
-import {COLOR_POSITIVE, FONT_SIZE, SPACING} from '../theme/tokens';
+import {FONT_SIZE, SPACING, GRADIENT_BALANCE, GRADIENT_BALANCE_DARK} from '../theme/tokens';
 import {useMediaQuery} from '../hooks/useMediaQuery';
+import {usePreferences} from '../contexts/PreferencesContext';
 import {StatCard} from './common/StatCard';
 
 const { Text } = Typography;
@@ -28,6 +29,10 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
     const { t, i18n } = useTranslation();
     const locale = i18n.language === 'it' ? 'it-IT' : 'en-US';
     const isMobile = useMediaQuery('(max-width: 768px)');
+    const { preferences } = usePreferences();
+    const { token } = theme.useToken();
+    const isDark = preferences.theme === 'dark';
+    const heroGradient = isDark ? GRADIENT_BALANCE_DARK : GRADIENT_BALANCE;
     const groupedAssets = useMemo(() => {
         if (!data?.assets) return [];
         const groups: Record<string, GroupedAsset> = {};
@@ -139,10 +144,10 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                 <Col xs={24} sm={12} md={8}>
                     <StatCard
                         bordered={false}
+                        gradient={heroGradient}
                         title={t('portfolio.totalValue')}
                         value={data?.totalValue}
                         precision={2}
-                        color={COLOR_POSITIVE}
                         prefix={data?.currency === 'EUR' ? '€' : '$'}
                         loading={loading}
                     />
@@ -176,7 +181,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                                                     rowKey="id"
                                                     renderItem={(asset) => (
                                                         <List.Item
-                                                            style={{ padding: `${SPACING.xs}px 0`, borderBottom: '1px solid #f0f0f0' }}
+                                                            style={{ padding: `${SPACING.xs}px 0`, borderBottom: `1px solid ${token.colorBorderSecondary}` }}
                                                             actions={
                                                                 asset.source === 'MANUAL'
                                                                     ? [
