@@ -2,6 +2,25 @@
 
 NexaBudget is a modern and intuitive personal finance management application designed to help you track your income and expenses with ease. This repository contains the source code for the frontend part of the application, built with React.
 
+## 📸 Screenshots
+
+| Dashboard | Transactions | Budgets |
+|---|---|---|
+| ![Dashboard light](docs/screenshots/dashboard-light.png) | ![Transactions light](docs/screenshots/transactions-light.png) | ![Budgets light](docs/screenshots/budgets-light.png) |
+| ![Dashboard dark](docs/screenshots/dashboard-dark.png) | ![Transactions dark](docs/screenshots/transactions-dark.png) | ![Budgets dark](docs/screenshots/budgets-dark.png) |
+
+| Crypto Portfolio | Settings | Trash |
+|---|---|---|
+| ![Crypto light](docs/screenshots/crypto-light.png) | ![Settings light](docs/screenshots/settings-light.png) | ![Trash light](docs/screenshots/trash-light.png) |
+| ![Crypto dark](docs/screenshots/crypto-dark.png) | ![Settings dark](docs/screenshots/settings-dark.png) | ![Trash dark](docs/screenshots/trash-dark.png) |
+
+| Audit Log | NexaBot Chat |
+|---|---|
+| ![Audit log light](docs/screenshots/audit-log-light.png) | ![Chat light](docs/screenshots/chat-light.png) |
+| ![Audit log dark](docs/screenshots/audit-log-dark.png) | ![Chat dark](docs/screenshots/chat-dark.png) |
+
+*Shown with sample data, in light (top row) and dark (bottom row) theme.*
+
 ## ✨ Features
 
 - **User Authentication**: Secure registration and login system.
