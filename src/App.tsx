@@ -16,6 +16,7 @@ const RegisterPage = lazy(() => import('./pages/auth/RegisterPage').then(m => ({
 const TransactionsPage = lazy(() => import('./pages/transactions/TransactionsPage').then(m => ({ default: m.TransactionsPage })));
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })));
 const GoCardlessCallbackPage = lazy(() => import('./pages/gocardless/GoCardlessCallbackPage.tsx').then(m => ({ default: m.GoCardlessCallbackPage })));
+const EnableBankingCallbackPage = lazy(() => import('./pages/banking/EnableBankingCallbackPage.tsx').then(m => ({ default: m.EnableBankingCallbackPage })));
 const CryptoPage = lazy(() => import('./pages/crypto/CryptoPage').then(m => ({ default: m.CryptoPage })));
 const SettingsPage = lazy(() => import('./pages/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const TrashPage = lazy(() => import('./pages/trash/TrashPage').then(m => ({ default: m.TrashPage })));
@@ -86,6 +87,12 @@ const router = createBrowserRouter([
             {
                 path: 'gocardless/callback/:accountId',
                 element: <LazyRoute><GoCardlessCallbackPage /></LazyRoute>,
+            },
+            {
+                // Redirect_url statico e unico registrato in ENABLEBANKING_REDIRECT_URL:
+                // porta con sé `?code=...&state=<localAccountId>` in query string.
+                path: 'banking/enable-banking/callback',
+                element: <LazyRoute><EnableBankingCallbackPage /></LazyRoute>,
             },
             {
                 path: 'crypto',

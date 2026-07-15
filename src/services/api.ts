@@ -7,6 +7,12 @@ import type {
     AuditLogEntry,
     AuthResponse,
     BalanceTrendResponse,
+    BankInstitutionDto,
+    BankLinkCompletionResult,
+    BankLinkRequest,
+    BankLinkResult,
+    BankProvider,
+    BankSessionRequest,
     BinanceKeysRequest,
     BudgetAlert,
     BudgetAlertRequest,
@@ -19,14 +25,12 @@ import type {
     ChatRequest,
     ChatResponse,
     ChatSession,
+    CompleteBankLinkRequest,
     ConvertSingleToTransferRequest,
     CoinbaseKeysRequest,
     CryptoHolding,
     DeletedAccount,
-    GoCardlessBank,
     GoCardlessBankAccountsResponse,
-    GoCardlessBankLinkRequest,
-    GoCardlessCompleteBankLinkRequest,
     ImportConfirmRequest,
     ImportPreviewResponse,
     ImportResultResponse,
@@ -239,12 +243,29 @@ export const deleteCategory = (id: string): Promise<AxiosResponse<void>> => apiC
 export const mergeCategoryInto = (sourceId: string, targetId: string): Promise<AxiosResponse<void>> =>
     apiClient.post(`/categories/${sourceId}/merge-into/${targetId}`);
 
-// GoCardless
-export const getGoCardlessBankList = (countryCode: string): Promise<AxiosResponse<GoCardlessBank[]>> => apiClient.get(`/gocardless/bank?countryCode=${countryCode}`);
-export const getGoCardlessBankLink = (data: GoCardlessBankLinkRequest): Promise<AxiosResponse<string>> => apiClient.post(`/gocardless/bank/link`, data);
+// Banking (multi-provider: GoCardless / Enable Banking) — /api/banking/{provider}/...
+const bankingBase = (provider: BankProvider) => `/banking/${provider}`;
+
+/** Deduce lo slug provider dell'API unificata a partire da Account.provider. Default 'gocardless' se null/GOCARDLESS. */
+export const providerSlug = (provider: Account['provider']): BankProvider =>
+    provider === 'ENABLE_BANKING' ? 'enable-banking' : 'gocardless';
+
+export const getBankList = (provider: BankProvider, countryCode: string): Promise<AxiosResponse<BankInstitutionDto[]>> =>
+    apiClient.get(`${bankingBase(provider)}/banks?countryCode=${countryCode}`);
+export const getBankLink = (provider: BankProvider, data: BankLinkRequest): Promise<AxiosResponse<BankLinkResult>> =>
+    apiClient.post(`${bankingBase(provider)}/link`, data);
+export const completeBankSession = (provider: BankProvider, localAccountId: string, data: BankSessionRequest): Promise<AxiosResponse<BankLinkCompletionResult>> =>
+    apiClient.post(`${bankingBase(provider)}/${localAccountId}/session`, data);
+export const getBankAccounts = (provider: BankProvider, localAccountId: string): Promise<AxiosResponse<BankLinkCompletionResult>> =>
+    apiClient.get(`${bankingBase(provider)}/${localAccountId}/accounts`);
+export const linkBankAccount = (provider: BankProvider, localAccountId: string, data: CompleteBankLinkRequest): Promise<AxiosResponse<void>> =>
+    apiClient.post(`${bankingBase(provider)}/${localAccountId}/link`, data);
+export const syncBankAccount = (provider: BankProvider, localAccountId: string, data: SyncBankTransactionsRequest): Promise<AxiosResponse<void>> =>
+    apiClient.post(`${bankingBase(provider)}/${localAccountId}/sync`, data);
+
+// GoCardless legacy — mantenuto solo per leggere lo stato ricco del collegamento
+// (linkedStatus/pending/reason), non esposto dall'endpoint unificato.
 export const getGoCardlessBankAccounts = (localAccountId: string): Promise<AxiosResponse<GoCardlessBankAccountsResponse>> => apiClient.get(`/gocardless/bank/${localAccountId}/account`);
-export const linkGoCardlessBankAccount = (localAccountId: string, data: GoCardlessCompleteBankLinkRequest): Promise<AxiosResponse<void>> => apiClient.post(`/gocardless/bank/${localAccountId}/link`, data);
-export const syncGoCardlessBankAccount = (localAccountId: string, data: SyncBankTransactionsRequest): Promise<AxiosResponse<void>> => apiClient.post(`/gocardless/bank/${localAccountId}/sync`, data);
 
 // Crypto
 export const getPortfolioValue = (currency: string): Promise<AxiosResponse<PortfolioValueResponse>> => apiClient.get('/crypto/portfolio?currency=' + currency);

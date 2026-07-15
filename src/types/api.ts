@@ -31,6 +31,8 @@ export interface Account {
     linkedToExternal: boolean;
     synchronizing: boolean;
     requiresReauth: boolean;
+    /** Provider di aggregazione bancaria collegato; null = conto manuale, mai collegato a un provider esterno. */
+    provider?: 'GOCARDLESS' | 'ENABLE_BANKING' | null;
     createdAt: string;
 }
 
@@ -105,11 +107,6 @@ export interface GoCardlessBank {
     logo: string;
 }
 
-export interface GoCardlessBankLinkRequest {
-    institutionId: string;
-    localAccountId: string;
-}
-
 export interface GoCardlessBankDetails {
     account_id: string;
     institution: GoCardlessBank;
@@ -118,6 +115,11 @@ export interface GoCardlessBankDetails {
 
 export type GoCardlessLinkedStatus = 'linked' | 'expired' | 'rejected' | 'suspended' | 'pending' | 'unknown';
 
+/**
+ * Risposta dell'endpoint legacy GoCardless `/gocardless/bank/{id}/account`.
+ * Ancora usata per leggere lo stato del collegamento (linkedStatus/pending/reason),
+ * che l'endpoint unificato /api/banking/{provider}/{id}/accounts non espone.
+ */
 export interface GoCardlessBankAccountsResponse {
     linkedStatus: GoCardlessLinkedStatus;
     requisitionStatus?: string;
@@ -132,12 +134,54 @@ export interface GoCardlessBankAccountsResponse {
     accounts: GoCardlessBankDetails[];
 }
 
-export interface GoCardlessCompleteBankLinkRequest {
-    accountId: string;
-}
-
 export interface SyncBankTransactionsRequest {
     actualBalance: number | null;
+}
+
+// --- API unificata multi-provider /api/banking/{provider}/... ---
+
+/** Slug provider usato nel path dell'API unificata. */
+export type BankProvider = 'gocardless' | 'enable-banking';
+
+export interface BankInstitutionDto {
+    id: string;
+    name: string;
+    bic: string;
+    countries: string[];
+    logo: string;
+    maxAccessValidForDays: number;
+}
+
+export interface BankLinkRequest {
+    institutionId: string;
+    localAccountId: string;
+}
+
+export interface BankLinkResult {
+    redirectUrl: string;
+    /** Valorizzato solo per GoCardless (requisitionId); null per Enable Banking in questo step. */
+    providerReference: string | null;
+}
+
+export interface BankSessionRequest {
+    code: string;
+}
+
+export interface NormalizedBankAccount {
+    providerAccountId: string;
+    name: string;
+    iban: string;
+    currency: string;
+    institutionName: string;
+}
+
+export interface BankLinkCompletionResult {
+    providerReference: string;
+    accounts: NormalizedBankAccount[];
+}
+
+export interface CompleteBankLinkRequest {
+    accountId: string;
 }
 
 export interface PortfolioValueResponse {
