@@ -1,42 +1,46 @@
 import {Button, Flex, Form, Modal, Select, Spin, Steps} from 'antd';
 import {europeanCountries} from '../../utils/countries';
-import type {Account, GoCardlessBank} from '../../types/api';
+import type {Account, BankInstitutionDto, BankProvider} from '../../types/api';
 import {useTranslation} from 'react-i18next';
 import {SPACING} from '../../theme/tokens';
 
 const { Option } = Select;
 
-interface GoCardlessModalProps {
+interface BankLinkModalProps {
     open: boolean;
     onCancel: () => void;
     account: Account | null;
     currentStep: number;
+    selectedProvider: BankProvider | null;
     selectedCountry: string | null;
-    banks: GoCardlessBank[];
+    banks: BankInstitutionDto[];
     loadingBanks: boolean;
     selectedBank: string | null;
+    onProviderSelect: (provider: BankProvider) => void;
     onCountrySelect: (countryCode: string) => void;
     onBankSelect: (bankId: string) => void;
     onConfirm: () => void;
 }
 
-export const GoCardlessModal = ({
+export const BankLinkModal = ({
     open,
     onCancel,
     account,
     currentStep,
+    selectedProvider,
     selectedCountry,
     banks,
     loadingBanks,
     selectedBank,
+    onProviderSelect,
     onCountrySelect,
     onBankSelect,
     onConfirm
-}: GoCardlessModalProps) => {
+}: BankLinkModalProps) => {
     const { t } = useTranslation();
     return (
         <Modal
-            title={t('gocardless.connectTitle', { name: account?.name ?? '' })}
+            title={t('bankLink.connectTitle', { name: account?.name ?? '' })}
             open={open}
             onCancel={onCancel}
             footer={[
@@ -47,7 +51,7 @@ export const GoCardlessModal = ({
                     onClick={onConfirm}
                     disabled={!selectedBank}
                 >
-                    {t('gocardless.linkBank')}
+                    {t('bankLink.linkBank')}
                 </Button>,
             ]}
             width={700}
@@ -57,17 +61,33 @@ export const GoCardlessModal = ({
                 current={currentStep}
                 style={{ marginBottom: SPACING.lg }}
                 items={[
-                    { title: t('gocardless.selectCountry') },
-                    { title: t('gocardless.selectBank') },
+                    { title: t('bankLink.selectProvider') },
+                    { title: t('bankLink.selectCountry') },
+                    { title: t('bankLink.selectBank') },
                 ]}
             />
 
             {currentStep === 0 && (
                 <Form layout="vertical">
-                    <Form.Item label={t('gocardless.selectYourCountry')}>
+                    <Form.Item label={t('bankLink.selectYourProvider')}>
+                        <Select
+                            placeholder={t('bankLink.selectProviderPlaceholder')}
+                            onChange={onProviderSelect}
+                            value={selectedProvider ?? undefined}
+                        >
+                            <Option key="gocardless" value="gocardless">{t('bankLink.providerGoCardless')}</Option>
+                            <Option key="enable-banking" value="enable-banking">{t('bankLink.providerEnableBanking')}</Option>
+                        </Select>
+                    </Form.Item>
+                </Form>
+            )}
+
+            {currentStep === 1 && (
+                <Form layout="vertical">
+                    <Form.Item label={t('bankLink.selectYourCountry')}>
                         <Select
                             showSearch
-                            placeholder={t('gocardless.selectCountryPlaceholder')}
+                            placeholder={t('bankLink.selectCountryPlaceholder')}
                             onChange={onCountrySelect}
                             value={selectedCountry}
                             loading={loadingBanks}
@@ -85,15 +105,15 @@ export const GoCardlessModal = ({
                 </Form>
             )}
 
-            {currentStep === 1 && (
+            {currentStep === 2 && (
                 <Form layout="vertical">
-                    <Form.Item label={t('gocardless.selectYourBank')}>
+                    <Form.Item label={t('bankLink.selectYourBank')}>
                         {loadingBanks ? (
                             <Spin />
                         ) : (
                             <Select
                                 showSearch
-                                placeholder={t('gocardless.selectBankPlaceholder')}
+                                placeholder={t('bankLink.selectBankPlaceholder')}
                                 onChange={onBankSelect}
                                 value={selectedBank}
                                 filterOption={(input, option) =>

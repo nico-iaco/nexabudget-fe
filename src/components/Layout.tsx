@@ -4,8 +4,8 @@
 //   - useAccounts       → fetch account + saldo totale (React Query)
 //   - useCategories     → fetch categorie (React Query)
 //   - useAccountActions → CRUD account + transfer (useMutation)
-//   - useAccountSync    → polling sincronizzazione GoCardless
-//   - useGoCardlessLink → macchina a stati wizard GoCardless
+//   - useAccountSync    → polling sincronizzazione bancaria (GoCardless / Enable Banking)
+//   - useBankLink       → macchina a stati wizard di collegamento bancario multi-provider
 //   - useConfirm        → dialog conferma delete
 import { useEffect, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -20,12 +20,12 @@ import { useBreakpoints } from '../hooks/useBreakpoints';
 import { applyPWAUpdate } from '../pwaRegister';
 import { AccountModal } from './modals/AccountModal';
 import { TransferModal } from './modals/TransferModal';
-import { GoCardlessModal } from './modals/GoCardlessModal';
+import { BankLinkModal } from './modals/BankLinkModal';
 import { useAccounts } from '../hooks/useAccounts';
 import { useCategories } from '../hooks/useCategories';
 import { useAccountActions } from '../hooks/useAccountActions';
 import { useAccountSync } from '../hooks/useAccountSync';
-import { useGoCardlessLink } from '../hooks/useGoCardlessLink';
+import { useBankLink } from '../hooks/useBankLink';
 import { useConfirm } from '../hooks/useConfirm';
 import type { AppOutletContext } from '../types/outletContext';
 import { RADIUS, SPACING } from '../theme/tokens';
@@ -70,11 +70,11 @@ export const Layout = () => {
         isTransferring,
     } = useAccountActions();
 
-    // --- Hook sync GoCardless ---
+    // --- Hook sync bancaria ---
     const { syncingAccounts, handleSyncAllAccounts } = useAccountSync(accounts, fetchAccounts);
 
-    // --- Hook wizard GoCardless ---
-    const { state: gcState, actions: gcActions } = useGoCardlessLink();
+    // --- Hook wizard collegamento bancario multi-provider ---
+    const { state: bankLinkState, actions: bankLinkActions } = useBankLink();
 
     // Focus management: restore focus to toggle when drawer closes
     const menuToggleRef = useRef<HTMLButtonElement | null>(null);
@@ -180,7 +180,7 @@ export const Layout = () => {
             fetchCategories: () => {},
             handleOpenTransferModal: () => {},
             onOpenCreateAccount: () => {},
-            onOpenGoCardless: () => {},
+            onOpenBankLink: () => {},
         };
         return <Outlet context={emptyContext} />;
     }
@@ -193,7 +193,7 @@ export const Layout = () => {
         fetchCategories,
         handleOpenTransferModal,
         onOpenCreateAccount: () => handleOpenCreateAccountModal(isMobile ? () => setCollapsed(true) : undefined),
-        onOpenGoCardless: gcActions.open,
+        onOpenBankLink: bankLinkActions.open,
     };
 
     return (
@@ -230,8 +230,8 @@ export const Layout = () => {
                     onOpenCreateAccount={() => handleOpenCreateAccountModal(isMobile ? () => setCollapsed(true) : undefined)}
                     onOpenEditAccount={(account) => handleOpenEditAccountModal(account, isMobile ? () => setCollapsed(true) : undefined)}
                     onOpenDeleteAccount={handleOpenDeleteAccount}
-                    onOpenGoCardless={(account) => {
-                        gcActions.open(account);
+                    onOpenBankLink={(account) => {
+                        bankLinkActions.open(account);
                         if (isMobile) setCollapsed(true);
                     }}
                     onSyncAllAccounts={handleSyncAllAccounts}
@@ -320,19 +320,21 @@ export const Layout = () => {
                 />
             )}
 
-            {gcState.isOpen && (
-                <GoCardlessModal
-                    open={gcState.isOpen}
-                    onCancel={gcActions.cancel}
-                    account={gcState.linkingAccount}
-                    currentStep={gcState.currentStep}
-                    selectedCountry={gcState.selectedCountry}
-                    banks={gcState.banks}
-                    loadingBanks={gcState.loadingBanks}
-                    selectedBank={gcState.selectedBank}
-                    onCountrySelect={gcActions.handleCountrySelect}
-                    onBankSelect={gcActions.handleBankSelect}
-                    onConfirm={gcActions.handleConfirmBankLink}
+            {bankLinkState.isOpen && (
+                <BankLinkModal
+                    open={bankLinkState.isOpen}
+                    onCancel={bankLinkActions.cancel}
+                    account={bankLinkState.linkingAccount}
+                    currentStep={bankLinkState.currentStep}
+                    selectedProvider={bankLinkState.selectedProvider}
+                    selectedCountry={bankLinkState.selectedCountry}
+                    banks={bankLinkState.banks}
+                    loadingBanks={bankLinkState.loadingBanks}
+                    selectedBank={bankLinkState.selectedBank}
+                    onProviderSelect={bankLinkActions.handleProviderSelect}
+                    onCountrySelect={bankLinkActions.handleCountrySelect}
+                    onBankSelect={bankLinkActions.handleBankSelect}
+                    onConfirm={bankLinkActions.handleConfirmBankLink}
                 />
             )}
 

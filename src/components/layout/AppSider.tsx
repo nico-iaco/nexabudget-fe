@@ -92,7 +92,7 @@ interface AppSiderProps {
     onOpenCreateAccount: () => void;
     onOpenEditAccount: (account: Account) => void;
     onOpenDeleteAccount: (account: Account) => void;
-    onOpenGoCardless: (account: Account) => void;
+    onOpenBankLink: (account: Account) => void;
     onSyncAllAccounts: () => void;
     syncingAccounts: boolean;
 }
@@ -108,7 +108,7 @@ export const AppSider = ({
     onOpenCreateAccount,
     onOpenEditAccount,
     onOpenDeleteAccount,
-    onOpenGoCardless,
+    onOpenBankLink,
     onSyncAllAccounts,
     syncingAccounts
 }: AppSiderProps) => {
@@ -153,21 +153,21 @@ export const AppSider = ({
 
         return sortedAccounts.map(acc => {
             const path = `/accounts/${acc.id}/transactions`;
-            const isConnectedToGoCardless = acc.linkedToExternal;
+            const isConnectedToBank = acc.linkedToExternal;
             const isCheckingAccount = acc.type === 'CONTO_CORRENTE';
 
             const dropdownItems = [
                 ...(isCheckingAccount ? [{
-                    key: 'gocardless',
-                    icon: isConnectedToGoCardless ? <DisconnectOutlined /> : <LinkOutlined />,
-                    label: isConnectedToGoCardless ? t('accounts.disconnectGoCardless') : t('accounts.connectGoCardless'),
-                    onClick: () => { if (!isConnectedToGoCardless) onOpenGoCardless(acc); },
+                    key: 'bankLink',
+                    icon: isConnectedToBank ? <DisconnectOutlined /> : <LinkOutlined />,
+                    label: isConnectedToBank ? t('accounts.disconnectBank') : t('accounts.connectBank'),
+                    onClick: () => { if (!isConnectedToBank) onOpenBankLink(acc); },
                 }] : []),
-                ...(isConnectedToGoCardless && acc.requiresReauth ? [{
+                ...(isConnectedToBank && acc.requiresReauth ? [{
                     key: 'renewConnection',
                     icon: <ReloadOutlined />,
                     label: t('accounts.renewConnection'),
-                    onClick: () => onOpenGoCardless(acc),
+                    onClick: () => onOpenBankLink(acc),
                 }] : []),
                 {
                     key: 'edit',
@@ -231,9 +231,9 @@ export const AppSider = ({
                 onClick: () => handleMenuClick(path),
             };
         });
-    }, [accounts, onOpenGoCardless, onOpenEditAccount, onOpenDeleteAccount, handleMenuClick, t, token, siderTextPrimary, siderTextSecondary]);
+    }, [accounts, onOpenBankLink, onOpenEditAccount, onOpenDeleteAccount, handleMenuClick, t, token, siderTextPrimary, siderTextSecondary]);
 
-    // Calcola se ci sono conti correnti collegati a GoCardless
+    // Calcola se ci sono conti correnti collegati a un provider bancario esterno
     const hasSyncableAccounts = useMemo(() => {
         return accounts.some(acc => acc.type === 'CONTO_CORRENTE' && acc.linkedToExternal);
     }, [accounts]);
@@ -306,7 +306,7 @@ export const AppSider = ({
                                 size="small"
                                 onClick={onSyncAllAccounts}
                                 disabled={syncingAccounts}
-                                title={t('gocardless.syncAllTitle')}
+                                title={t('bankLink.syncAllTitle')}
                             />
                         )}
                         <Button icon={<PlusOutlined />} size="small" onClick={onOpenCreateAccount} aria-label={t('accounts.newAccount')} />

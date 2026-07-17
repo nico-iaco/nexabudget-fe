@@ -1,5 +1,5 @@
 // src/hooks/useAccountSync.ts
-// Polling sincronizzazione GoCardless estratto da Layout.tsx (righe 148-181).
+// Polling sincronizzazione bancaria (GoCardless / Enable Banking) estratto da Layout.tsx (righe 148-181).
 // Usa refetchInterval di React Query invece di setInterval manuale.
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
@@ -13,7 +13,7 @@ const SYNC_POLL_INTERVAL_MS = 10_000;
 const SYNC_POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minuti
 
 /**
- * Gestisce il polling di sincronizzazione GoCardless e la notifica di completamento.
+ * Gestisce il polling di sincronizzazione bancaria e la notifica di completamento.
  * Avviato automaticamente quando uno degli account ha `synchronizing = true`.
  *
  * @param accounts - Lista account corrente (da useAccounts)
@@ -67,13 +67,13 @@ export const useAccountSync = (
             acc => acc.type === 'CONTO_CORRENTE' && acc.linkedToExternal
         );
         if (syncableAccounts.length === 0) {
-            message.info(t('gocardless.noAccountsToSync'));
+            message.info(t('bankLink.noAccountsToSync'));
             return;
         }
         setSyncingAccounts(true);
         try {
             const syncPromises = syncableAccounts.map(account =>
-                api.syncGoCardlessBankAccount(account.id, { actualBalance: null })
+                api.syncBankAccount(api.providerSlug(account.provider), account.id, { actualBalance: null })
                     .then(() => ({ success: true, accountName: account.name }))
                     .catch(error => ({ success: false, accountName: account.name, error }))
             );
@@ -82,15 +82,15 @@ export const useAccountSync = (
             const failureCount = results.filter(r => !r.success).length;
 
             if (failureCount === 0) {
-                message.success(t('gocardless.syncSuccessAll', { count: successCount }));
+                message.success(t('bankLink.syncSuccessAll', { count: successCount }));
             } else if (successCount === 0) {
-                message.error(t('gocardless.syncErrorAll', { count: failureCount }));
+                message.error(t('bankLink.syncErrorAll', { count: failureCount }));
             } else {
-                message.warning(t('gocardless.syncPartial', { successCount, failureCount }));
+                message.warning(t('bankLink.syncPartial', { successCount, failureCount }));
             }
             await fetchAccountsRef.current();
         } catch (error) {
-            message.error(t('gocardless.syncError'));
+            message.error(t('bankLink.syncError'));
             console.error(error);
         } finally {
             setSyncingAccounts(false);

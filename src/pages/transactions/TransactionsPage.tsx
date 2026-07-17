@@ -166,8 +166,8 @@ export const TransactionsPage = () => {
 
     const typeLabel = (type: 'IN' | 'OUT') => type === 'IN' ? t('transactions.typeIn') : t('transactions.typeOut');
 
-    const handleSyncGoCardlessTransactions = async () => {
-        console.log('handleSyncGoCardlessTransactions called', { accountId, currentBalance });
+    const handleSyncBankTransactions = async () => {
+        console.log('handleSyncBankTransactions called', { accountId, currentBalance });
 
         if (!accountId) {
             message.error(t('transactions.invalidAccountId'));
@@ -177,8 +177,8 @@ export const TransactionsPage = () => {
         setSyncingTransactions(true);
 
         try {
-            console.log('Calling syncGoCardlessBankAccount...');
-            await api.syncGoCardlessBankAccount(accountId, { actualBalance: currentBalance });
+            console.log('Calling syncBankAccount...');
+            await api.syncBankAccount(api.providerSlug(currentAccount?.provider ?? null), accountId, { actualBalance: currentBalance });
             console.log('Sync API call completed successfully');
 
             // Chiudi il modal PRIMA di mostrare la notifica
@@ -771,7 +771,7 @@ export const TransactionsPage = () => {
                                 disabled={accounts.find(acc => acc.id === accountId)?.synchronizing}
                                 size={isMobile ? 'middle' : 'large'}
                             >
-                                {accounts.find(acc => acc.id === accountId)?.synchronizing ? t('transactions.syncing') : t('transactions.syncGoCardless')}
+                                {accounts.find(acc => acc.id === accountId)?.synchronizing ? t('transactions.syncing') : t('transactions.syncBank')}
                             </Button>
                         )}
                         <Button
@@ -1141,7 +1141,7 @@ export const TransactionsPage = () => {
                     <Button
                         key="submit"
                         type="primary"
-                        onClick={handleSyncGoCardlessTransactions}
+                        onClick={handleSyncBankTransactions}
                     >
                         {t('common.confirm')}
                     </Button>

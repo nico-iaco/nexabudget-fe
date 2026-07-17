@@ -1,14 +1,14 @@
 // src/pages/gocardless/GoCardlessCallbackPage.tsx
 import {useEffect, useState} from 'react';
 import {useNavigate, useOutletContext, useParams} from 'react-router-dom';
-import {App, Alert, Button, Card, Flex, Form, InputNumber, List, Spin, theme, Typography} from 'antd';
+import {App, Alert, Button, Card, Flex, Spin, Typography} from 'antd';
 import {BankOutlined, ReloadOutlined, ArrowRightOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import * as api from '../../services/api';
 import type {Account, GoCardlessBankDetails, GoCardlessLinkedStatus} from '../../types/api';
-import {FONT_SIZE, RADIUS, SPACING} from '../../theme/tokens';
-import {getCurrencySymbol} from '../../utils/currency';
+import {SPACING} from '../../theme/tokens';
 import type { AppOutletContext } from '../../types/outletContext';
+import { BankAccountPicker } from '../../components/banking/BankAccountPicker';
 
 const {Title, Text} = Typography;
 
@@ -17,7 +17,7 @@ export const GoCardlessCallbackPage = () => {
     const { message, notification } = App.useApp();
     const {accountId} = useParams<{ accountId: string }>();
     const navigate = useNavigate();
-    const { fetchAccounts, onOpenGoCardless } = useOutletContext<AppOutletContext>();
+    const { fetchAccounts, onOpenBankLink } = useOutletContext<AppOutletContext>();
     const [loading, setLoading] = useState(true);
     const [linkedStatus, setLinkedStatus] = useState<GoCardlessLinkedStatus | null>(null);
     const [bankAccounts, setBankAccounts] = useState<GoCardlessBankDetails[]>([]);
@@ -31,7 +31,6 @@ export const GoCardlessCallbackPage = () => {
     const [error, setError] = useState<string | null>(null);
 
     const apiNotification = notification;
-    const {token} = theme.useToken();
 
     useEffect(() => {
         if (!accountId) {
@@ -88,13 +87,13 @@ export const GoCardlessCallbackPage = () => {
         setLoading(true);
 
         try {
-            await api.linkGoCardlessBankAccount(accountId, {
+            await api.linkBankAccount('gocardless', accountId, {
                 accountId: selectedAccountId
             });
 
             message.success(t('gocardlessCallback.linkSuccess'));
 
-            await api.syncGoCardlessBankAccount(accountId, {actualBalance: currentBalance});
+            await api.syncBankAccount('gocardless', accountId, {actualBalance: currentBalance});
 
             apiNotification.info({
                 message: t('gocardlessCallback.syncStartedTitle'),
@@ -119,7 +118,7 @@ export const GoCardlessCallbackPage = () => {
 
     const handleReconnect = () => {
         if (localAccount) {
-            onOpenGoCardless(localAccount);
+            onOpenBankLink(localAccount);
         }
     };
 
@@ -291,79 +290,26 @@ export const GoCardlessCallbackPage = () => {
                         style={{marginBottom: SPACING.lg}}
                     />
 
-                    <List
-                        dataSource={bankAccounts}
-                        renderItem={(account) => (
-                            <List.Item
-                                onClick={() => handleSelectAccount(account.account_id)}
-                                style={{
-                                    cursor: 'pointer',
-                                    padding: SPACING.md,
-                                    border: selectedAccountId === account.account_id
-                                        ? `2px solid ${token.colorPrimary}`
-                                        : `1px solid ${token.colorBorder}`,
-                                    borderRadius: RADIUS.lg,
-                                    marginBottom: SPACING.sm,
-                                    backgroundColor: selectedAccountId === account.account_id
-                                        ? token.controlItemBgActive
-                                        : token.colorBgContainer,
-                                    transition: 'all 0.3s'
-                                }}
-                            >
-                                <Flex gap="middle" align="center" style={{width: '100%'}}>
-                                    {account.institution.logo && (
-                                        <img
-                                            src={account.institution.logo}
-                                            alt={account.institution.name}
-                                            style={{
-                                                width: '48px',
-                                                height: '48px',
-                                                objectFit: 'contain',
-                                                borderRadius: RADIUS.lg
-                                            }}
-                                        />
-                                    )}
-                                    <Flex vertical gap="small" style={{flex: 1}}>
-                                        <Text strong style={{fontSize: FONT_SIZE.xl}}>
-                                            {account.institution.name || t('gocardlessCallback.bankUnknown')}
-                                        </Text>
-                                        {account.name && (
-                                            <Text type="secondary">
-                                                {t('gocardlessCallback.accountNameLabel')}: {account.name}
-                                            </Text>
-                                        )}
-                                    </Flex>
-                                    <BankOutlined style={{fontSize: FONT_SIZE.display, color: token.colorPrimary}}/>
-                                </Flex>
-                            </List.Item>
-                        )}
+                    <BankAccountPicker
+                        items={bankAccounts.map(account => ({
+                            id: account.account_id,
+                            institutionName: account.institution.name,
+                            accountName: account.name,
+                            logo: account.institution.logo,
+                        }))}
+                        selectedId={selectedAccountId}
+                        onSelect={handleSelectAccount}
+                        currentBalance={currentBalance}
+                        onBalanceChange={setCurrentBalance}
+                        currency={accountCurrency}
+                        bankUnknownLabel={t('gocardlessCallback.bankUnknown')}
+                        accountNameLabel={t('gocardlessCallback.accountNameLabel')}
+                        balanceWarningTitle={t('gocardlessCallback.balanceWarningTitle')}
+                        balanceWarningDescription={t('gocardlessCallback.balanceWarningDescription')}
+                        currentBalanceLabel={t('gocardlessCallback.currentBalanceLabel')}
+                        currentBalanceHelp={t('gocardlessCallback.currentBalanceHelp')}
+                        currentBalancePlaceholder={t('gocardlessCallback.currentBalancePlaceholder')}
                     />
-
-                    {selectedAccountId && (
-                        <>
-                            <Alert
-                                message={t('gocardlessCallback.balanceWarningTitle')}
-                                description={t('gocardlessCallback.balanceWarningDescription')}
-                                type="warning"
-                                showIcon
-                                style={{marginTop: SPACING.lg, marginBottom: SPACING.md}}
-                            />
-                            <Form.Item
-                                label={t('gocardlessCallback.currentBalanceLabel')}
-                                help={t('gocardlessCallback.currentBalanceHelp')}
-                            >
-                                <InputNumber
-                                    style={{width: '100%'}}
-                                    value={currentBalance}
-                                    onChange={(value) => setCurrentBalance(value)}
-                                    placeholder={t('gocardlessCallback.currentBalancePlaceholder')}
-                                    addonAfter={getCurrencySymbol(accountCurrency)}
-                                    precision={2}
-                                    parser={(value) => value?.replace(',', '.') as any}
-                                />
-                            </Form.Item>
-                        </>
-                    )}
 
                     <Flex gap="small" style={{marginTop: SPACING.lg}}>
                         <Button onClick={() => navigate('/transactions')} style={{flex: 1}}>
