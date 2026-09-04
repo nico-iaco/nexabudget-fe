@@ -7,7 +7,7 @@
 //   - useAccountSync    → polling sincronizzazione bancaria (GoCardless / Enable Banking)
 //   - useBankLink       → macchina a stati wizard di collegamento bancario multi-provider
 //   - useConfirm        → dialog conferma delete
-import { useEffect, useRef, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { App, Button, Layout as AntLayout, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
@@ -18,9 +18,6 @@ import { AppHeader } from './layout/AppHeader';
 import { BottomNavBar } from './layout/BottomNavBar';
 import { useBreakpoints } from '../hooks/useBreakpoints';
 import { applyPWAUpdate } from '../pwaRegister';
-import { AccountModal } from './modals/AccountModal';
-import { TransferModal } from './modals/TransferModal';
-import { BankLinkModal } from './modals/BankLinkModal';
 import { useAccounts } from '../hooks/useAccounts';
 import { useCategories } from '../hooks/useCategories';
 import { useAccountActions } from '../hooks/useAccountActions';
@@ -30,13 +27,20 @@ import { useConfirm } from '../hooks/useConfirm';
 import type { AppOutletContext } from '../types/outletContext';
 import { RADIUS, SPACING } from '../theme/tokens';
 
+// Modali caricati on-demand: si aprono solo su azione dell'utente, ma importati
+// staticamente trascinavano nel percorso critico ~258 kB di componenti antd —
+// soprattutto il DatePicker (177 kB, incluso Time/Week/Month/Quarter/Year/Calendar)
+// tirato dentro da TransferModal, più Steps, Form, Input e InputNumber.
+const AccountModal = lazy(() => import('./modals/AccountModal').then(m => ({ default: m.AccountModal })));
+const TransferModal = lazy(() => import('./modals/TransferModal').then(m => ({ default: m.TransferModal })));
+const BankLinkModal = lazy(() => import('./modals/BankLinkModal').then(m => ({ default: m.BankLinkModal })));
+
 const { Content } = AntLayout;
 
 export const Layout = () => {
     const { t } = useTranslation();
     const { notification } = App.useApp();
     const [collapsed, setCollapsed] = useState(true);
-    const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
     const [transactionRefreshKey] = useState(0);
 
     const { isMobile, isSmallMobile } = useBreakpoints();
@@ -48,6 +52,12 @@ export const Layout = () => {
     const {
         token: { colorBgContainer, borderRadiusLG },
     } = theme.useToken();
+
+    // Derivato, non stato+effetto: prima un useEffect faceva `setSelectedKeys([pathname])`,
+    // causando un doppio render di shell e pagina a OGNI navigazione. In più l'array
+    // literal cambiava identità, invalidando il useMemo di accountMenuItems in AppSider,
+    // che ricostruiva l'intero menu dei conti.
+    const selectedKeys = useMemo(() => [location.pathname], [location.pathname]);
 
     // --- Hook dati ---
     const { accounts, totalBalance, fetchAccounts, isLoading: loadingAccounts, isError: isAccountsError, refetch: refetchAccounts } = useAccounts();
@@ -79,10 +89,6 @@ export const Layout = () => {
     // Focus management: restore focus to toggle when drawer closes
     const menuToggleRef = useRef<HTMLButtonElement | null>(null);
     const prevCollapsedRef = useRef(collapsed);
-
-    useEffect(() => {
-        setSelectedKeys([location.pathname]);
-    }, [location.pathname]);
 
     // Banner aggiornamento PWA
     useEffect(() => {
@@ -159,6 +165,37 @@ export const Layout = () => {
         navigate('/login');
     };
 
+    // Stabile: entra nell'outlet context memoizzato qui sotto e nelle prop di AppSider.
+    const onOpenCreateAccount = useCallback(() => {
+        handleOpenCreateAccountModal(isMobile ? () => setCollapsed(true) : undefined);
+    }, [handleOpenCreateAccountModal, isMobile]);
+
+    // L'oggetto era un literal ricostruito a ogni render, con dentro una arrow inline e
+    // due funzioni non memoizzate: sei pagine lo consumano via useOutletContext e nessuna
+    // è memo, quindi qualunque render di Layout — collasso della sidebar, cambio di
+    // breakpoint, settle di una query in background — ri-renderizzava per intero la
+    // pagina attiva. Va calcolato prima dell'early return su `!auth`: gli hook non
+    // possono stare dopo un return condizionale.
+    const outletContext: AppOutletContext = useMemo(() => ({
+        accounts,
+        fetchAccounts,
+        transactionRefreshKey,
+        categories,
+        fetchCategories,
+        handleOpenTransferModal,
+        onOpenCreateAccount,
+        onOpenBankLink: bankLinkActions.open,
+    }), [
+        accounts,
+        fetchAccounts,
+        transactionRefreshKey,
+        categories,
+        fetchCategories,
+        handleOpenTransferModal,
+        onOpenCreateAccount,
+        bankLinkActions.open,
+    ]);
+
     const handleOpenDeleteAccount = (account: import('../types/api').Account) => {
         if (isMobile) setCollapsed(true);
         confirm({
@@ -184,17 +221,6 @@ export const Layout = () => {
         };
         return <Outlet context={emptyContext} />;
     }
-
-    const outletContext: AppOutletContext = {
-        accounts,
-        fetchAccounts,
-        transactionRefreshKey,
-        categories,
-        fetchCategories,
-        handleOpenTransferModal,
-        onOpenCreateAccount: () => handleOpenCreateAccountModal(isMobile ? () => setCollapsed(true) : undefined),
-        onOpenBankLink: bankLinkActions.open,
-    };
 
     return (
         <>
@@ -227,7 +253,7 @@ export const Layout = () => {
                     loading={loadingAccounts}
                     totalBalance={totalBalance}
                     selectedKeys={selectedKeys}
-                    onOpenCreateAccount={() => handleOpenCreateAccountModal(isMobile ? () => setCollapsed(true) : undefined)}
+                    onOpenCreateAccount={onOpenCreateAccount}
                     onOpenEditAccount={(account) => handleOpenEditAccountModal(account, isMobile ? () => setCollapsed(true) : undefined)}
                     onOpenDeleteAccount={handleOpenDeleteAccount}
                     onOpenBankLink={(account) => {
@@ -300,42 +326,50 @@ export const Layout = () => {
                 />
             )}
 
+            {/* fallback null: il modale ha una sua animazione d'ingresso, uno spinner
+                intermedio sarebbe solo uno sfarfallio */}
             {isAccountModalOpen && (
-                <AccountModal
-                    open={isAccountModalOpen}
-                    onCancel={handleCancelAccountModal}
-                    onFinish={onFinishAccount}
-                    editingAccount={editingAccount}
-                    loading={isSavingAccount}
-                />
+                <Suspense fallback={null}>
+                    <AccountModal
+                        open={isAccountModalOpen}
+                        onCancel={handleCancelAccountModal}
+                        onFinish={onFinishAccount}
+                        editingAccount={editingAccount}
+                        loading={isSavingAccount}
+                    />
+                </Suspense>
             )}
 
             {isTransferModalOpen && (
-                <TransferModal
-                    open={isTransferModalOpen}
-                    onCancel={handleCancelTransferModal}
-                    onFinish={onFinishTransfer}
-                    accounts={accounts}
-                    loading={isTransferring}
-                />
+                <Suspense fallback={null}>
+                    <TransferModal
+                        open={isTransferModalOpen}
+                        onCancel={handleCancelTransferModal}
+                        onFinish={onFinishTransfer}
+                        accounts={accounts}
+                        loading={isTransferring}
+                    />
+                </Suspense>
             )}
 
             {bankLinkState.isOpen && (
-                <BankLinkModal
-                    open={bankLinkState.isOpen}
-                    onCancel={bankLinkActions.cancel}
-                    account={bankLinkState.linkingAccount}
-                    currentStep={bankLinkState.currentStep}
-                    selectedProvider={bankLinkState.selectedProvider}
-                    selectedCountry={bankLinkState.selectedCountry}
-                    banks={bankLinkState.banks}
-                    loadingBanks={bankLinkState.loadingBanks}
-                    selectedBank={bankLinkState.selectedBank}
-                    onProviderSelect={bankLinkActions.handleProviderSelect}
-                    onCountrySelect={bankLinkActions.handleCountrySelect}
-                    onBankSelect={bankLinkActions.handleBankSelect}
-                    onConfirm={bankLinkActions.handleConfirmBankLink}
-                />
+                <Suspense fallback={null}>
+                    <BankLinkModal
+                        open={bankLinkState.isOpen}
+                        onCancel={bankLinkActions.cancel}
+                        account={bankLinkState.linkingAccount}
+                        currentStep={bankLinkState.currentStep}
+                        selectedProvider={bankLinkState.selectedProvider}
+                        selectedCountry={bankLinkState.selectedCountry}
+                        banks={bankLinkState.banks}
+                        loadingBanks={bankLinkState.loadingBanks}
+                        selectedBank={bankLinkState.selectedBank}
+                        onProviderSelect={bankLinkActions.handleProviderSelect}
+                        onCountrySelect={bankLinkActions.handleCountrySelect}
+                        onBankSelect={bankLinkActions.handleBankSelect}
+                        onConfirm={bankLinkActions.handleConfirmBankLink}
+                    />
+                </Suspense>
             )}
 
             {/* PWA Install Prompt */}

@@ -1,11 +1,11 @@
 // src/pages/gocardless/GoCardlessCallbackPage.tsx
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate, useOutletContext, useParams} from 'react-router-dom';
 import {App, Alert, Button, Card, Flex, Spin, Typography} from 'antd';
 import {BankOutlined, ReloadOutlined, ArrowRightOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import * as api from '../../services/api';
-import type {Account, GoCardlessBankDetails, GoCardlessLinkedStatus} from '../../types/api';
+import type {GoCardlessBankDetails, GoCardlessLinkedStatus} from '../../types/api';
 import {SPACING} from '../../theme/tokens';
 import type { AppOutletContext } from '../../types/outletContext';
 import { BankAccountPicker } from '../../components/banking/BankAccountPicker';
@@ -17,62 +17,63 @@ export const GoCardlessCallbackPage = () => {
     const { message, notification } = App.useApp();
     const {accountId} = useParams<{ accountId: string }>();
     const navigate = useNavigate();
-    const { fetchAccounts, onOpenBankLink } = useOutletContext<AppOutletContext>();
+    const { accounts, fetchAccounts, onOpenBankLink } = useOutletContext<AppOutletContext>();
     const [loading, setLoading] = useState(true);
     const [linkedStatus, setLinkedStatus] = useState<GoCardlessLinkedStatus | null>(null);
     const [bankAccounts, setBankAccounts] = useState<GoCardlessBankDetails[]>([]);
     const [pendingLink, setPendingLink] = useState<string | undefined>(undefined);
     const [statusReason, setStatusReason] = useState<string | undefined>(undefined);
-    const [localAccount, setLocalAccount] = useState<Account | null>(null);
+    // Derivati dagli account già in cache React Query e passati dall'outlet context:
+    // prima questa pagina rifaceva `api.getAccounts()` pur avendo il dato a disposizione.
+    const localAccount = useMemo(
+        () => accounts.find(a => a.id === accountId) ?? null,
+        [accounts, accountId]
+    );
+    const accountCurrency = localAccount?.currency ?? 'EUR';
     const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
     const [currentBalance, setCurrentBalance] = useState<number | null>(null);
-    const [accountCurrency, setAccountCurrency] = useState<string>('EUR');
 
     const [error, setError] = useState<string | null>(null);
+
+    const tRef = useRef(t);
+    useEffect(() => { tRef.current = t; });
 
     const apiNotification = notification;
 
     useEffect(() => {
         if (!accountId) {
-            setError(t('gocardlessCallback.invalidAccountId'));
+            setError(tRef.current('gocardlessCallback.invalidAccountId'));
             setLoading(false);
             return;
         }
 
         const fetchBankAccounts = async () => {
             try {
-                const [bankAccountsRes, accountsRes] = await Promise.all([
-                    api.getGoCardlessBankAccounts(accountId),
-                    api.getAccounts(),
-                ]);
+                const bankAccountsRes = await api.getGoCardlessBankAccounts(accountId);
                 const res = bankAccountsRes.data;
                 setLinkedStatus(res.linkedStatus);
                 setPendingLink(res.link);
                 setStatusReason(res.reason);
 
-                const found = accountsRes.data.find((a) => a.id === accountId) ?? null;
-                if (found) {
-                    setLocalAccount(found);
-                    setAccountCurrency(found.currency);
-                }
-
                 if (res.linkedStatus === 'linked') {
                     const accounts = res.accounts ?? [];
                     setBankAccounts(accounts);
                     if (accounts.length === 0) {
-                        setError(t('gocardlessCallback.noAccounts'));
+                        setError(tRef.current('gocardlessCallback.noAccounts'));
                     }
                 }
             } catch (err) {
                 console.error(err);
-                setError(t('gocardlessCallback.loadError'));
+                setError(tRef.current('gocardlessCallback.loadError'));
             } finally {
                 setLoading(false);
             }
         };
 
         fetchBankAccounts();
-    }, [accountId, t]);
+        // `t` deliberatamente fuori dalle dipendenze: un cambio lingua rieseguirebbe
+        // l'intero effetto di lettura dello stato del collegamento senza motivo.
+    }, [accountId]);
 
     const handleSelectAccount = (bankAccountId: string) => {
         setSelectedAccountId(bankAccountId);
@@ -126,7 +127,7 @@ export const GoCardlessCallbackPage = () => {
         if (pendingLink) {
             window.location.href = pendingLink;
         } else {
-            setError(t('gocardlessCallback.loadError'));
+            setError(tRef.current('gocardlessCallback.loadError'));
         }
     };
 

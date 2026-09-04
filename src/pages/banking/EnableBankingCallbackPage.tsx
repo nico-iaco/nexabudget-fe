@@ -2,13 +2,13 @@
 // Pagina di ritorno del flusso Enable Banking. A differenza di GoCardless, il redirect_url
 // registrato lato backend è UNICO e STATICO per tutta l'app: questa route riceve `code` e `state`
 // (state = localAccountId che ha avviato il collegamento) come query string, sempre.
-import {useEffect, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useNavigate, useOutletContext, useSearchParams} from 'react-router-dom';
 import {App, Alert, Button, Card, Flex, Spin, Typography} from 'antd';
 import {BankOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import * as api from '../../services/api';
-import type {Account, NormalizedBankAccount} from '../../types/api';
+import type {NormalizedBankAccount} from '../../types/api';
 import {SPACING} from '../../theme/tokens';
 import type {AppOutletContext} from '../../types/outletContext';
 import {BankAccountPicker} from '../../components/banking/BankAccountPicker';
@@ -20,61 +20,63 @@ export const EnableBankingCallbackPage = () => {
     const {message, notification} = App.useApp();
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const {fetchAccounts, onOpenBankLink} = useOutletContext<AppOutletContext>();
+    const {accounts, fetchAccounts, onOpenBankLink} = useOutletContext<AppOutletContext>();
 
     const code = searchParams.get('code');
     const localAccountId = searchParams.get('state');
 
     const [loading, setLoading] = useState(true);
     const [bankAccounts, setBankAccounts] = useState<NormalizedBankAccount[]>([]);
-    const [localAccount, setLocalAccount] = useState<Account | null>(null);
+    // Derivati dagli account già in cache React Query e passati dall'outlet context:
+    // prima questa pagina rifaceva `api.getAccounts()` pur avendo il dato a disposizione.
+    const localAccount = useMemo(
+        () => accounts.find(a => a.id === localAccountId) ?? null,
+        [accounts, localAccountId]
+    );
+    const accountCurrency = localAccount?.currency ?? 'EUR';
     const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
     const [currentBalance, setCurrentBalance] = useState<number | null>(null);
-    const [accountCurrency, setAccountCurrency] = useState<string>('EUR');
     const [error, setError] = useState<string | null>(null);
+
+    const tRef = useRef(t);
+    useEffect(() => { tRef.current = t; });
 
     const apiNotification = notification;
 
     useEffect(() => {
         if (!localAccountId) {
-            setError(t('enableBankingCallback.invalidState'));
+            setError(tRef.current('enableBankingCallback.invalidState'));
             setLoading(false);
             return;
         }
         if (!code) {
-            setError(t('enableBankingCallback.invalidCode'));
+            setError(tRef.current('enableBankingCallback.invalidCode'));
             setLoading(false);
             return;
         }
 
         const completeSession = async () => {
             try {
-                const [sessionRes, accountsRes] = await Promise.all([
-                    api.completeBankSession('enable-banking', localAccountId, {code}),
-                    api.getAccounts(),
-                ]);
-
-                const found = accountsRes.data.find((a) => a.id === localAccountId) ?? null;
-                if (found) {
-                    setLocalAccount(found);
-                    setAccountCurrency(found.currency);
-                }
+                const sessionRes = await api.completeBankSession('enable-banking', localAccountId, {code});
 
                 const accounts = sessionRes.data.accounts ?? [];
                 setBankAccounts(accounts);
                 if (accounts.length === 0) {
-                    setError(t('enableBankingCallback.noAccounts'));
+                    setError(tRef.current('enableBankingCallback.noAccounts'));
                 }
             } catch (err) {
                 console.error(err);
-                setError(t('enableBankingCallback.sessionError'));
+                setError(tRef.current('enableBankingCallback.sessionError'));
             } finally {
                 setLoading(false);
             }
         };
 
         completeSession();
-    }, [localAccountId, code, t]);
+        // `t` deliberatamente fuori dalle dipendenze: il `code` di Enable Banking è
+        // monouso, e includendolo un cambio lingua rieseguiva l'effetto ri-postando
+        // lo stesso code (richiesta duplicata e rifiuto lato backend).
+    }, [localAccountId, code]);
 
     const handleSelectAccount = (providerAccountId: string) => {
         setSelectedAccountId(providerAccountId);

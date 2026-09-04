@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 import { message } from 'antd';
 import * as api from '../services/api';
 import { SERIES_INCOME, SERIES_EXPENSE } from '../theme/tokens';
+import { queryKeys } from '../queryKeys';
 import type {
     CategoryBreakdownItem,
     MonthComparisonResponse,
@@ -42,7 +43,6 @@ export interface TrendPoint {
 }
 
 interface DashboardQueryResult {
-    comp: MonthComparisonResponse | null;
     trend: MonthlyTrendResponse;
     incomeBreakdown: CategoryBreakdownItem[];
     expenseBreakdown: CategoryBreakdownItem[];
@@ -80,8 +80,7 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
 
             const EMPTY_BREAKDOWN = { startDate, endDate, currency: 'EUR', totalIncome: 0, totalExpense: 0, grandTotal: 0, categories: [] };
 
-            const [comp, trend, breakdown, proj, crypto, budgets] = await Promise.all([
-                safe(api.getMonthComparison(now.year(), now.month() + 1), null, 'monthComparison'),
+            const [trend, breakdown, proj, crypto, budgets] = await Promise.all([
                 safe(api.getMonthlyTrend(trendMonths), EMPTY_TREND, 'monthlyTrend'),
                 safe(api.getCategoryBreakdown(startDate, endDate), EMPTY_BREAKDOWN, 'categoryBreakdown'),
                 safe(api.getMonthlyProjection(), null, 'monthlyProjection'),
@@ -92,7 +91,6 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
             const categories = Array.isArray(breakdown?.categories) ? breakdown.categories : [];
 
             return {
-                comp,
                 trend: trend ?? EMPTY_TREND,
                 incomeBreakdown: categories.filter(c => c.inferredType === 'IN'),
                 expenseBreakdown: categories.filter(c => c.inferredType === 'OUT'),
@@ -105,6 +103,12 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
             };
         },
         placeholderData: keepPreviousData,
+        // staleTime più lungo del default globale (2 min): questa singola query racchiude
+        // sei chiamate HTTP, e con `refetchOnWindowFocus: true` ogni ritorno sulla tab —
+        // su PWA mobile ogni resume dell'app — le rifaceva tutte e sei. Ora che le
+        // mutazioni sulle transazioni invalidano esplicitamente questa chiave
+        // (TransactionsPage), una finestra di freschezza più ampia è sicura.
+        staleTime: 5 * 60 * 1000,
     });
 
     const lastReportedErrorsRef = useRef<string[] | null>(null);
@@ -116,7 +120,19 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
         }
     }, [data?.partialErrors, t]);
 
-    const monthComparison = data?.comp ?? null;
+    // Query separata, non più dentro il Promise.all: condivide la chiave con lo
+    // useQuery di DashboardPage, che chiedeva lo stesso endpoint con gli stessi
+    // parametri sotto una chiave diversa — due richieste identiche a ogni caricamento.
+    const now = dayjs();
+    const { data: comparisonData } = useQuery<MonthComparisonResponse | null>({
+        queryKey: queryKeys.monthComparison(now.year(), now.month() + 1),
+        queryFn: () =>
+            api.getMonthComparison(now.year(), now.month() + 1)
+                .then(r => r.data)
+                .catch(() => null),
+        placeholderData: keepPreviousData,
+    });
+    const monthComparison = comparisonData ?? null;
     const trendResponse = data?.trend ?? EMPTY_TREND;
     const monthlyTrendItems: MonthlyTrendItem[] = Array.isArray(trendResponse.items) ? trendResponse.items : [];
     const trendCurrency = trendResponse.currency ?? 'EUR';

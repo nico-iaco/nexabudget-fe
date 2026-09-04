@@ -3,6 +3,25 @@ server {
 
     error_log /var/log/nginx/error.log ${LOG_LEVEL};
 
+    # Compressione: l'immagine nginx:alpine ha gzip disattivato di default, quindi finora
+    # ogni asset viaggiava NON compresso (vendor-react: 276 kB invece di ~89 kB).
+    # Non usiamo gzip_static/brotli_static: nginx:alpine non include ngx_brotli, e i file
+    # precompressi non vengono più generati a build time (vedi vite.config.ts).
+    gzip on;
+    gzip_vary on;
+    gzip_comp_level 6;
+    gzip_min_length 1024;
+    gzip_proxied any;
+    gzip_types
+        text/plain
+        text/css
+        text/javascript
+        application/javascript
+        application/json
+        application/manifest+json
+        application/wasm
+        image/svg+xml;
+
     # Servire i file statici
     location / {
         root /usr/share/nginx/html;
@@ -10,11 +29,38 @@ server {
         try_files $uri /index.html;
     }
 
+    # L'entry point NON va cachato: è il file che punta agli asset con hash, quindi
+    # se resta in cache l'utente non vede mai una nuova release. Prima ricadeva in
+    # `location /` senza alcun Cache-Control, lasciando il browser al caching euristico.
+    location = /index.html {
+        root /usr/share/nginx/html;
+        expires off;
+        add_header Cache-Control "no-cache";
+    }
+
+    # Il service worker non va MAI cachato, altrimenti gli aggiornamenti della PWA non
+    # raggiungono i client. Questa location precede quella su \.(css|js)$, che altrimenti
+    # marcherebbe sw.js come `immutable, max-age=1y`.
+    location ~* ^/(sw\.js|workbox-[^/]+\.js|registerSW\.js)$ {
+        root /usr/share/nginx/html;
+        try_files $uri =404;
+        expires off;
+        add_header Cache-Control "no-cache";
+    }
+
+    # Il manifest cambia insieme alla release: cache breve, non immutable.
+    location = /manifest.webmanifest {
+        root /usr/share/nginx/html;
+        try_files $uri =404;
+        expires off;
+        add_header Cache-Control "public, max-age=3600";
+    }
+
     # Ottimizzare il caching per file statici generati da Vite (con hash nel nome)
     location ~* \.(?:css|js)$ {
         root /usr/share/nginx/html;
         try_files $uri =404;
-        expires 1y;
+        expires off;
         access_log off;
         add_header Cache-Control "public, max-age=31536000, immutable";
     }
@@ -23,7 +69,7 @@ server {
     location ~* \.(?:jpg|jpeg|gif|png|ico|cur|gz|svg|svgz|mp4|ogg|ogv|webm|htc|woff2|woff)$ {
         root /usr/share/nginx/html;
         try_files $uri =404;
-        expires 1M;
+        expires off;
         access_log off;
         add_header Cache-Control "public, max-age=2592000";
     }

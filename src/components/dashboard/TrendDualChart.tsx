@@ -41,6 +41,12 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerW, setContainerW] = useState(0);
     const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+    // Rect memorizzata all'ingresso del puntatore: `getBoundingClientRect()` a ogni
+    // mousemove è una lettura di layout forzata, e il riquadro non cambia durante l'hover.
+    const rectRef = useRef<DOMRect | null>(null);
+    const handleEnter = (e: React.MouseEvent<SVGSVGElement>) => {
+        rectRef.current = e.currentTarget.getBoundingClientRect();
+    };
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -91,12 +97,17 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
     const labelStep = colW < 40 ? Math.ceil(40 / colW) : 1;
 
     const handleMove = (e: React.MouseEvent<SVGSVGElement>) => {
-        const rect = e.currentTarget.getBoundingClientRect();
+        const rect = rectRef.current ?? e.currentTarget.getBoundingClientRect();
         const x = ((e.clientX - rect.left) / rect.width) * totalW;
         const localX = x - MARGIN_LEFT;
-        if (localX < 0 || localX > plotW) { setHoverIdx(null); return; }
+        if (localX < 0 || localX > plotW) {
+            // Aggiorna solo se cambia davvero: altrimenti ogni pixel di movimento
+            // ri-renderizzava un centinaio di nodi SVG.
+            setHoverIdx(prev => (prev === null ? prev : null));
+            return;
+        }
         const idx = Math.min(N - 1, Math.max(0, Math.floor(localX / colW)));
-        setHoverIdx(idx);
+        setHoverIdx(prev => (prev === idx ? prev : idx));
     };
 
     const hoverPoint = hoverIdx != null ? points[hoverIdx] : null;
@@ -131,6 +142,7 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
                     height={height}
                     viewBox={`0 0 ${totalW} ${height}`}
                     style={{ display: 'block' }}
+                    onMouseEnter={handleEnter}
                     onMouseMove={handleMove}
                     onMouseLeave={() => setHoverIdx(null)}
                 >

@@ -8,7 +8,19 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <!-- Il foglio di stile dei font era un <link rel="stylesheet"> bloccante verso un'origine
+       terza: il primo paint aspettava due round-trip fuori dal nostro controllo.
+       Ora si carica in modo asincrono (media="print" + onload) e il testo compare subito
+       con i fallback di sistema, poi passa a Inter/Manrope — coerente con display=swap,
+       che già prevede quello scambio. Il <noscript> copre i browser senza JS. -->
+  <link rel="preload" as="style"
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" media="print" onload="this.media='all'"
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" />
+  <noscript>
+    <link rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap" />
+  </noscript>
 
   <!-- PWA Meta Tags -->
   <meta name="theme-color" content="#3d6fd6" />

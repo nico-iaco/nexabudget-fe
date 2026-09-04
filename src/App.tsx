@@ -138,46 +138,64 @@ const router = createBrowserRouter([
     },
 ]);
 
+// Costanti di modulo: erano oggetti letterali inline dentro il JSX di <ConfigProvider>,
+// quindi ricostruiti a ogni render di App insieme ai token annidati e agli override per
+// componente. Il cambio tema è l'interazione più costosa dell'app e l'identità nuova del
+// theme object propagava a tutti i consumer di theme.useToken().
+const COMPONENT_TOKENS = {
+    Card: {
+        borderRadiusLG: RADIUS.card,
+    },
+    Button: {
+        borderRadius: 10,
+        controlHeight: 38,
+    },
+    Menu: {
+        itemBorderRadius: 9,
+        itemHeight: 38,
+        itemMarginInline: 8,
+    },
+    Modal: {
+        borderRadiusLG: RADIUS.card,
+    },
+} as const;
+
+const THEME_LIGHT = {
+    algorithm: antTheme.defaultAlgorithm,
+    token: {
+        colorPrimary: PRIMARY_LIGHT_HEX,
+        borderRadius: RADIUS_BASE,
+        borderRadiusLG: RADIUS.card,
+        fontFamily: FONT_BODY,
+    },
+    components: COMPONENT_TOKENS,
+};
+
+const THEME_DARK = {
+    ...THEME_LIGHT,
+    algorithm: antTheme.darkAlgorithm,
+    token: { ...THEME_LIGHT.token, colorPrimary: PRIMARY_DARK_HEX },
+};
+
+// Anche questa era una closure nuova a ogni render. Monta i popup di AntD nel drawer o
+// nel modale più vicino: è ciò che tiene Select e DatePicker posizionati correttamente
+// dentro overlay.
+const getPopupContainer = (triggerNode?: HTMLElement) => {
+    const drawer = triggerNode?.closest?.('.ant-drawer-body');
+    if (drawer) return drawer as HTMLElement;
+    const modal = triggerNode?.closest?.('.ant-modal-body');
+    if (modal) return modal as HTMLElement;
+    return document.body;
+};
+
 function App() {
     const { preferences } = usePreferences();
     const isDark = preferences.theme === 'dark';
-    const algorithm = isDark ? antTheme.darkAlgorithm : antTheme.defaultAlgorithm;
 
     return (
         <ConfigProvider
-            theme={{
-                algorithm,
-                token: {
-                    colorPrimary: isDark ? PRIMARY_DARK_HEX : PRIMARY_LIGHT_HEX,
-                    borderRadius: RADIUS_BASE,
-                    borderRadiusLG: RADIUS.card,
-                    fontFamily: FONT_BODY,
-                },
-                components: {
-                    Card: {
-                        borderRadiusLG: RADIUS.card,
-                    },
-                    Button: {
-                        borderRadius: 10,
-                        controlHeight: 38,
-                    },
-                    Menu: {
-                        itemBorderRadius: 9,
-                        itemHeight: 38,
-                        itemMarginInline: 8,
-                    },
-                    Modal: {
-                        borderRadiusLG: RADIUS.card,
-                    },
-                },
-            }}
-            getPopupContainer={(triggerNode) => {
-                const drawer = triggerNode?.closest?.('.ant-drawer-body');
-                if (drawer) return drawer as HTMLElement;
-                const modal = triggerNode?.closest?.('.ant-modal-body');
-                if (modal) return modal as HTMLElement;
-                return document.body;
-            }}
+            theme={isDark ? THEME_DARK : THEME_LIGHT}
+            getPopupContainer={getPopupContainer}
         >
             <AntApp>
                 <RouterProvider router={router} />

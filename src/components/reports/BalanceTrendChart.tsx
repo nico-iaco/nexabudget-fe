@@ -38,6 +38,12 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerW, setContainerW] = useState(0);
     const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+    // Rect memorizzata all'ingresso del puntatore: `getBoundingClientRect()` a ogni
+    // mousemove è una lettura di layout forzata, e il riquadro non cambia durante l'hover.
+    const rectRef = useRef<DOMRect | null>(null);
+    const handleEnter = (e: React.MouseEvent<SVGSVGElement>) => {
+        rectRef.current = e.currentTarget.getBoundingClientRect();
+    };
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -94,15 +100,16 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
     const labelStep = colW < 56 ? Math.ceil(56 / Math.max(colW, 1)) : 1;
 
     const handleMove = (e: React.MouseEvent<SVGSVGElement>) => {
-        const rect = e.currentTarget.getBoundingClientRect();
+        const rect = rectRef.current ?? e.currentTarget.getBoundingClientRect();
         const x = ((e.clientX - rect.left) / rect.width) * totalW;
         const localX = x - MARGIN_LEFT;
         if (localX < -colW / 2 || localX > plotW + colW / 2) {
-            setHoverIdx(null);
+            // Aggiorna solo se cambia davvero (vedi nota in TrendDualChart).
+            setHoverIdx(prev => (prev === null ? prev : null));
             return;
         }
         const idx = Math.min(N - 1, Math.max(0, Math.round(localX / colW)));
-        setHoverIdx(idx);
+        setHoverIdx(prev => (prev === idx ? prev : idx));
     };
 
     const polyline = points.map((p, i) => `${xCenter(i)},${yToPx(p.closingBalance)}`).join(' ');
@@ -131,6 +138,7 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
                     height={height}
                     viewBox={`0 0 ${totalW} ${height}`}
                     style={{ display: 'block' }}
+                    onMouseEnter={handleEnter}
                     onMouseMove={handleMove}
                     onMouseLeave={() => setHoverIdx(null)}
                 >

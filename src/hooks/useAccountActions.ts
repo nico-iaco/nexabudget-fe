@@ -1,7 +1,7 @@
 // src/hooks/useAccountActions.ts
 // Mutazioni CRUD account e transfer estratte da Layout.tsx.
 // Usa useMutation di React Query: isPending alimenta il loading dei modali (Fase E).
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
@@ -93,25 +93,28 @@ export const useAccountActions = () => {
     });
 
     // --- Handler apertura modali ---
-    const handleOpenCreateAccountModal = (closeMobile?: () => void) => {
+    // Tutti in useCallback: finiscono nell'outlet context di Layout e nelle prop di
+    // AppSider, che vanno memoizzati. I setter di useState sono già stabili, quindi
+    // le dipendenze sono vuote.
+    const handleOpenCreateAccountModal = useCallback((closeMobile?: () => void) => {
         setEditingAccount(null);
         setIsAccountModalOpen(true);
         closeMobile?.();
-    };
+    }, []);
 
-    const handleOpenEditAccountModal = (account: Account, closeMobile?: () => void) => {
+    const handleOpenEditAccountModal = useCallback((account: Account, closeMobile?: () => void) => {
         setEditingAccount(account);
         setIsAccountModalOpen(true);
         closeMobile?.();
-    };
+    }, []);
 
-    const handleCancelAccountModal = () => {
+    const handleCancelAccountModal = useCallback(() => {
         setIsAccountModalOpen(false);
         setEditingAccount(null);
-    };
+    }, []);
 
-    const handleOpenTransferModal = () => setIsTransferModalOpen(true);
-    const handleCancelTransferModal = () => setIsTransferModalOpen(false);
+    const handleOpenTransferModal = useCallback(() => setIsTransferModalOpen(true), []);
+    const handleCancelTransferModal = useCallback(() => setIsTransferModalOpen(false), []);
 
     return {
         // Stato modali

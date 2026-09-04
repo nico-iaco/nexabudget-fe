@@ -2,7 +2,12 @@
 import { useState, useEffect } from 'react';
 
 export const useMediaQuery = (query: string): boolean => {
-    const [matches, setMatches] = useState(window.matchMedia(query).matches);
+    // Initializer lazy: scritto come `useState(window.matchMedia(query).matches)`
+    // l'espressione veniva valutata a OGNI render, non solo al mount. Con 13 file che
+    // usano questo hook (alcuni due volte, via useBreakpoints) erano ~8 chiamate
+    // sincrone a matchMedia — una API di risoluzione di stile — per ogni passaggio
+    // di render dell'albero.
+    const [matches, setMatches] = useState(() => window.matchMedia(query).matches);
 
     useEffect(() => {
         const media = window.matchMedia(query);

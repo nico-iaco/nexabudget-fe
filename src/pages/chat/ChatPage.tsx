@@ -1,5 +1,5 @@
 // src/pages/chat/ChatPage.tsx
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { App, Button, Drawer, Flex, List, Popconfirm, Spin, Tag, Typography, theme } from 'antd';
 import { DeleteOutlined, MenuOutlined, PlusOutlined, RobotOutlined, SendOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
@@ -7,6 +7,7 @@ import type { TextAreaRef } from 'antd/es/input/TextArea';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import type { GlobalToken } from 'antd/es/theme/interface';
 import dayjs from 'dayjs';
 import * as api from '../../services/api';
 import type { ChatSession } from '../../types/api';
@@ -26,6 +27,106 @@ interface DisplayMessage {
     isLoading?: boolean;
 }
 
+// I plugin remark vanno in una costante di modulo: come array literal inline
+// cambiavano identità a ogni render, forzando ReactMarkdown a rifare il lavoro.
+const REMARK_PLUGINS = [remarkGfm];
+
+interface ChatMessageBubbleProps {
+    msg: DisplayMessage;
+    isMobile: boolean;
+    token: GlobalToken;
+    toolsUsedLabel: string;
+}
+
+/**
+ * Bolla di un singolo messaggio, memoizzata.
+ * Serve perché `inputText` vive nello stesso componente che rende la lista: senza memo
+ * ogni carattere digitato ri-renderizzava tutti i messaggi e faceva ri-parsare a
+ * remark/remark-gfm il markdown di ogni risposta dell'assistente, con latenza di
+ * digitazione crescente al crescere della conversazione.
+ * Le prop sono tutte stabili fra una battitura e l'altra.
+ */
+const ChatMessageBubble = memo(({ msg, isMobile, token, toolsUsedLabel }: ChatMessageBubbleProps) => (
+    <Flex justify={msg.role === 'USER' ? 'flex-end' : 'flex-start'}>
+        <Flex
+            vertical
+            style={{
+                // clamp() scala con il contenitore reale (non con vw),
+                // così si adatta a qualsiasi larghezza senza breakpoint fissi.
+                // USER: più stretto (i messaggi utente sono tipicamente brevi)
+                // ASSISTANT: più largo (markdown, tabelle, liste)
+                maxWidth: msg.role === 'USER'
+                    ? 'clamp(200px, 72%, 520px)'
+                    : 'clamp(260px, 88%, 740px)',
+                alignItems: msg.role === 'USER' ? 'flex-end' : 'flex-start',
+            }}
+        >
+            <div
+                style={{
+                    background: msg.role === 'USER'
+                        ? token.colorPrimary
+                        : token.colorBgElevated,
+                    color: msg.role === 'USER' ? token.colorTextLightSolid : token.colorText,
+                    padding: isMobile ? '10px 13px' : '10px 14px',
+                    borderRadius: msg.role === 'USER'
+                        ? '16px 16px 4px 16px'
+                        : '16px 16px 16px 4px',
+                    boxShadow: token.boxShadowSecondary,
+                    lineHeight: 1.55,
+                    fontSize: isMobile ? FONT_SIZE.lg : FONT_SIZE.base,
+                    wordBreak: 'break-word',
+                }}
+            >
+                {msg.isLoading ? (
+                    <Flex align="center" gap={8}>
+                        <Spin size="small" />
+                        <Text style={{ color: token.colorTextSecondary, fontSize: FONT_SIZE.md }}>
+                            NexaBot…
+                        </Text>
+                    </Flex>
+                ) : msg.role === 'ASSISTANT' ? (
+                    <div className="chat-markdown">
+                        <ReactMarkdown remarkPlugins={REMARK_PLUGINS}>
+                            {msg.content}
+                        </ReactMarkdown>
+                    </div>
+                ) : (
+                    <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
+                )}
+            </div>
+
+            {msg.toolsUsed && msg.toolsUsed.length > 0 && (
+                <Flex gap={4} wrap="wrap" style={{ marginTop: 4, paddingLeft: 4 }}>
+                    <Text style={{ fontSize: FONT_SIZE.xxs, color: token.colorTextTertiary }}>
+                        {toolsUsedLabel}:
+                    </Text>
+                    {msg.toolsUsed.map(tool => (
+                        <Tag
+                            key={tool}
+                            style={{ fontSize: FONT_SIZE.xxs, margin: 0, padding: '0 5px', lineHeight: '18px' }}
+                        >
+                            {tool}
+                        </Tag>
+                    ))}
+                </Flex>
+            )}
+
+            <Text
+                style={{
+                    fontSize: FONT_SIZE.xs,
+                    color: token.colorTextQuaternary,
+                    marginTop: 3,
+                    paddingLeft: 4,
+                    paddingRight: 4,
+                }}
+            >
+                {dayjs(msg.createdAt).format('HH:mm')}
+            </Text>
+        </Flex>
+    </Flex>
+));
+ChatMessageBubble.displayName = 'ChatMessageBubble';
+
 // Chip di suggerimento per lo stato vuoto — aiutano l'utente a iniziare
 const SUGGESTION_KEYS = [
     'chat.suggestion1',
@@ -38,6 +139,9 @@ export const ChatPage = () => {
     const { t } = useTranslation();
     const { message } = App.useApp();
     const { token } = theme.useToken();
+    // Estratta qui: passata come stringa già risolta, la bolla memoizzata non ha
+    // bisogno di `t` fra le prop (che cambierebbe identità al cambio lingua).
+    const toolsUsedLabel = t('chat.toolsUsed');
     const { isMobile, isSmallMobile } = useBreakpoints();
 
     usePageTitle(t('chat.title'));
@@ -494,90 +598,13 @@ export const ChatPage = () => {
                     ) : (
                         <Flex vertical gap={isMobile ? 10 : 12}>
                             {messages.map(msg => (
-                                <Flex
+                                <ChatMessageBubble
                                     key={msg.id}
-                                    justify={msg.role === 'USER' ? 'flex-end' : 'flex-start'}
-                                >
-                                    <Flex
-                                        vertical
-                                        style={{
-                                            // clamp() scala con il contenitore reale (non con vw),
-                                            // così si adatta a qualsiasi larghezza senza breakpoint fissi.
-                                            // USER: più stretto (i messaggi utente sono tipicamente brevi)
-                                            // ASSISTANT: più largo (markdown, tabelle, liste)
-                                            maxWidth: msg.role === 'USER'
-                                                ? 'clamp(200px, 72%, 520px)'
-                                                : 'clamp(260px, 88%, 740px)',
-                                            alignItems: msg.role === 'USER' ? 'flex-end' : 'flex-start',
-                                        }}
-                                    >
-                                        <div
-                                            style={{
-                                                background: msg.role === 'USER'
-                                                    ? token.colorPrimary
-                                                    : token.colorBgElevated,
-                                                color: msg.role === 'USER' ? token.colorTextLightSolid : token.colorText,
-                                                padding: isMobile ? '10px 13px' : '10px 14px',
-                                                borderRadius: msg.role === 'USER'
-                                                    ? '16px 16px 4px 16px'
-                                                    : '16px 16px 16px 4px',
-                                                boxShadow: token.boxShadowSecondary,
-                                                lineHeight: 1.55,
-                                                fontSize: isMobile ? FONT_SIZE.lg : FONT_SIZE.base,
-                                                wordBreak: 'break-word',
-                                            }}
-                                        >
-                                            {msg.isLoading ? (
-                                                <Flex align="center" gap={8}>
-                                                    <Spin size="small" />
-                                                    <Text style={{ color: token.colorTextSecondary, fontSize: FONT_SIZE.md }}>
-                                                        NexaBot…
-                                                    </Text>
-                                                </Flex>
-                                            ) : msg.role === 'ASSISTANT' ? (
-                                                <div className="chat-markdown">
-                                                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                                        {msg.content}
-                                                    </ReactMarkdown>
-                                                </div>
-                                            ) : (
-                                                <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
-                                            )}
-                                        </div>
-
-                                        {msg.toolsUsed && msg.toolsUsed.length > 0 && (
-                                            <Flex
-                                                gap={4}
-                                                wrap="wrap"
-                                                style={{ marginTop: 4, paddingLeft: 4 }}
-                                            >
-                                                <Text style={{ fontSize: FONT_SIZE.xxs, color: token.colorTextTertiary }}>
-                                                    {t('chat.toolsUsed')}:
-                                                </Text>
-                                                {msg.toolsUsed.map(tool => (
-                                                    <Tag
-                                                        key={tool}
-                                                        style={{ fontSize: FONT_SIZE.xxs, margin: 0, padding: '0 5px', lineHeight: '18px' }}
-                                                    >
-                                                        {tool}
-                                                    </Tag>
-                                                ))}
-                                            </Flex>
-                                        )}
-
-                                        <Text
-                                            style={{
-                                                fontSize: FONT_SIZE.xs,
-                                                color: token.colorTextQuaternary,
-                                                marginTop: 3,
-                                                paddingLeft: 4,
-                                                paddingRight: 4,
-                                            }}
-                                        >
-                                            {dayjs(msg.createdAt).format('HH:mm')}
-                                        </Text>
-                                    </Flex>
-                                </Flex>
+                                    msg={msg}
+                                    isMobile={isMobile}
+                                    token={token}
+                                    toolsUsedLabel={toolsUsedLabel}
+                                />
                             ))}
                             <div ref={messagesEndRef} />
                         </Flex>

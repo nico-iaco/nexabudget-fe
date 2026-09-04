@@ -6,10 +6,17 @@ const THRESHOLD = 70;
 const getScrollTop = (el: EventTarget | null): number => {
     let node = el as HTMLElement | null;
     while (node && node !== document.body) {
-        const { overflow, overflowY } = window.getComputedStyle(node);
-        if (overflow.includes('auto') || overflow.includes('scroll') ||
-            overflowY.includes('auto') || overflowY.includes('scroll')) {
-            return node.scrollTop;
+        // `getComputedStyle` forza un flush di stile, e la risalita lo chiamava per ogni
+        // antenato fino al body. Un elemento che non ha contenuto in eccesso non può
+        // essere il contenitore scrollabile, quindi lo scartiamo prima di interrogarne
+        // lo stile: resta la stessa semantica (incluso il rispetto degli scroller
+        // annidati), su una frazione degli elementi.
+        if (node.scrollHeight > node.clientHeight) {
+            const { overflow, overflowY } = window.getComputedStyle(node);
+            if (overflow.includes('auto') || overflow.includes('scroll') ||
+                overflowY.includes('auto') || overflowY.includes('scroll')) {
+                return node.scrollTop;
+            }
         }
         node = node.parentElement;
     }

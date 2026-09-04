@@ -13,3 +13,4 @@ docker-compose.yaml
 stats.html
 npm-debug.log*
 .DS_Store
+.stats

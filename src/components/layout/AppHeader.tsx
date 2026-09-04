@@ -56,7 +56,15 @@ export const AppHeader = ({ collapsed, setCollapsed, isMobile, onLogout, toggleR
                         fontFamily: FONT_HEADING,
                         fontWeight: 800,
                         color: colorPrimary,
-                        background: `linear-gradient(135deg, ${colorPrimary} 0%, ${colorPrimaryActive} 100%)`,
+                        // `backgroundImage` (longhand) e non `background` (shorthand):
+                        // al cambio tema React aggiorna solo questa proprietà, e lo
+                        // shorthand `background` avrebbe riportato `background-clip` al
+                        // valore iniziale `border-box`, facendo sparire il ritaglio sul
+                        // testo — il titolo diventava un rettangolo blu pieno. Il bug si
+                        // vedeva solo passando da un tema all'altro a runtime, non al
+                        // caricamento, perché al primo render le proprietà vengono
+                        // applicate tutte in ordine.
+                        backgroundImage: `linear-gradient(135deg, ${colorPrimary} 0%, ${colorPrimaryActive} 100%)`,
                         WebkitBackgroundClip: 'text',
                         WebkitTextFillColor: 'transparent',
                         backgroundClip: 'text',

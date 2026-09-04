@@ -1,11 +1,15 @@
 // src/hooks/useAccounts.ts
 // Hook React Query per account e saldo totale.
 // Sostituisce il data-fetching manuale in Layout.tsx (fetchAccounts).
+import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../queryKeys';
 import * as api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import type { Account } from '../types/api';
+
+// Riferimento stabile: vedi nota in useCategories.
+const EMPTY_ACCOUNTS: Account[] = [];
 
 /**
  * Restituisce la lista account e il saldo totale preferito dell'utente.
@@ -33,14 +37,19 @@ export const useAccounts = () => {
      * Forza un refetch degli account e del saldo.
      * Compatibile con la firma di `fetchAccounts(background?)` usata nei consumer dell'Outlet.
      */
-    const fetchAccounts = async (_background?: boolean): Promise<Account[]> => {
-        await queryClient.invalidateQueries({ queryKey: queryKeys.accounts });
-        await queryClient.invalidateQueries({ queryKey: queryKeys.totalBalance });
-        return queryClient.getQueryData<Account[]>(queryKeys.accounts) ?? [];
-    };
+    // Le due invalidazioni vanno in parallelo: `invalidateQueries` risolve a refetch
+    // completato, quindi in serie erano due round-trip in fila invece che simultanei —
+    // su un percorso invocato a ogni salvataggio, import, sync e tick di polling.
+    const fetchAccounts = useCallback(async (_background?: boolean): Promise<Account[]> => {
+        await Promise.all([
+            queryClient.invalidateQueries({ queryKey: queryKeys.accounts }),
+            queryClient.invalidateQueries({ queryKey: queryKeys.totalBalance }),
+        ]);
+        return queryClient.getQueryData<Account[]>(queryKeys.accounts) ?? EMPTY_ACCOUNTS;
+    }, [queryClient]);
 
     return {
-        accounts: accountsQuery.data ?? [],
+        accounts: accountsQuery.data ?? EMPTY_ACCOUNTS,
         totalBalance: balanceQuery.data ?? 0,
         isLoading: accountsQuery.isPending,
         isFetching: accountsQuery.isFetching,

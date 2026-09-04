@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { memo, useEffect, useState } from 'react';
 import { App, Card, Collapse, Flex, List, Table, Tag, Typography, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
@@ -28,6 +28,30 @@ const ACTION_COLORS: Record<AuditAction, string> = {
     UPDATE_CATEGORY: 'blue',
     DELETE_CATEGORY: 'red',
 };
+
+const formatValue = (raw: string) => {
+    try { return JSON.stringify(JSON.parse(raw), null, 2); } catch { return raw; }
+};
+
+/**
+ * Anteprima JSON del valore di un'entry di audit.
+ * Esiste come componente proprio perché il ramo mobile la mostra dentro un Collapse:
+ * passando `formatValue(record.newValue)` come children dell'item, la chiamata veniva
+ * valutata subito — i children React sono costruiti in modo eager — quindi il
+ * parse+stringify girava per tutte e 20 le righe della pagina anche da collassate.
+ * Dentro un componente, il lavoro avviene solo quando il pannello viene aperto.
+ */
+const JsonPreview = memo(({ raw, maxHeight, fontSize, background }: {
+    raw: string;
+    maxHeight: number;
+    fontSize: number;
+    background: string;
+}) => (
+    <pre style={{ fontSize, maxHeight, overflow: 'auto', margin: 0, background, padding: SPACING.xs, borderRadius: RADIUS.sm }}>
+        {formatValue(raw)}
+    </pre>
+));
+JsonPreview.displayName = 'JsonPreview';
 
 export const AuditLogPage = () => {
     const { t } = useTranslation();
@@ -109,9 +133,6 @@ export const AuditLogPage = () => {
         },
     };
 
-    const formatValue = (raw: string) => {
-        try { return JSON.stringify(JSON.parse(raw), null, 2); } catch { return raw; }
-    };
 
     return (
         <>
@@ -149,9 +170,12 @@ export const AuditLogPage = () => {
                                             key: '1',
                                             label: <Text type="secondary" style={{ fontSize: FONT_SIZE.sm }}>{t('audit.newValue')}</Text>,
                                             children: (
-                                                <pre style={{ fontSize: FONT_SIZE.xs, maxHeight: 200, overflow: 'auto', margin: 0, background: token.colorFillTertiary, padding: SPACING.xs, borderRadius: RADIUS.sm }}>
-                                                    {formatValue(record.newValue)}
-                                                </pre>
+                                                <JsonPreview
+                                                    raw={record.newValue}
+                                                    maxHeight={200}
+                                                    fontSize={FONT_SIZE.xs}
+                                                    background={token.colorFillTertiary}
+                                                />
                                             ),
                                         }]}
                                     />
@@ -170,9 +194,12 @@ export const AuditLogPage = () => {
                     scroll={{ x: 'max-content' }}
                     expandable={{
                         expandedRowRender: (record) => (
-                            <pre style={{ fontSize: FONT_SIZE.sm, maxHeight: 300, overflow: 'auto', margin: 0, background: token.colorFillTertiary, padding: SPACING.xs, borderRadius: RADIUS.sm }}>
-                                {formatValue(record.newValue)}
-                            </pre>
+                            <JsonPreview
+                                raw={record.newValue}
+                                maxHeight={300}
+                                fontSize={FONT_SIZE.sm}
+                                background={token.colorFillTertiary}
+                            />
                         ),
                         rowExpandable: (record) => !!record.newValue,
                     }}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { App, Button, Table, Tabs, Tag } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -48,10 +48,22 @@ export const TrashPage = () => {
         }
     };
 
+    // Solo la tab visibile viene caricata al mount: prima partivano entrambe le
+    // richieste (entrambe non paginate), e quella della tab nascosta era pura attesa
+    // finché l'utente non ci passava — se ci passava.
+    const [activeTab, setActiveTab] = useState<'transactions' | 'accounts'>('transactions');
+    const loadedTabsRef = useRef<Set<string>>(new Set());
+
     useEffect(() => {
-        fetchDeletedTransactions();
-        fetchDeletedAccounts();
-    }, []);
+        if (loadedTabsRef.current.has(activeTab)) return;
+        loadedTabsRef.current.add(activeTab);
+        if (activeTab === 'transactions') {
+            fetchDeletedTransactions();
+        } else {
+            fetchDeletedAccounts();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [activeTab]);
 
     const handleRestoreTransaction = async (id: string) => {
         setRestoringId(id);
@@ -185,6 +197,8 @@ export const TrashPage = () => {
         <>
             <PageHeader title={t('trash.title')} />
             <Tabs
+                activeKey={activeTab}
+                onChange={(k) => setActiveTab(k as 'transactions' | 'accounts')}
                 items={[
                     {
                         key: 'transactions',

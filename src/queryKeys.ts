@@ -27,6 +27,12 @@ export const queryKeys = {
         trendMonths: number
     ) => ['dashboardData', refreshKey, startKey, endKey, trendMonths] as const,
 
+    // Confronto mese su mese. Chiave condivisa fra useDashboardData (mese corrente) e
+    // DashboardPage (mese scelto dall'utente): quando coincidono — cioè nel caso di
+    // default — React Query deduplica le due richieste in una sola.
+    monthComparison: (year: number, month: number) =>
+        ['reports', 'month-comparison', year, month] as const,
+
     // Report trend saldo (mantiene la stessa struttura usata da BalanceTrendSection)
     balanceTrend: (startDate: string | null, endDate: string | null) =>
         ['reports', 'balance-trend', startDate, endDate] as const,

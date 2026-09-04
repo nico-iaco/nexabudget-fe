@@ -1,4 +1,11 @@
-import { Column, Line, Pie } from '@ant-design/charts';
+// Importati da `@ant-design/plots`, non da `@ant-design/charts`: quest'ultimo è un barrel
+// (`export * from '@ant-design/graphs'; export * from '@ant-design/plots';`) e
+// `@ant-design/graphs` fa `import * as G6 from '@antv/g6'` più un modulo di preset a effetti
+// collaterali, senza campo `sideEffects` — quindi l'intero motore di grafi G6, con
+// @antv/algorithm, dagre, graphlib e d3-force-3d, era non-eliminabile e finiva in un chunk
+// da 1,26 MB per tre soli tipi di grafico. `@ant-design/plots` dichiara `sideEffects: false`.
+import { Column, Line, Pie } from '@ant-design/plots';
+import { memo } from 'react';
 import { Flex, theme, Typography } from 'antd';
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -10,7 +17,10 @@ import type { GlobalToken } from 'antd/es/theme/interface';
 
 export { TrendDualChart } from './TrendDualChart';
 
-const TooltipGlobalStyles = ({ token }: { token: GlobalToken }) => (
+// memo: reso dentro ciascuno dei tre grafici, quindi a ogni loro render venivano
+// ricreati fino a tre <style> duplicati, e ogni inserzione invalida la CSSOM forzando
+// un ricalcolo di stile su tutto il documento.
+const TooltipGlobalStyles = memo(({ token }: { token: GlobalToken }) => (
     <style>{`
         .g2-tooltip {
             background-color: ${token.colorBgElevated} !important;
@@ -27,7 +37,8 @@ const TooltipGlobalStyles = ({ token }: { token: GlobalToken }) => (
              color: ${token.colorTextSecondary} !important;
         }
     `}</style>
-);
+));
+TooltipGlobalStyles.displayName = 'TooltipGlobalStyles';
 
 const formatCurrency = (v: number): string =>
     `${v.toLocaleString(undefined, { maximumFractionDigits: 0 })} €`;
@@ -37,7 +48,7 @@ interface PieChartProps {
     centerLabel?: string;
 }
 
-export const GenericPieChart = ({ data, centerLabel }: PieChartProps) => {
+const GenericPieChartInner = ({ data, centerLabel }: PieChartProps) => {
     const { t } = useTranslation();
     const { preferences } = usePreferences();
     const isDark = preferences.theme === 'dark';
@@ -88,7 +99,7 @@ interface BarChartProps {
     data: BarData[];
 }
 
-export const TrendBarChart = ({ data }: BarChartProps) => {
+const TrendBarChartInner = ({ data }: BarChartProps) => {
     const { t } = useTranslation();
     const { preferences } = usePreferences();
     const isDark = preferences.theme === 'dark';
@@ -256,7 +267,7 @@ interface LineChartProps {
     data: LineData[];
 }
 
-export const NetBalanceLineChart = ({ data }: LineChartProps) => {
+const NetBalanceLineChartInner = ({ data }: LineChartProps) => {
     const { t } = useTranslation();
     const { preferences } = usePreferences();
     const isDark = preferences.theme === 'dark';
@@ -299,3 +310,10 @@ export const NetBalanceLineChart = ({ data }: LineChartProps) => {
         </>
     );
 };
+
+// memo sui tre grafici che passano da G2: senza, qualunque render di DashboardPage
+// (cambio di trendMonths, settle di una query, cambio di breakpoint) faceva ricostruire
+// gli oggetti config e ri-disegnare la canvas con animazione.
+export const GenericPieChart = memo(GenericPieChartInner);
+export const TrendBarChart = memo(TrendBarChartInner);
+export const NetBalanceLineChart = memo(NetBalanceLineChartInner);

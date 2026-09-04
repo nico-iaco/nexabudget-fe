@@ -35,6 +35,10 @@ export default defineConfig([
         caughtErrorsIgnorePattern: '^_',
       }],
 
+      // I console.log restavano nei bundle di produzione, stampando id conto e saldi.
+      // console.warn/error sono ammessi: servono come diagnostica reale.
+      'no-console': ['error', { allow: ['warn', 'error'] }],
+
       // --- Regole introdotte da eslint-plugin-react-hooks 7 (React Compiler) ---
       // Tenute attive come warning, non come errore: segnalano pattern legittimi
       // per questo codebase e il loro fix è un refactor, non una correzione locale.

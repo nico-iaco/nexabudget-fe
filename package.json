@@ -6,13 +6,13 @@
   "scripts": {
     "dev": "vite --host",
     "build": "npm run generate-icons && tsc -b && vite build",
-    "analyze": "npm run build && open dist/stats.html",
+    "analyze": "ANALYZE=true npm run build && open .stats/stats.html",
     "lint": "eslint .",
     "preview": "vite preview",
     "generate-icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
-    "@ant-design/charts": "^2.6.7",
+    "@ant-design/plots": "^2.6.8",
     "@ant-design/icons": "^6.1.1",
     "@tanstack/react-query": "^5.100.9",
     "antd": "^6.3.6",

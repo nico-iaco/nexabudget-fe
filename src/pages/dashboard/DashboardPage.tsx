@@ -15,6 +15,9 @@ import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 
 // On mobile we load a lightweight chart bundle (no G2Plot); on desktop the full one.
 // Evaluated once at module load — device type is fixed for a PWA session.
+// Deve combaciare col default di `height` in Sparkline (DashboardCharts*.tsx).
+const SPARKLINE_HEIGHT = 32;
+
 const _isMobileAtLoad = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
 const _chartsModule = () =>
     _isMobileAtLoad
@@ -24,9 +27,12 @@ const GenericPieChart = lazy(() => _chartsModule().then(m => ({ default: m.Gener
 const TrendDualChart = lazy(() => _chartsModule().then(m => ({ default: m.TrendDualChart })));
 const ComparisonBars = lazy(() => _chartsModule().then(m => ({ default: m.ComparisonBars })));
 const Sparkline = lazy(() => _chartsModule().then(m => ({ default: m.Sparkline })));
-import { AiAnalysisCard } from '../../components/dashboard/AiAnalysisCard';
+// Lazy: AiAnalysisCard importa react-markdown + remark-gfm (153 kB raw / 40 kB gzip)
+// per una card opzionale, e li portava nel chunk della route di atterraggio.
+const AiAnalysisCard = lazy(() => import('../../components/dashboard/AiAnalysisCard').then(m => ({ default: m.AiAnalysisCard })));
 import { BalanceTrendSection } from '../../components/reports/BalanceTrendSection';
 import * as api from '../../services/api';
+import { queryKeys } from '../../queryKeys';
 import type { CategoryBreakdownItem, MonthComparisonResponse, MonthlySummaryResponse } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -92,7 +98,7 @@ export const DashboardPage = () => {
     // Confronto mese scelto dall'utente — cached via React Query.
     const [comparisonMonth, setComparisonMonth] = useState<Dayjs>(dayjs());
     const { data: customComparison, isPending: loadingComparison } = useQuery<MonthComparisonResponse | null>({
-        queryKey: ['monthComparison', comparisonMonth.year(), comparisonMonth.month() + 1, transactionRefreshKey],
+        queryKey: queryKeys.monthComparison(comparisonMonth.year(), comparisonMonth.month() + 1),
         queryFn: () =>
             api.getMonthComparison(comparisonMonth.year(), comparisonMonth.month() + 1)
                 .then(r => r.data)
@@ -160,6 +166,19 @@ export const DashboardPage = () => {
                     <Col xs={24} md={12}><Skeleton active paragraph={{ rows: 6 }} /></Col>
                 </Row>
                 <Skeleton active paragraph={{ rows: 6 }} style={{ marginTop: SPACING.md }} />
+                {/* Montate anche durante il caricamento: hanno una query propria, e
+                    l'early-return globale le teneva smontate finché il Promise.all da 6
+                    chiamate non era interamente risolto — il loro TTFB diventava "la più
+                    lenta delle sei" più la propria latenza. Entrambe hanno già uno stato
+                    di caricamento interno. */}
+                <div style={{ marginTop: SPACING.md }}>
+                    <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
+                        <AiAnalysisCard />
+                    </Suspense>
+                </div>
+                <div style={{ marginTop: SPACING.md }}>
+                    <BalanceTrendSection />
+                </div>
             </>
         );
     }
@@ -246,7 +265,7 @@ export const DashboardPage = () => {
                                 prefix={netBalance >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
                                 suffix="€"
                                 footer={
-                                    <Suspense fallback={null}>
+                                    <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
                                         <Sparkline values={netSparkline} color="rgba(255,255,255,0.55)" />
                                     </Suspense>
                                 }
@@ -261,7 +280,7 @@ export const DashboardPage = () => {
                                 prefix={<ArrowUpOutlined />}
                                 suffix="€"
                                 footer={
-                                    <Suspense fallback={null}>
+                                    <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
                                         <Sparkline values={incomeSparkline} color={semantic.positive} />
                                     </Suspense>
                                 }
@@ -285,7 +304,7 @@ export const DashboardPage = () => {
                                                 <Text type="secondary"> {t('dashboard.vsPeriod', { period: t('dashboard.previousMonth') })}</Text>
                                             </div>
                                         )}
-                                        <Suspense fallback={null}>
+                                        <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
                                             <Sparkline values={expenseSparkline} color={semantic.negative} />
                                         </Suspense>
                                     </>
@@ -308,7 +327,9 @@ export const DashboardPage = () => {
                     {/* Analisi Finanziaria AI */}
                     <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
                         <Col xs={24}>
-                            <AiAnalysisCard />
+                            <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
+                                <AiAnalysisCard />
+                            </Suspense>
                         </Col>
                     </Row>
 

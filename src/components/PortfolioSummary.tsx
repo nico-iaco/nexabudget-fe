@@ -57,6 +57,15 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
 
     const colors = ['magenta', 'red', 'volcano', 'orange', 'gold', 'lime', 'green', 'cyan', 'blue', 'geekblue', 'purple'];
 
+    // Un solo formatter riusato: prima veniva costruito un `new Intl.NumberFormat` per
+    // cella e per render — nel ramo mobile uno per asset più uno per ogni sotto-asset.
+    // È fra le costruzioni più costose della piattaforma.
+    const currencyFormatter = useMemo(
+        () => new Intl.NumberFormat(locale, { style: 'currency', currency: data?.currency || 'USD' }),
+        [locale, data?.currency]
+    );
+    const formatMoney = currencyFormatter.format;
+
     const columns = [
         {
             title: t('portfolio.asset'),
@@ -77,14 +86,14 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
             dataIndex: 'price',
             key: 'price',
             render: (price: number) =>
-                new Intl.NumberFormat(locale, { style: 'currency', currency: data?.currency || 'USD' }).format(price),
+                formatMoney(price),
         },
         {
             title: t('portfolio.value'),
             dataIndex: 'value',
             key: 'value',
             render: (value: number) =>
-                new Intl.NumberFormat(locale, { style: 'currency', currency: data?.currency || 'USD' }).format(value),
+                formatMoney(value),
         },
     ];
 
@@ -102,7 +111,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                 dataIndex: 'value',
                 key: 'value',
                 render: (value: number) =>
-                    new Intl.NumberFormat(locale, { style: 'currency', currency: data?.currency || 'USD' }).format(value),
+                    formatMoney(value),
             },
             {
                 title: t('portfolio.actions'),
@@ -170,7 +179,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                                                 <Flex justify="space-between" align="center" style={{ width: '100%' }}>
                                                     <Tag color={colors[index % colors.length]}>{record.symbol}</Tag>
                                                     <div style={{ textAlign: 'right' }}>
-                                                        <div><Text strong>{new Intl.NumberFormat(locale, { style: 'currency', currency: data?.currency || 'USD' }).format(record.value)}</Text></div>
+                                                        <div><Text strong>{formatMoney(record.value)}</Text></div>
                                                         <div><Text type="secondary" style={{ fontSize: `${FONT_SIZE.sm}px` }}>{record.amount.toLocaleString(locale, { maximumFractionDigits: 8 })}</Text></div>
                                                     </div>
                                                 </Flex>
@@ -210,7 +219,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                                                                 description={
                                                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                                                         <span>{t('portfolio.amount')}: {asset.amount.toLocaleString(locale, { maximumFractionDigits: 8 })}</span>
-                                                                        <span>{t('portfolio.value')}: {new Intl.NumberFormat(locale, { style: 'currency', currency: data?.currency || 'USD' }).format(asset.value)}</span>
+                                                                        <span>{t('portfolio.value')}: {formatMoney(asset.value)}</span>
                                                                     </div>
                                                                 }
                                                             />
@@ -230,7 +239,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                         columns={columns}
                         rowKey="symbol"
                         loading={loading}
-                        pagination={false}
+                        pagination={{ defaultPageSize: 20, hideOnSinglePage: true }}
                         scroll={{ x: true }}
                         expandable={{
                             expandedRowRender,

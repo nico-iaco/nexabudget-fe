@@ -1,8 +1,17 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
-import viteCompression from 'vite-plugin-compression'
 import { visualizer } from 'rollup-plugin-visualizer'
+
+// Il report del bundle si genera SOLO con `npm run analyze` (che imposta ANALYZE=true)
+// e finisce fuori da `dist/`: prima veniva scritto a ogni build dentro l'output, dove
+// pesava 2,1 MB, entrava nel precache del service worker (globPatterns include **/*.html)
+// ed esponeva pubblicamente l'intero module graph dell'app.
+const ANALYZE = process.env.ANALYZE === 'true';
+
+// La compressione è a carico di Nginx (`gzip on` in nginx.conf.template).
+// I due `vite-plugin-compression` che stavano qui producevano 68 file .br non servibili
+// (nginx:alpine non include ngx_brotli) e zero file .gz (conflitto fra le due istanze).
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => {
@@ -12,9 +21,9 @@ export default defineConfig(({ mode }) => {
     return {
         plugins: [
             react(),
-            viteCompression({ algorithm: 'brotliCompress', ext: '.br' }),
-            viteCompression({ algorithm: 'gzip', ext: '.gz' }),
-            visualizer({ open: false, filename: 'dist/stats.html', gzipSize: true, brotliSize: true }),
+            ...(ANALYZE
+                ? [visualizer({ open: false, filename: '.stats/stats.html', gzipSize: true, brotliSize: true })]
+                : []),
             VitePWA({
                 registerType: 'autoUpdate',
                 includeAssets: ['vite.svg', 'robots.txt'],
@@ -56,23 +65,71 @@ export default defineConfig(({ mode }) => {
                     ]
                 },
                 workbox: {
+                    // Il precache deve contenere il solo shell d'avvio. Prima erano 101 entry
+                    // per 5,85 MB — scaricate al primo avvio e a ogni deploy, dato che
+                    // registerType è 'autoUpdate' — di cui ~3,85 MB di puro spreco.
                     maximumFileSizeToCacheInBytes: 6000000,
                     globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
+                    globIgnores: [
+                        // Report del bundle: non deve nemmeno esistere in dist (vedi ANALYZE sopra),
+                        // ma lo escludiamo comunque per sicurezza.
+                        'stats.html',
+                        // Chunk di route e componenti lazy: servono solo quando l'utente ci arriva,
+                        // e il runtimeCaching qui sotto li mette in cache al primo uso.
+                        'assets/*Page-*.js',
+                        'assets/*Modal-*.js',
+                        'assets/DashboardCharts-*.js',
+                        'assets/DashboardChartsMobile-*.js',
+                        'assets/BalanceTrendChart-*.js',
+                        'assets/AiAnalysisCard-*.js',
+                    ],
                     navigateFallback: '/index.html',
                     navigateFallbackDenylist: [/^\/api\//, /^\/mcp/, /^\/offline\.html$/],
                     runtimeCaching: [
                         {
-                            // API calls: try network first, fall back to cache (5 min TTL)
+                            // Chunk di route esclusi dal precache: cache al primo uso, così
+                            // l'app resta utilizzabile offline sulle sezioni già visitate.
+                            urlPattern: /\/assets\/.*\.js$/i,
+                            handler: 'StaleWhileRevalidate',
+                            options: {
+                                cacheName: 'route-chunks',
+                                expiration: {
+                                    maxEntries: 60,
+                                    maxAgeSeconds: 30 * 24 * 60 * 60,
+                                },
+                                cacheableResponse: { statuses: [0, 200] },
+                            },
+                        },
+                        {
+                            // Liste transazioni paginate: MAI in cache. La query string
+                            // contiene il testo di ricerca, quindi generava una voce di
+                            // cache per battitura: con maxEntries: 50 una sola sessione di
+                            // ricerca sfrattava ogni altra voce API, azzerando il fallback
+                            // offline di account e dashboard. Questa regola precede quella
+                            // generica: Workbox applica la prima che combacia.
+                            urlPattern: /\/api\/transactions\/(?:account\/[^/]+\/)?paged/i,
+                            handler: 'NetworkOnly',
+                        },
+                        {
+                            // Altre chiamate API: rete prima, cache come fallback.
+                            // networkTimeoutSeconds era 3: qualunque GET più lenta di 3 s
+                            // veniva abbandonata a favore di una copia fino a 5 minuti
+                            // vecchia, mentre React Query credeva di aver appena letto dati
+                            // freschi — due nozioni di freschezza in conflitto. 10 s
+                            // interviene solo quando la rete è davvero ferma, e la TTL è
+                            // allineata allo staleTime di React Query (2 min).
                             urlPattern: /\/api\/.*/i,
                             handler: 'NetworkFirst',
                             options: {
                                 cacheName: 'api-cache',
-                                networkTimeoutSeconds: 3,
+                                networkTimeoutSeconds: 10,
                                 expiration: {
-                                    maxEntries: 50,
-                                    maxAgeSeconds: 5 * 60,
+                                    maxEntries: 100,
+                                    maxAgeSeconds: 2 * 60,
                                 },
-                                cacheableResponse: { statuses: [0, 200] },
+                                // statuses: [0] cacherebbe risposte opaque, potenzialmente
+                                // inutilizzabili, bloccandole in cache.
+                                cacheableResponse: { statuses: [200] },
                             },
                         },
                         {
@@ -113,7 +170,22 @@ export default defineConfig(({ mode }) => {
             }
         },
         build: {
-            chunkSizeWarningLimit: 1500,
+            // Target esplicito invece del default implicito di Vite.
+            target: 'baseline-widely-available',
+            modulePreload: {
+                // DashboardPage sceglie a runtime fra due moduli grafici mutuamente
+                // esclusivi (`_isMobileAtLoad ? import(mobile) : import(desktop)`), ma il
+                // bundler emette un unico elenco di modulepreload per il chunk, che li
+                // contiene entrambi: su mobile il bundle desktop con G2 (1,26 MB) veniva
+                // scaricato pur non venendo mai eseguito. Verificato con browser headless
+                // a viewport 390px. Toglierli dal preload non impedisce il caricamento del
+                // ramo che serve davvero: quello passa dall'import() normale.
+                resolveDependencies: (_url, deps) =>
+                    deps.filter(d => !/\/(DashboardCharts|DashboardChartsMobile)-[^/]*\.js$/.test(d)),
+            },
+            // Prima era 1500, cioè giusto sopra il chunk da 1232 kB: la soglia esisteva
+            // ma non poteva scattare. 600 kB è abbastanza basso per fare rumore.
+            chunkSizeWarningLimit: 600,
             rollupOptions: {
                 output: {
                     manualChunks(id) {
@@ -129,6 +201,17 @@ export default defineConfig(({ mode }) => {
                             if (id.includes('/i18next') || id.includes('/react-i18next')) {
                                 return 'vendor-i18n';
                             }
+                            // NON raggruppare antd o @antv in un vendor chunk unico.
+                            // Provato e misurato: accorpandoli il percorso critico eager passa
+                            // da 1359 kB a 2868 kB, perché forzare moduli non correlati nello
+                            // stesso chunk crea dipendenze circolari fra chunk e basta un solo
+                            // modulo del gruppo raggiungibile dall'entry per rendere eager
+                            // l'intero blocco — lo stack grafici, che era correttamente lazy,
+                            // finiva in `modulepreload`. Inoltre impedirebbe di alleggerire il
+                            // primo paint rendendo lazy i singoli componenti (i modali dello
+                            // shell trascinano il DatePicker: se antd è un blocco unico, renderli
+                            // lazy non toglie più nulla dal percorso critico).
+                            // Lo splitting per componente di rolldown va lasciato fare.
                         }
                     },
                 },

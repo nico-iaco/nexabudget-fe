@@ -16,12 +16,23 @@ export const SEMANTIC = {
     warning: { light: 'oklch(60% 0.14 55)', dark: 'oklch(65% 0.14 55)' },
 } as const;
 
+// Due soli risultati possibili, precalcolati: la funzione è chiamata nel corpo di render
+// di oltre 10 componenti e restituendo un oggetto nuovo ogni volta vanificava le memo
+// e i confronti di prop dei componenti che lo ricevono.
+const SEMANTIC_LIGHT = {
+    positive: SEMANTIC.positive.light,
+    negative: SEMANTIC.negative.light,
+    warning: SEMANTIC.warning.light,
+} as const;
+
+const SEMANTIC_DARK = {
+    positive: SEMANTIC.positive.dark,
+    negative: SEMANTIC.negative.dark,
+    warning: SEMANTIC.warning.dark,
+} as const;
+
 /** Pick the semantic color set matching the active PreferencesContext theme. */
-export const getSemanticColors = (isDark: boolean) => ({
-    positive: isDark ? SEMANTIC.positive.dark : SEMANTIC.positive.light,
-    negative: isDark ? SEMANTIC.negative.dark : SEMANTIC.negative.light,
-    warning: isDark ? SEMANTIC.warning.dark : SEMANTIC.warning.light,
-});
+export const getSemanticColors = (isDark: boolean) => (isDark ? SEMANTIC_DARK : SEMANTIC_LIGHT);
 
 // Brand gradients (logo mark, balance/KPI panels).
 export const GRADIENT_BRAND = `linear-gradient(135deg, ${PRIMARY_LIGHT}, oklch(66% 0.15 200))`;

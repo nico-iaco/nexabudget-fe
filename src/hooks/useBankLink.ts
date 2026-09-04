@@ -1,7 +1,7 @@
 // src/hooks/useBankLink.ts
 // Macchina a stati del wizard di collegamento bancario multi-provider (GoCardless / Enable Banking).
 // Estende il precedente useGoCardlessLink con un primo step di scelta provider.
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import * as api from '../services/api';
@@ -38,7 +38,8 @@ export const useBankLink = () => {
     const { message } = App.useApp();
     const [state, setState] = useState<BankLinkState>(INITIAL_STATE);
 
-    const open = (account: Account) => {
+    // useCallback: `open` viene esposto nell'outlet context di Layout, che va memoizzato.
+    const open = useCallback((account: Account) => {
         // Se l'account è già collegato a un provider (es. rinnovo collegamento scaduto),
         // pre-seleziona quel provider e salta lo step di scelta.
         const presetProvider: BankProvider | null = account.provider
@@ -54,11 +55,11 @@ export const useBankLink = () => {
             loadingBanks: false,
             selectedBank: null,
         });
-    };
+    }, []);
 
-    const cancel = () => {
+    const cancel = useCallback(() => {
         setState(INITIAL_STATE);
-    };
+    }, []);
 
     const handleProviderSelect = (provider: BankProvider) => {
         setState(s => ({ ...s, selectedProvider: provider, currentStep: 1 }));

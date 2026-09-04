@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { App, Card, Button, DatePicker, Typography, Spin, Space, Flex, theme } from 'antd';
 import { RobotOutlined, DownloadOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
@@ -17,6 +17,10 @@ const AI_CARD_BORDER_DARK = 'oklch(32% 0.03 250)';
 import { DatePresetPicker } from '../common/DatePresetPicker';
 
 const { RangePicker } = DatePicker;
+
+// 3 s erano fino a 100 richieste per analisi su un job che dura decine di secondi.
+const AI_ANALYSIS_POLL_INTERVAL_MS = 5_000;
+const AI_ANALYSIS_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 const { Title, Text } = Typography;
 
 const PRESETS = (t: (k: string) => string) => [
@@ -80,22 +84,39 @@ export const AiAnalysisCard: React.FC = () => {
         }
     };
 
+    // `loading`, `t` e `message` letti da ref e non dalle dipendenze: erano fra le deps
+    // dell'effetto, ma `loading` viene modificato dall'effetto stesso e `t` cambia al
+    // cambio lingua — quindi intervallo e timeout venivano distrutti e ricreati,
+    // azzerando ogni volta il tetto di sicurezza dei 5 minuti.
+    const loadingRef = useRef(loading);
+    const tRef = useRef(t);
+    const messageRef = useRef(message);
+    // Assegnazione in effetto, non in render: i ref non si possono scrivere durante il
+    // render (react-hooks/refs). Stesso pattern di useAccountSync.
+    useEffect(() => {
+        loadingRef.current = loading;
+        tRef.current = t;
+        messageRef.current = message;
+    });
+
     useEffect(() => {
         if (!jobId) return;
 
         const interval = setInterval(async () => {
+            // Niente richieste mentre la tab è in background.
+            if (document.hidden) return;
             try {
                 const res = await api.getAiAnalysisStatus(jobId);
                 const { status, content } = res.data;
 
                 if (status === 'COMPLETED') {
-                    setResult(content || t('dashboard.aiAnalysis.emptyResult'));
+                    setResult(content || tRef.current('dashboard.aiAnalysis.emptyResult'));
                     setLoading(false);
                     setCompletedJobId(jobId);
                     setJobId(null);
                     clearInterval(interval);
                 } else if (status === 'FAILED') {
-                    message.error(t('dashboard.aiAnalysis.failed'));
+                    messageRef.current.error(tRef.current('dashboard.aiAnalysis.failed'));
                     setLoading(false);
                     setJobId(null);
                     clearInterval(interval);
@@ -104,23 +125,23 @@ export const AiAnalysisCard: React.FC = () => {
                 console.error(error);
                 // Non fermo il polling al primo errore di rete, ma potrei aggiungere un contatore di retry.
             }
-        }, 3000);
+        }, AI_ANALYSIS_POLL_INTERVAL_MS);
 
-        // Timeout di sicurezza (es. 5 minuti = 300000 ms)
+        // Timeout di sicurezza
         const timeout = setTimeout(() => {
             clearInterval(interval);
-            if (loading) {
-                message.error(t('dashboard.aiAnalysis.timeout'));
+            if (loadingRef.current) {
+                messageRef.current.error(tRef.current('dashboard.aiAnalysis.timeout'));
                 setLoading(false);
                 setJobId(null);
             }
-        }, 300000);
+        }, AI_ANALYSIS_POLL_TIMEOUT_MS);
 
         return () => {
             clearInterval(interval);
             clearTimeout(timeout);
         };
-    }, [jobId, loading, t]);
+    }, [jobId]);
 
     const handleDownload = async () => {
         if (!completedJobId) return;

@@ -3,7 +3,6 @@ import axios, { type AxiosResponse } from 'axios';
 import type {
     Account,
     AccountRequest,
-    AuditEntityType,
     AuditLogEntry,
     AuthResponse,
     BalanceTrendResponse,
@@ -43,7 +42,6 @@ import type {
     MonthlyTrendResponse,
     MonthlySummaryResponse,
     Page,
-    PeriodTotalsResponse,
     PortfolioValueResponse,
     SyncBankTransactionsRequest,
     Transaction,
@@ -113,8 +111,6 @@ export const updateAccount = (id: string, data: AccountRequest): Promise<AxiosRe
 export const deleteAccount = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/accounts/${id}`);
 
 // Transactions
-export const getTransactionsByUserId = (): Promise<AxiosResponse<Transaction[]>> => apiClient.get(`/transactions`);
-export const getTransactionsByAccountId = (accountId: string): Promise<AxiosResponse<Transaction[]>> => apiClient.get(`/transactions/account/${accountId}`);
 export interface TransactionFilters {
     type?: 'IN' | 'OUT';
     categoryId?: string;
@@ -139,8 +135,6 @@ const buildTransactionParams = (page: number, size: number, filters?: Transactio
 
 export const getTransactionsByAccountIdPaged = (accountId: string, page: number, size: number, filters?: TransactionFilters): Promise<AxiosResponse<Page<Transaction>>> =>
     apiClient.get(`/transactions/account/${accountId}/paged?${buildTransactionParams(page, size, filters)}`);
-export const getTransactionsBetweenDates = (startDate: string, endDate: string): Promise<AxiosResponse<Transaction[]>> => apiClient.get(`/transactions/daterange?start=${startDate}&end=${endDate}`);
-export const getPeriodTotals = (start: string, end: string): Promise<AxiosResponse<PeriodTotalsResponse>> => apiClient.get(`/transactions/period-totals?start=${start}&end=${end}`);
 export const getTransactionsPaged = (page: number, size: number, filters?: TransactionFilters): Promise<AxiosResponse<Page<Transaction>>> =>
     apiClient.get(`/transactions/paged?${buildTransactionParams(page, size, filters)}`);
 export const createTransaction = (data: TransactionRequest): Promise<AxiosResponse<Transaction>> => apiClient.post('/transactions', data);
@@ -232,7 +226,6 @@ export const deleteBudgetAlert = (id: string): Promise<AxiosResponse<void>> => a
 
 // Audit Log
 export const getAuditLog = (page: number, size: number): Promise<AxiosResponse<Page<AuditLogEntry>>> => apiClient.get(`/audit-log?page=${page}&size=${size}`);
-export const getAuditLogForEntity = (entityType: AuditEntityType, entityId: string): Promise<AxiosResponse<AuditLogEntry[]>> => apiClient.get(`/audit-log/${entityType}/${entityId}`);
 
 
 // Categories

@@ -1,11 +1,16 @@
 // src/hooks/useCategories.ts
 // Hook React Query per le categorie dell'utente.
 // Sostituisce il data-fetching manuale in Layout.tsx (fetchCategories).
+import { useCallback } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryKeys } from '../queryKeys';
 import * as api from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import type { Category } from '../types/api';
+
+// Riferimento stabile: `data ?? []` produrrebbe un array nuovo a ogni render mentre la
+// query è pending, invalidando le memo dei consumer.
+const EMPTY_CATEGORIES: Category[] = [];
 
 /**
  * Restituisce la lista categorie dell'utente.
@@ -30,12 +35,14 @@ export const useCategories = () => {
      * Forza un refetch delle categorie.
      * Compatibile con la firma di `fetchCategories()` usata nei consumer dell'Outlet.
      */
-    const fetchCategories = () => {
+    // useCallback: questa funzione finisce nell'outlet context di Layout, che va
+    // memoizzato — un'identità nuova a ogni render ne vanificherebbe la memo.
+    const fetchCategories = useCallback(() => {
         queryClient.invalidateQueries({ queryKey: queryKeys.categories });
-    };
+    }, [queryClient]);
 
     return {
-        categories: data ?? [],
+        categories: data ?? EMPTY_CATEGORIES,
         isLoading: isPending,
         isError,
         refetch,

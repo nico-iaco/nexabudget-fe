@@ -28,6 +28,7 @@ import {
 import { SafeSelect } from '../../components/common/SafeSelect';
 import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, FilterOutlined, PlusOutlined, RetweetOutlined, RobotOutlined, SearchOutlined, SwapOutlined, UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import * as api from '../../services/api';
 import type { TransactionFilters } from '../../services/api';
 import type {
@@ -59,6 +60,13 @@ const { Option } = Select;
 interface FormValues extends Omit<TransactionRequest, 'date'> {
     date?: dayjs.Dayjs | null;
 }
+
+const SEARCH_DEBOUNCE_MS = 300;
+// Candidati per il collegamento a trasferimento: una finestra di 7 giorni su un singolo
+// conto sta largamente entro questo limite.
+const TRANSFER_CANDIDATES_PAGE_SIZE = 200;
+const AI_POLL_INTERVAL_MS = 10_000;
+const AI_POLL_TIMEOUT_MS = 10 * 60 * 1000; // 10 minuti
 
 interface TableFilters {
     type?: 'IN' | 'OUT';
@@ -99,8 +107,16 @@ export const TransactionsPage = () => {
     const { preferences } = usePreferences();
     const semantic = getSemanticColors(preferences.theme === 'dark');
 
+    // Indice per id: il render faceva `accounts.find(...)` una volta per riga nella colonna
+    // importo e altre cinque volte nell'header, per ogni render.
+    const accountsById = useMemo(
+        () => new Map(accounts.map(a => [a.id, a])),
+        [accounts]
+    );
+
+
     usePageTitle(accountId
-        ? accounts.find(a => a.id === accountId)?.name ?? t('nav.transactions')
+        ? accountsById.get(accountId)?.name ?? t('nav.transactions')
         : t('nav.transactions')
     );
 
@@ -136,13 +152,14 @@ export const TransactionsPage = () => {
     const [aiCategorizationJob, setAiCategorizationJob] = useState<CategorizationJobResponse | null>(null);
     const [aiCategorizationLoading, setAiCategorizationLoading] = useState(false);
     const aiPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const aiPollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
     const [apiNotification, contextHolder] = notification.useNotification();
 
     const currentAccount = useMemo(() => {
         if (!accountId) return null;
-        return accounts.find(acc => acc.id === accountId) || null;
-    }, [accounts, accountId]);
+        return accountsById.get(accountId) ?? null;
+    }, [accountsById, accountId]);
 
     const formattedCurrentBalance = useMemo(() => {
         if (!currentAccount) return null;
@@ -161,15 +178,13 @@ export const TransactionsPage = () => {
 
     const formSelectedAccountId = Form.useWatch('accountId', form);
     const formSelectedCurrency = useMemo(() => {
-        const acc = accounts.find(a => a.id === (formSelectedAccountId ?? accountId));
+        const acc = accountsById.get(formSelectedAccountId ?? accountId ?? '');
         return getCurrencySymbol(acc?.currency ?? 'EUR');
-    }, [formSelectedAccountId, accountId, accounts]);
+    }, [formSelectedAccountId, accountId, accountsById]);
 
-    const typeLabel = (type: 'IN' | 'OUT') => type === 'IN' ? t('transactions.typeIn') : t('transactions.typeOut');
+    const typeLabel = useCallback((type: 'IN' | 'OUT') => type === 'IN' ? t('transactions.typeIn') : t('transactions.typeOut'), [t]);
 
     const handleSyncBankTransactions = async () => {
-        console.log('handleSyncBankTransactions called', { accountId, currentBalance });
-
         if (!accountId) {
             message.error(t('transactions.invalidAccountId'));
             return;
@@ -178,9 +193,7 @@ export const TransactionsPage = () => {
         setSyncingTransactions(true);
 
         try {
-            console.log('Calling syncBankAccount...');
             await api.syncBankAccount(api.providerSlug(currentAccount?.provider ?? null), accountId, { actualBalance: currentBalance });
-            console.log('Sync API call completed successfully');
 
             // Chiudi il modal PRIMA di mostrare la notifica
             setIsBalanceModalOpen(false);
@@ -193,8 +206,6 @@ export const TransactionsPage = () => {
 
             // Aspetta che il modal si chiuda completamente prima di mostrare la notifica
             setTimeout(() => {
-                console.log('Showing notification...');
-
                 apiNotification.success({
                     message: t('transactions.syncStartedTitle'),
                     description: t('transactions.syncStartedDescription'),
@@ -223,7 +234,19 @@ export const TransactionsPage = () => {
             clearInterval(aiPollingRef.current);
             aiPollingRef.current = null;
         }
+        if (aiPollTimeoutRef.current !== null) {
+            clearTimeout(aiPollTimeoutRef.current);
+            aiPollTimeoutRef.current = null;
+        }
     };
+
+    // Cleanup su unmount: senza di questo, uscendo dalla pagina con un job in corso
+    // l'intervallo sopravviveva e continuava a chiamare l'API ogni 10 s senza alcun
+    // tetto, facendo setState su un albero smontato. Il modello corretto è quello di
+    // useAccountSync (guard su document.hidden + tetto + cleanup).
+    const stopAiPollingRef = useRef(stopAiPolling);
+    useEffect(() => { stopAiPollingRef.current = stopAiPolling; });
+    useEffect(() => () => stopAiPollingRef.current(), []);
 
     const dismissAiCategorization = (job: CategorizationJobResponse | null) => {
         stopAiPolling();
@@ -238,7 +261,12 @@ export const TransactionsPage = () => {
 
     const startAiPolling = (jobId: string) => {
         stopAiPolling();
+        // Tetto di sicurezza: se il backend non chiude mai il job, il polling si ferma
+        // comunque invece di proseguire indefinitamente.
+        aiPollTimeoutRef.current = setTimeout(() => stopAiPolling(), AI_POLL_TIMEOUT_MS);
         aiPollingRef.current = setInterval(async () => {
+            // Niente richieste mentre la tab è in background.
+            if (document.hidden) return;
             try {
                 const res = await api.getCategorizationJobStatus(jobId);
                 setAiCategorizationJob(res.data);
@@ -272,7 +300,7 @@ export const TransactionsPage = () => {
             } catch {
                 stopAiPolling();
             }
-        }, 10000);
+        }, AI_POLL_INTERVAL_MS);
     };
 
     const handleStartAiCategorization = async () => {
@@ -323,8 +351,27 @@ export const TransactionsPage = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };
 
+    // Le mutazioni sulle transazioni cambiano anche i dati derivati (totali, trend,
+    // breakdown, budget, saldo). Prima l'unico canale era `transactionRefreshKey`, che è
+    // dichiarato in Layout con `useState(0)` e nessun setter: non poteva mai cambiare, e
+    // le invalidazioni su `queryKeys.transactions()` non erano lette da nessuna query.
+    // Risultato: dopo aver modificato una transazione la dashboard restava su numeri
+    // vecchi fino a 2 minuti o al focus della finestra. Qui invalidiamo per prefisso,
+    // così coprono sia `['dashboardData', …]` sia le query sotto `['reports', …]`.
+    const queryClient = useQueryClient();
+    const invalidateDerivedData = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
+        queryClient.invalidateQueries({ queryKey: ['reports'] });
+    }, [queryClient]);
+
+    // Sequenza di richiesta: senza di essa, due fetch concorrenti (tipico della ricerca)
+    // possono risolversi fuori ordine e lo stato finisce con la risposta arrivata per
+    // ultima, non con quella della query corrente.
+    const requestSeqRef = useRef(0);
+
     const fetchTransactions = (page = currentPage, currentFilters = filters, append = false) => {
         if (!auth) return;
+        const seq = ++requestSeqRef.current;
         setLoading(true);
 
         const sortField = sortConfig.field as string | undefined;
@@ -344,6 +391,8 @@ export const TransactionsPage = () => {
 
         call
             .then(response => {
+                // Risposta di una richiesta già superata: la scartiamo.
+                if (seq !== requestSeqRef.current) return;
                 if (append) {
                     setTransactions(prev => [...prev, ...response.data.content]);
                 } else {
@@ -352,26 +401,53 @@ export const TransactionsPage = () => {
                 setTotalTransactions(response.data.page.totalElements);
             })
             .catch(error => {
+                if (seq !== requestSeqRef.current) return;
                 console.error("Failed to fetch transactions", error);
                 message.error(t('transactions.loadError'));
             })
-            .finally(() => setLoading(false));
+            .finally(() => {
+                if (seq === requestSeqRef.current) setLoading(false);
+            });
     };
 
     // Stable ref so useCallback closures always call the latest version
     const fetchTransactionsRef = useRef(fetchTransactions);
     useEffect(() => { fetchTransactionsRef.current = fetchTransactions; });
 
+    // Debounce del testo di ricerca: `filters.search` viene scritto a ogni onChange, e
+    // senza questo l'effetto di fetch partiva a ogni tasto premuto (12 richieste per una
+    // ricerca di 12 caratteri). Stesso approccio già usato in BalanceTrendSection.
+    const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
     useEffect(() => {
-        setCurrentPage(1);
-        fetchTransactionsRef.current(1, filters, /* append */ false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [accountId, auth, transactionRefreshKey]);
+        const id = setTimeout(() => setDebouncedSearch(filters.search), SEARCH_DEBOUNCE_MS);
+        return () => clearTimeout(id);
+    }, [filters.search]);
 
+    // I filtri effettivamente inviati al backend: identici a `filters` tranne la ricerca,
+    // che passa dal valore debounced.
+    // Le dipendenze sono i singoli campi, NON l'oggetto `filters`: dato che `search` vive
+    // dentro `filters`, dipendere dall'oggetto dava un'identità nuova a ogni battitura e
+    // l'effetto di fetch ripartiva comunque, scavalcando il debounce. Verificato con
+    // browser headless: 13 richieste per 12 caratteri.
+    const { type: filterType, categoryId: filterCategoryId, startDate: filterStartDate, endDate: filterEndDate } = filters;
+    const effectiveFilters = useMemo(
+        () => ({
+            type: filterType,
+            categoryId: filterCategoryId,
+            startDate: filterStartDate,
+            endDate: filterEndDate,
+            search: debouncedSearch,
+        }),
+        [filterType, filterCategoryId, filterStartDate, filterEndDate, debouncedSearch]
+    );
+
+    // Un solo effetto di caricamento. Prima erano due, con dipendenze diverse ma corpo
+    // identico: entrambi scattavano al mount, quindi ogni ingresso nella pagina faceva
+    // due volte la stessa richiesta paginata.
     useEffect(() => {
         setCurrentPage(1);
-        fetchTransactionsRef.current(1, filters, /* append */ false);
-    }, [filters, sortConfig]);
+        fetchTransactionsRef.current(1, effectiveFilters, /* append */ false);
+    }, [accountId, auth, transactionRefreshKey, effectiveFilters, sortConfig]);
 
     useEffect(() => {
         if (!destinationAccountId || !sourceTransaction) return;
@@ -379,12 +455,30 @@ export const TransactionsPage = () => {
         const fetchDestinationTransactions = async () => {
             setLoadingDestTransactions(true);
             try {
-                const response = await api.getTransactionsByAccountId(destinationAccountId);
                 const sourceDate = dayjs(sourceTransaction.date);
                 const startDate = sourceDate.subtract(3, 'day');
                 const endDate = sourceDate.add(3, 'day');
 
-                const filtered = response.data.filter(t => {
+                // Query mirata invece di `getTransactionsByAccountId`, che restituisce
+                // l'intero storico non paginato del conto per poi scartarne quasi tutto
+                // lato client. Finestra e tipo li filtra il backend, che li supporta già;
+                // importo e assenza di transferId restano lato client. Il predicato
+                // client sotto è invariato, così il risultato è identico a prima: la
+                // finestra server è un sovrainsieme (inclusiva) di quella client
+                // (esclusiva).
+                const oppositeType = sourceTransaction.type === 'IN' ? 'OUT' : 'IN';
+                const response = await api.getTransactionsByAccountIdPaged(
+                    destinationAccountId,
+                    0,
+                    TRANSFER_CANDIDATES_PAGE_SIZE,
+                    {
+                        type: oppositeType,
+                        startDate: startDate.format('YYYY-MM-DD'),
+                        endDate: endDate.format('YYYY-MM-DD'),
+                    }
+                );
+
+                const filtered = response.data.content.filter(t => {
                     const tDate = dayjs(t.date);
                     // Must be opposite type, same amount, and within date range
                     return t.type !== sourceTransaction.type &&
@@ -418,13 +512,14 @@ export const TransactionsPage = () => {
                     message.success(t('trash.movedToTrash'));
                     fetchTransactionsRef.current();
                     fetchLayoutAccounts();
+                    invalidateDerivedData();
                 } catch (error) {
                     console.error("Failed to delete transaction", error);
                     message.error(t('transactions.deleteError'));
                 }
             }
         });
-    }, [t, confirm, fetchLayoutAccounts]);
+    }, [t, confirm, fetchLayoutAccounts, invalidateDerivedData]);
 
     const handleOpenEditModal = useCallback((record: Transaction) => {
         setEditingRecord(record);
@@ -474,6 +569,7 @@ export const TransactionsPage = () => {
             setIsModalOpen(false);
             fetchTransactions();
             fetchLayoutAccounts();
+            invalidateDerivedData();
         } catch (error) {
             console.error("Failed to save transaction", error);
             message.error(t('transactions.saveError'));
@@ -501,6 +597,7 @@ export const TransactionsPage = () => {
             message.success(t('transactions.linkTransferSuccess'));
             handleCancelLinkTransferModal();
             fetchTransactions();
+            invalidateDerivedData();
         } catch (error) {
             console.error("Failed to link transactions", error);
             message.error(t('transactions.linkTransferError'));
@@ -518,13 +615,17 @@ export const TransactionsPage = () => {
             message.success(t('transactions.linkTransferSuccess'));
             handleCancelLinkTransferModal();
             fetchTransactions();
+            invalidateDerivedData();
         } catch (error) {
             console.error("Failed to convert single transaction to transfer", error);
             message.error(t('transactions.linkTransferError'));
         }
     };
 
-    const columns: ColumnsType<Transaction> = [
+    // Memoizzate: erano ricostruite a ogni render, con closure render/sorter nuove, quindi
+    // la Table ri-renderizzava tutte le celle. I tre handler usati qui dentro sono già
+    // useCallback e `semantic` è ora una costante per tema.
+    const columns: ColumnsType<Transaction> = useMemo(() => [
         {
             title: t('transactions.data'),
             dataIndex: 'date',
@@ -573,7 +674,7 @@ export const TransactionsPage = () => {
             },
             sortOrder: sortConfig.field === 'amount' ? sortConfig.order : null,
             render: (amount: number, record: Transaction) => {
-                const sym = getCurrencySymbol(accounts.find(a => a.id === record.accountId)?.currency ?? 'EUR');
+                const sym = getCurrencySymbol(accountsById.get(record.accountId)?.currency ?? 'EUR');
                 return (<span>
                     <span style={{ color: record.type === 'IN' ? semantic.positive : semantic.negative }}>
                         {record.type === 'IN'
@@ -620,7 +721,7 @@ export const TransactionsPage = () => {
                 </Flex>
             )
         },
-    ];
+    ], [t, sortConfig, semantic, accountsById, typeLabel, handleDelete, handleOpenEditModal, handleOpenLinkTransferModal]);
 
     const handleTableChange: TableProps<Transaction>['onChange'] = (_, _tableFilters, sorter) => {
         const nextSorter = Array.isArray(sorter) ? sorter[0] : sorter;
@@ -633,17 +734,17 @@ export const TransactionsPage = () => {
     const processedTransactions = useMemo(() => {
         const data = transactions.map(t => {
             if (!t.accountName) {
-                const account = accounts.find(acc => acc.id === t.accountId);
+                const account = accountsById.get(t.accountId);
                 return { ...t, accountName: account?.name || 'N/A' };
             }
             return t;
         });
 
         return data;
-    }, [transactions, accounts]);
+    }, [transactions, accountsById]);
 
     const pageTitle = accountId
-        ? t('transactions.titleAccount', { account: accounts.find(acc => acc.id === accountId)?.name })
+        ? t('transactions.titleAccount', { account: currentAccount?.name })
         : t('transactions.titleAll');
 
     if (loading && transactions.length === 0) return <Spin size="large" />;
@@ -675,7 +776,7 @@ export const TransactionsPage = () => {
                         renderItem={item => (
                             <TransactionCard
                                 transaction={item}
-                                currency={accounts.find(a => a.id === item.accountId)?.currency}
+                                currency={accountsById.get(item.accountId)?.currency}
                                 onEdit={handleOpenEditModal}
                                 onDelete={handleDelete}
                                 onConvertToTransfer={handleOpenLinkTransferModal}
@@ -762,15 +863,15 @@ export const TransactionsPage = () => {
                 title={pageTitle}
                 actions={
                     <Space wrap size={isMobile ? 'small' : 'middle'} style={{ width: isMobile ? '100%' : 'auto' }}>
-                        {accountId && accounts.find(acc => acc.id === accountId)?.linkedToExternal && (
+                        {accountId && currentAccount?.linkedToExternal && (
                             <Button
-                                icon={<RetweetOutlined spin={accounts.find(acc => acc.id === accountId)?.synchronizing} />}
+                                icon={<RetweetOutlined spin={currentAccount?.synchronizing} />}
                                 onClick={() => setIsBalanceModalOpen(true)}
-                                loading={syncingTransactions || accounts.find(acc => acc.id === accountId)?.synchronizing}
-                                disabled={accounts.find(acc => acc.id === accountId)?.synchronizing}
+                                loading={syncingTransactions || currentAccount?.synchronizing}
+                                disabled={currentAccount?.synchronizing}
                                 size={isMobile ? 'middle' : 'large'}
                             >
-                                {accounts.find(acc => acc.id === accountId)?.synchronizing ? t('transactions.syncing') : t('transactions.syncBank')}
+                                {currentAccount?.synchronizing ? t('transactions.syncing') : t('transactions.syncBank')}
                             </Button>
                         )}
                         <Button
@@ -1057,7 +1158,7 @@ export const TransactionsPage = () => {
                             {dayjs(sourceTransaction.date).format('DD/MM/YYYY')} - {sourceTransaction.description} ({sourceTransaction.accountName})
                             -
                             <Text
-                                type={sourceTransaction.type === 'IN' ? 'success' : 'danger'}> {sourceTransaction.amount.toFixed(2)} {getCurrencySymbol(accounts.find(a => a.id === sourceTransaction.accountId)?.currency ?? 'EUR')}</Text>
+                                type={sourceTransaction.type === 'IN' ? 'success' : 'danger'}> {sourceTransaction.amount.toFixed(2)} {getCurrencySymbol(accountsById.get(sourceTransaction.accountId)?.currency ?? 'EUR')}</Text>
                         </p>
 
                         <Form layout="vertical">
@@ -1091,7 +1192,7 @@ export const TransactionsPage = () => {
                                                     <Radio value={item.id}>
                                                         {dayjs(item.date).format('DD/MM/YYYY')} - {item.description} -
                                                         <Text
-                                                            type={item.type === 'IN' ? 'success' : 'danger'}> {item.amount.toFixed(2)} {getCurrencySymbol(accounts.find(a => a.id === destinationAccountId)?.currency ?? 'EUR')}</Text>
+                                                            type={item.type === 'IN' ? 'success' : 'danger'}> {item.amount.toFixed(2)} {getCurrencySymbol(accountsById.get(destinationAccountId ?? '')?.currency ?? 'EUR')}</Text>
                                                     </Radio>
                                                 </List.Item>
                                             )}
@@ -1119,6 +1220,7 @@ export const TransactionsPage = () => {
                         setCurrentPage(1);
                         fetchTransactions(1);
                         fetchLayoutAccounts(true);
+                        invalidateDerivedData();
                     }}
                 />
             )}
