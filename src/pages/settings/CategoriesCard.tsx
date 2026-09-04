@@ -101,7 +101,7 @@ export const CategoriesCard = () => {
             setMergeModalOpen(false);
             setMergeSource(null);
             fetchCategories();
-        } catch (error) {
+        } catch {
             message.error(t('settings.categories.mergeError'));
         } finally {
             setSubmitting(false);

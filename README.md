@@ -28,20 +28,26 @@ NexaBudget is a modern and intuitive personal finance management application des
 - **Multi-currency Support**: Each account can have its own currency; the correct symbol is displayed throughout the app.
 - **Transaction Tracking**: Log income and expenses for each account, with server-side pagination for fast loading.
 - **Transfer Management**: Link transactions as transfers between accounts, with automatic currency conversion for multi-currency transfers.
-- **Categorization**: Assign categories to transactions for better analysis.
+- **Categorization**: Assign categories to transactions for better analysis, with support for merging two categories into one.
 - **Powerful Filtering & Sorting**: Easily find transactions by description, account, category, type, or date range.
+- **Statement Imports**: Import transactions from CSV (with configurable column mapping) or OFX files, with a preview and duplicate detection step before anything is saved.
 - **Dashboard**: Interactive overview with configurable date-range presets (last week / current month / last 6 months / last year) and custom range picker.
   - Monthly income & expense totals
   - Month-end projection
   - Month-over-month comparison with selectable month
   - Income and expense breakdown by category (pie chart + table)
   - Monthly trend bar chart (6 / 12 / 24 months)
+  - Net-worth balance trend section
+  - Guided onboarding checklist for new users
 - **Budget Templates & Alerts**: Create recurring budget limits per category (monthly, quarterly, yearly) with threshold alerts.
 - **Trash / Soft Delete**: Deleted transactions and accounts are moved to a recoverable trash, with a dedicated page to restore them.
 - **Audit Log**: Paginated, server-side audit trail of all user actions with expandable JSON detail.
-- **Bank Synchronization**: GoCardless integration to link bank accounts and import transactions automatically.
-- **Crypto Portfolio**: Binance integration for read-only crypto holdings tracking.
-- **Responsive Design**: Seamless experience on desktop and mobile, with mobile-optimised controls throughout.
+- **Bank Synchronization**: Open Banking account linking through two interchangeable providers — **GoCardless** and **Enable Banking** — with automatic transaction import and live sync status.
+- **Crypto Portfolio**: Read-only Binance and Coinbase integrations, plus manual holdings for cold wallets, aggregated into a single valuation.
+- **AI Assistant (NexaBot)**: Chat with an AI agent about your finances, with multiple saved conversations and transparency about the data tools it used.
+- **AI Insights & Automation**: On-demand AI analysis of your spending (viewable in-app or downloadable as PDF) and automatic categorization of uncategorized transactions.
+- **Programmatic API Keys**: Issue and revoke personal API keys for programmatic access to your own data.
+- **Responsive Design**: Seamless experience on desktop and mobile, with mobile-optimised controls, a bottom navigation bar, pull-to-refresh, and haptic feedback.
 - **Progressive Web App (PWA)**: Installable on any device for an app-like experience with offline support.
 - **Light / Dark theme**: Toggle between themes from the Settings page.
 - **Bilingual UI**: Full Italian and English translations.
@@ -84,14 +90,16 @@ NexaBudget can be installed as a Progressive Web App (PWA) on your device:
 ## 🛠️ Technologies Used
 
 - **Framework**: React 19
-- **Build Tool**: Vite 7
-- **Language**: TypeScript 5.8
+- **Build Tool**: Vite 8
+- **Language**: TypeScript 6
 - **UI Library**: Ant Design 6
 - **Routing**: React Router 7
 - **HTTP Client**: Axios
-- **State Management**: React Context API (Auth, Preferences)
+- **Server State**: TanStack Query (React Query) 5
+- **Client State**: React Context API (Auth, Preferences)
 - **Date & Time**: Day.js
 - **Charts**: @ant-design/charts
+- **Markdown**: react-markdown + remark-gfm (AI answers and reports)
 - **PWA**: vite-plugin-pwa with Workbox
 - **i18n**: i18next (Italian & English)
 
@@ -99,8 +107,8 @@ NexaBudget can be installed as a Progressive Web App (PWA) on your device:
 
 ### Prerequisites
 
-- Node.js (v18 or later)
-- npm
+- Node.js (v20 or later)
+- npm (v10 or later)
 - A running instance of the NexaBudget Backend
 
 ### Installation & Setup
@@ -122,7 +130,7 @@ NexaBudget can be installed as a Progressive Web App (PWA) on your device:
     ```shell
     VITE_BE_BASE_URL=http://localhost:8080
     ```
-    Vite will proxy all `/api` requests to this URL.
+    Vite will proxy all `/api` (and `/mcp`) requests to this URL.
 
 4. Run the development server:
     ```shell
@@ -138,15 +146,15 @@ NexaBudget can be installed as a Progressive Web App (PWA) on your device:
    ```shell
    docker-compose up -d --build
    ```
-3. Open your browser at http://localhost (or the port configured in `docker-compose.yaml`).
+3. Open your browser at http://localhost:3000 (or the host port configured in `docker-compose.yaml`).
 
 ## 📖 Technical Documentation
 
 For in-depth details about the application's structure, integrations, and deployment, refer to the following documentation files:
 
-- [Architecture & Tech Stack](docs/architecture.md): Overview of the framework, routing, state management, layouts, and component hierarchy.
-- [Integrations & AI Features](docs/integrations.md): Detailed information on GoCardless Open Banking, Crypto tracking (Binance/Coinbase), and AI-powered features (financial Chat assistant, transaction categorizer, AI reports).
+- [Architecture & Tech Stack](docs/architecture.md): Overview of the framework, routing and code splitting, state management (React Query + contexts), the application shell, design tokens, and shared components.
+- [Integrations & AI Features](docs/integrations.md): Detailed information on multi-provider Open Banking (GoCardless / Enable Banking), Crypto tracking (Binance/Coinbase/manual), CSV & OFX statement imports, and AI-powered features (financial Chat assistant, transaction categorizer, AI reports).
 - [PWA Configuration](docs/pwa.md): Details on the Progressive Web App setup, Service Worker update prompts, offline capabilities, and asset caching.
 - [API Client Layer](docs/api_client.md): Deep-dive into Axios configuration, authentication token injection, response handling, and endpoints mapping.
-- [Development & Deployment Guide](docs/development_guide.md): Developer setup instructions, i18n structure, environment configuration, and Docker deployment.
+- [Development & Deployment Guide](docs/development_guide.md): Developer setup instructions, CLI scripts, i18n structure, environment configuration, the docs-to-wiki workflow, and Docker deployment.
 

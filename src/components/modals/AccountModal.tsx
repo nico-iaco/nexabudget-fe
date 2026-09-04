@@ -5,6 +5,7 @@ import {useTranslation} from 'react-i18next';
 import {getCurrencySymbol} from '../../utils/currency';
 import { SafeSelect } from '../common/SafeSelect';
 import { SPACING } from '../../theme/tokens';
+import { commaDecimalParser } from '../../utils/number';
 
 const { Option } = SafeSelect;
 
@@ -78,12 +79,12 @@ export const AccountModal = ({ open, onCancel, onFinish, editingAccount, loading
                     initialValue={0}
                     rules={[{ required: true, message: t('accounts.startingBalanceRequired') }]}
                 >
-                    <InputNumber
+                    <InputNumber<number>
                         style={{ width: '100%' }}
                         min={0}
                         addonAfter={getCurrencySymbol(currencyValue ?? 'EUR')}
                         disabled={!!editingAccount}
-                        parser={(value) => value?.replace(',', '.') as any}
+                        parser={commaDecimalParser}
                     />
                 </Form.Item>
                 <Form.Item

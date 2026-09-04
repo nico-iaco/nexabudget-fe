@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   nexabudget-fe:
     container_name: nexabudget-fe

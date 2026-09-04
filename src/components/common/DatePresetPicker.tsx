@@ -218,8 +218,10 @@ export const DatePresetPicker = ({
     const { token } = theme.useToken();
     const [customMode, setCustomMode] = useState(false);
     const [hoveredIdx, setHoveredIdx] = useState<number | 'custom' | null>(null);
-    // Rilevato una sola volta: il tipo di device non cambia a runtime
-    const isIOS = useRef(detectIOS()).current;
+    // Rilevato una sola volta: il tipo di device non cambia a runtime.
+    // useState con initializer lazy invece di useRef: i ref non si possono leggere
+    // durante il render (react-hooks/refs).
+    const [isIOS] = useState(detectIOS);
 
     const activePresetIdx = presets.findIndex(
         p =>

@@ -7,18 +7,28 @@ This document details the software architecture, tech stack, and module structur
 NexaBudget Frontend is designed as a modern Single Page Application (SPA) leveraging the latest standard tools in the React ecosystem:
 
 * **React 19**: Core UI rendering engine. Takes advantage of concurrent rendering and modern JSX compilation.
-* **TypeScript 5.8**: Strictly enforces type safety across components, contexts, custom hooks, and API responses (mapped to `src/types/api.ts`).
-* **Vite 7**: Next-generation build tool that provides instant Hot Module Replacement (HMR) during development and optimized Rollup-based bundling for production.
+* **TypeScript 6**: Strictly enforces type safety across components, contexts, custom hooks, and API responses (mapped to `src/types/api.ts`). The build config also enables `noUnusedLocals`, `noUnusedParameters`, `verbatimModuleSyntax`, and `erasableSyntaxOnly`, so unused imports and untyped type-imports fail the build rather than warn.
+* **Vite 8**: Next-generation build tool that provides instant Hot Module Replacement (HMR) during development and optimized Rollup-based bundling for production.
 * **Ant Design 6**: Enterprise-grade UI component library. Implements CSS-in-JS style injection, modular component styling, and a clean, responsive layout grid.
 * **React Router 7**: Managed client-side routing, utilizing data APIs (`createBrowserRouter`, `RouterProvider`) and nested layout outlets.
+* **TanStack Query (React Query) 5**: Server-state cache for all remote data — deduplication, background refetching, and invalidation.
+* **Axios**: HTTP client, wrapped in a single configured instance with auth interceptors (see [API Client Layer](api_client.md)).
 * **Day.js**: Lightweight alternative to Moment.js for date parsing, validation, manipulation, and formatting.
+* **`@ant-design/charts`**: Chart rendering for dashboards and reports.
 * **i18next**: Internationalization framework supporting complete bilingual localization (English & Italian).
 
 ---
 
 ## 🏗️ State Management & Data Flow
 
-NexaBudget relies on React's Context API rather than a heavy global state manager (like Redux or Zustand). State is localized where needed, and global concerns are split into dedicated contexts:
+NexaBudget deliberately avoids a heavyweight global store (Redux, Zustand). State is split by nature:
+
+| State kind | Owner |
+|---|---|
+| Session / identity | `AuthContext` |
+| UI preferences (theme, language) | `PreferencesContext` |
+| Server data (accounts, categories, reports, budgets…) | React Query cache |
+| Local view state (filters, form drafts, modal open flags) | Component `useState` / feature hooks |
 
 ### 1. Authentication (`src/contexts/AuthContext.tsx`)
 
@@ -29,13 +39,43 @@ Manages the user session and credential tokens:
 * Persists the JWT token under `authToken` and user profile under `auth` in `localStorage`.
 * Exposes `login()`, `logout()`, and `updateUser()` hooks.
 
+Token injection into requests and automatic sign-out on an expired token are **not** handled here — they live in the Axios interceptors described in [API Client Layer](api_client.md).
+
 ### 2. User Preferences (`src/contexts/PreferencesContext.tsx`)
 
-Maintains display configurations across sessions:
+Maintains display configurations across sessions, serialized as a single `preferences` JSON entry in `localStorage`:
 
 * **Theme**: Toggle between `'light'` and `'dark'` modes, mapped directly to Ant Design's `defaultAlgorithm` and `darkAlgorithm` via the root `<ConfigProvider>`.
-* **Language**: Manages translation locale (`'en'` or `'it'`), dynamically invoking `i18n.changeLanguage()` when changed.
+* **Language**: Manages translation locale (`'en'` or `'it'`, default Italian), dynamically invoking `i18n.changeLanguage()` when changed. The same key is read synchronously by `src/i18n/index.ts` before React mounts, so the first paint is already in the right language.
 * **Server Settings**: Stores server URLs and timeout options.
+
+### 3. Server State (React Query)
+
+The `QueryClient` is created in `src/main.tsx` with app-wide defaults:
+
+```typescript
+new QueryClient({
+    defaultOptions: {
+        queries: {
+            staleTime: 2 * 60 * 1000,   // 2 minutes
+            refetchOnWindowFocus: true,
+            retry: 1,
+        },
+    },
+});
+```
+
+**All query keys are declared in a single module, `src/queryKeys.ts`.** Because invalidation is key-based, inlining ad-hoc key arrays at call sites silently breaks refresh behaviour — new queries should register their key there instead.
+
+Data-access hooks in `src/hooks/` wrap the query layer so pages never call Axios directly for shared entities:
+
+* `useAccounts` — account list + aggregated preferred balance.
+* `useCategories` — active categories.
+* `useAccountActions` — account CRUD and transfers via `useMutation`, with cache invalidation.
+* `useAccountSync` — bank-synchronization polling (see [Integrations](integrations.md)).
+* `useDashboardData` — parallel fetch of every dashboard widget, collecting per-request failures into a `partialErrors` list so a backend error is reported instead of rendering as "no data".
+
+> **Current limitation**: `src/pages/transactions/TransactionsPage.tsx` predates the React Query migration and still fetches imperatively into local state. As a result, transaction-cache invalidations triggered elsewhere do not refresh its table, and the legacy `transactionRefreshKey` signal in the outlet context is inert (see below).
 
 ```mermaid
 flowchart TD
@@ -45,45 +85,59 @@ flowchart TD
     B -->|Exposes language| E[i18n Localization]
     C -->|Exposes token| F[Axios API Client Interceptor]
     C -->|Exposes user status| G[Private Routes Guard]
+    F -->|Fetches| H[React Query Cache]
+    H -->|Shared via hooks| I[Pages & Components]
 ```
 
 ---
 
 ## 🗂️ Application Shell & Layout
 
-The entrypoint of the application is [App.tsx](file:///Users/nicolaiacovelli/WebstormProjects/nexabudget-fe/src/App.tsx), which configures context providers, routing tables, and the Ant Design application scope.
+The entrypoint of the application is `src/App.tsx`, which configures the routing table, the Ant Design application scope, and the theme. Context providers are mounted one level above, in `src/main.tsx`.
 
-For all authenticated views, [Layout.tsx](file:///Users/nicolaiacovelli/WebstormProjects/nexabudget-fe/src/components/Layout.tsx) serves as the **Master Application Shell**. It is responsible for orchestrating the persistent layout, sharing global database records, and hosting shared action triggers.
+For all authenticated views, `src/components/Layout.tsx` serves as the **Application Shell**. It is a thin composition layer: the business logic it used to contain has been extracted into dedicated hooks, leaving it responsible for wiring, layout, and hosting globally-reachable modals.
 
 ### Shared State & Modals in Layout
 
-To prevent reduntant API calls and prop drilling, the `Layout` component manages:
+To prevent redundant API calls and prop drilling, `Layout` gathers shared data through hooks and passes it to pages via the typed `Outlet` context (`src/types/outletContext.ts`):
 
-1. **Account List State**: Fetches and caches the list of all financial accounts (`Account[]`) and the aggregated preferred balance.
-2. **Category List State**: Fetches and caches active transaction categories (`Category[]`).
-3. **Global Modal Triggers**: Hosts overlay modals that can be summoned from various places in the UI:
+1. **Account List State** (`useAccounts`): the list of all financial accounts (`Account[]`) plus the aggregated preferred balance.
+2. **Category List State** (`useCategories`): active transaction categories (`Category[]`).
+3. **Global Modal Triggers**: overlay modals that can be summoned from anywhere in the UI:
     * `AccountModal`: Add or edit checking, savings, investment, or cash accounts.
     * `TransferModal`: Log transaction transfers between two accounts (including multi-currency conversion).
-    * `GoCardlessModal`: Guided wizard to link banks through Open Banking APIs.
-4. **Transaction Refresh Signals**: Exposes a toggleable counter (`transactionRefreshKey`) to notify child components (e.g. transaction tables) when a global operation (like creating a transfer) requires data refetching.
+    * `BankLinkModal`: Guided multi-provider wizard to link banks through Open Banking APIs (GoCardless or Enable Banking).
+4. **Error surfacing**: if the account or category fetch fails, `Layout` raises a persistent notification with a *Retry* action, because those lists feed the sidebar, the transaction forms, and the dashboard.
+5. **PWA update banner**: listens for the `pwa-update-available` event (see [PWA Configuration](pwa.md)).
+
+Crypto and API-key modals are **not** hosted here — they are owned by `CryptoPage` and `src/pages/settings/ApiKeysCard.tsx`.
+
+> `outletContext.transactionRefreshKey` is **deprecated and inert**: it is declared with no setter and is kept only for backward compatibility with `TransactionsPage` during the React Query migration. Use `queryClient.invalidateQueries` with a key from `src/queryKeys.ts` instead.
+
+### Navigation source of truth
+
+Sidebar and mobile bottom bar both read `src/components/layout/navItems.ts`. Each entry declares its route `key`, an i18n `labelKey`, and `showInBottomBar` to select the reduced mobile subset — so a new section is registered in one place.
 
 ### Responsive Shell Structure
 
-The layout adapts dynamically using custom breakpoints detected via `src/hooks/useBreakpoints.ts`:
+The layout adapts dynamically using the breakpoints exposed by `src/hooks/useBreakpoints.ts` (`isMobile` ≤ 991px, matching Ant Design's `lg`; `isSmallMobile` ≤ 768px):
 
-* **Desktop Layout**: Renders a fixed sidebar navigation menu (`AppSider`) on the left, an utility header (`AppHeader`) on top, and the main page canvas (`Content`) in the center.
-* **Mobile Layout**: Collapses the sidebar into a slide-out overlay drawer controlled by a toggle button in the header. Renders a fixed bottom navigation bar (`BottomNavBar`) optimized for touch controls.
+* **Desktop Layout**: Renders a fixed sidebar navigation menu (`AppSider`) on the left, a utility header (`AppHeader`) on top, and the main page canvas (`Content`) in the center.
+* **Mobile Layout**: Collapses the sidebar into a slide-out overlay drawer controlled by a toggle button in the header (dismissable with `Escape`, with focus returned to the toggle). On small screens it also renders a fixed bottom navigation bar (`BottomNavBar`) optimized for touch controls.
+* **Accessibility**: the shell exposes a keyboard-only "skip to content" link targeting the `<main id="main">` page canvas.
 
 ```mermaid
 flowchart TD
-    App["App.tsx"] --> Auth["AuthProvider"]
-    Auth --> Pref["PreferencesProvider"]
-    Pref --> Router["RouterProvider"]
+    Main["main.tsx"] --> QC["QueryClientProvider"]
+    QC --> Pref["PreferencesProvider"]
+    Pref --> Auth["AuthProvider"]
+    Auth --> App["App.tsx / ConfigProvider"]
+    App --> Router["RouterProvider"]
     Router -->|Public Route| PublicLayout["PublicLayout"]
     Router -->|Private Route| Layout
-    
+
     subgraph LayoutComponents["Layout Components"]
-        Layout["Layout Master Shell"]
+        Layout["Layout Application Shell"]
         Layout --> AppHeader["AppHeader"]
         Layout --> AppSider["AppSider / Drawer"]
         Layout --> BottomNavBar["BottomNavBar Mobile"]
@@ -100,12 +154,13 @@ flowchart TD
         Outlet --> TrashPage["TrashPage"]
         Outlet --> AuditLogPage["AuditLogPage"]
         Outlet --> SettingsPage["SettingsPage"]
+        Outlet --> Callbacks["Bank Link Callback Pages"]
     end
-    
+
     subgraph GlobalModalsManaged["Global Modals Managed by Layout"]
         GlobalModals --> AccountModal["AccountModal"]
         GlobalModals --> TransferModal["TransferModal"]
-        GlobalModals --> GoCardlessModal["GoCardlessModal"]
+        GlobalModals --> BankLinkModal["BankLinkModal"]
     end
 ```
 
@@ -117,20 +172,39 @@ NexaBudget Frontend optimizes network load times through **Code Splitting** by s
 
 ### Lazy Loaded Routes
 
-Webpack-style chunks are declared using React's `lazy` helper:
+Route chunks are declared using React's `lazy` helper:
 
 ```typescript
 const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage').then(m => ({ default: m.DashboardPage })));
 ```
 
-While loading, routes display a fallback `<LoadingSpinner />` component suspended inside a React `<Suspense>` wrapper.
+Every route element is then wrapped by the `LazyRoute` helper, which combines two boundaries:
+
+* **`<Suspense>`** — shows a centered `<LoadingSpinner />` while the chunk downloads.
+* **`<ErrorBoundary>`** — catches render-time crashes and shows `RouteErrorFallback` instead of a blank page. It is keyed on `location.pathname` (`resetKeys`), so simply navigating elsewhere clears the error state while the header and sidebar stay alive.
 
 ### Router Guarding
 
 The routing tree defines two custom guards to filter user access:
 
-1. **`<PrivateRoute>`**: Checks if the user is authenticated. If no auth token is detected, it redirects the browser to `/login`.
+1. **`<PrivateRoute>`**: Checks if the user is authenticated. If no auth session is detected, it redirects the browser to `/login`.
 2. **`<RedirectIfAuth>`**: Restricts access to public-only views (like registration and login). If an authenticated session exists, it automatically redirects the user to the `/dashboard`.
+
+Unmatched paths fall through to `NotFoundPage`, both inside and outside the authenticated shell.
+
+### Vendor Chunking & Compression
+
+`vite.config.ts` additionally splits `vendor-react` (react, react-dom, react-router, scheduler) and `vendor-i18n` (i18next, react-i18next) into dedicated chunks, and emits Brotli (`.br`) and Gzip (`.gz`) variants of every asset. `npm run analyze` builds the app and opens a `rollup-plugin-visualizer` treemap (`dist/stats.html`) to inspect bundle composition.
+
+---
+
+## 🎨 Design Tokens & Shared Components
+
+`src/theme/tokens.ts` is the single source of truth for visual constants: the theme-aware brand primary, a `SEMANTIC` palette resolved via `getSemanticColors(isDark)`, and the `SPACING`, `FONT_SIZE`, `RADIUS`, and `SHADOW` scales, plus the brand gradients and heading/body font stacks. These are wired into the root `<ConfigProvider>` in `App.tsx` (primary colour, radii, font family, and per-component Button/Menu/Card/Modal overrides). New styling should import from this module rather than introduce inline literals.
+
+`ConfigProvider` also installs a global `getPopupContainer` that mounts Ant Design popups inside the nearest `.ant-drawer-body` / `.ant-modal-body`, which is what keeps Selects and DatePickers correctly positioned inside modals and drawers.
+
+Reusable primitives live in `src/components/common/`: `StatCard` (the single stat-tile implementation, shared by the dashboard, reports, and crypto portfolio), `EmptyState`, `PageHeader`, `AsyncBoundary` (declarative loading/error/empty states for query-driven views), `ErrorBoundary`, `RouteErrorFallback`, `SafeSelect`, `DatePresetPicker`, `Fab`, `AppLogo`, and `AuthCard`. Shared modals are collected in `src/components/modals/`; feature-specific components are grouped by domain (`dashboard/`, `reports/`, `layout/`, `banking/`, `onboarding/`).
 
 ---
 
@@ -139,8 +213,10 @@ The routing tree defines two custom guards to filter user access:
 Responsive style adjustments are handled natively using a dual approach:
 
 1. **Ant Design Grid**: Utilizes flexbox layouts with `xs`, `sm`, `md`, `lg`, and `xl` breakpoints to auto-arrange dashboard metrics, tables, and graphs.
-2. **Media Queries & CSS Variables**: Specialized overrides for smaller devices live in [src/mobile.css](file:///Users/nicolaiacovelli/WebstormProjects/nexabudget-fe/src/mobile.css). This includes:
-    * Hiding heavy desktop elements (sider, desktop buttons) on screens smaller than `768px`.
+2. **Media Queries & CSS overrides**: Specialized overrides for smaller devices live in `src/mobile.css`. This includes:
+    * Hiding heavy desktop elements (sider, desktop buttons) on small screens.
     * Enabling full-width viewport scaling for cards and transaction rows.
     * Adjusting spacing and font sizes for better touch targets.
     * Styling the mobile bottom navigation bar (`BottomNavBar`).
+
+Two hooks complete the touch experience: `usePullToRefresh` (pull-down-to-refresh gesture on scrollable containers) and `src/utils/haptic.ts` for vibration feedback, which is intentionally limited to the installed/standalone PWA (see [PWA Configuration](pwa.md)).

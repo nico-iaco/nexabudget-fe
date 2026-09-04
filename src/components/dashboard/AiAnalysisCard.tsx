@@ -69,9 +69,10 @@ export const AiAnalysisCard: React.FC = () => {
                 userLanguage: preferences.language
             });
             setJobId(res.data.jobId);
-        } catch (error: any) {
+        } catch (error: unknown) {
             setLoading(false);
-            if (error.response?.status === 400) {
+            const status = (error as { response?: { status?: number } })?.response?.status;
+            if (status === 400) {
                 message.error(t('dashboard.aiAnalysis.invalidRequest'));
             } else {
                 message.error(t('dashboard.aiAnalysis.errorRequest'));
@@ -147,7 +148,7 @@ export const AiAnalysisCard: React.FC = () => {
             
             link.parentNode?.removeChild(link);
             window.URL.revokeObjectURL(url);
-        } catch (error) {
+        } catch {
             message.error(t('dashboard.aiAnalysis.downloadError'));
         }
     };
@@ -199,7 +200,7 @@ export const AiAnalysisCard: React.FC = () => {
                 ) : (
                     <Flex gap={8} align="center" wrap="wrap">
                         <RangePicker
-                            value={dateRange as any}
+                            value={dateRange}
                             onChange={(dates) => setDateRange(dates as [Dayjs | null, Dayjs | null])}
                             disabledDate={(current: Dayjs) => current.isAfter(dayjs().endOf('month'), 'day')}
                             disabled={loading}

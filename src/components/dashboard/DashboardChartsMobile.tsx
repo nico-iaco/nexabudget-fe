@@ -130,6 +130,38 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
 };
 
 
+interface ComparisonRowProps {
+    label: string;
+    current: number;
+    previous: number;
+    /** Valore di riferimento per la larghezza percentuale delle barre */
+    max: number;
+    /** Colore della barra "mese corrente" */
+    color: string;
+    /** Colore della barra "mese precedente" */
+    trackColor: string;
+}
+
+/**
+ * Riga di confronto mese corrente / mese precedente.
+ * Definita a livello di modulo (non dentro ComparisonBars) così l'identità del
+ * componente resta stabile fra i render e React non rimonta il sottoalbero.
+ */
+const ComparisonRow = ({ label, current, previous, max, color, trackColor }: ComparisonRowProps) => (
+    <div>
+        <Flex justify="space-between" style={{ marginBottom: 2 }}>
+            <Text style={{ fontSize: FONT_SIZE.sm }}>{label}</Text>
+            <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
+                {formatCurrency(current)} <Text type="secondary" style={{ fontSize: FONT_SIZE.xxs }}>({formatCurrency(previous)})</Text>
+            </Text>
+        </Flex>
+        <div style={{ position: 'relative', height: 14 }}>
+            <div style={{ position: 'absolute', left: 0, top: 0, height: 6, width: `${(previous / max) * 100}%`, backgroundColor: trackColor, borderRadius: RADIUS.xs }} />
+            <div style={{ position: 'absolute', left: 0, top: 8, height: 6, width: `${(current / max) * 100}%`, backgroundColor: color, borderRadius: RADIUS.xs }} />
+        </div>
+    </div>
+);
+
 interface ComparisonBarsProps {
     currentIncome: number;
     previousIncome: number;
@@ -146,21 +178,6 @@ export const ComparisonBars = ({
     const semantic = getSemanticColors(preferences.theme === 'dark');
     const max = Math.max(currentIncome, previousIncome, currentExpense, previousExpense, 1);
 
-    const Row = ({ label, current, previous, color }: { label: string; current: number; previous: number; color: string }) => (
-        <div>
-            <Flex justify="space-between" style={{ marginBottom: 2 }}>
-                <Text style={{ fontSize: FONT_SIZE.sm }}>{label}</Text>
-                <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
-                    {formatCurrency(current)} <Text type="secondary" style={{ fontSize: FONT_SIZE.xxs }}>({formatCurrency(previous)})</Text>
-                </Text>
-            </Flex>
-            <div style={{ position: 'relative', height: 14 }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, height: 6, width: `${(previous / max) * 100}%`, backgroundColor: token.colorTextQuaternary, borderRadius: RADIUS.xs }} />
-                <div style={{ position: 'absolute', left: 0, top: 8, height: 6, width: `${(current / max) * 100}%`, backgroundColor: color, borderRadius: RADIUS.xs }} />
-            </div>
-        </div>
-    );
-
     return (
         <Flex vertical gap={12}>
             <Flex gap={12} style={{ fontSize: FONT_SIZE.xs }}>
@@ -173,8 +190,8 @@ export const ComparisonBars = ({
                     <Text style={{ fontSize: FONT_SIZE.xs }}>{t('reports.currentMonth')}</Text>
                 </Flex>
             </Flex>
-            <Row label={t('reports.typeIn')} current={currentIncome} previous={previousIncome} color={semantic.positive} />
-            <Row label={t('reports.typeOut')} current={currentExpense} previous={previousExpense} color={semantic.negative} />
+            <ComparisonRow label={t('reports.typeIn')} current={currentIncome} previous={previousIncome} max={max} color={semantic.positive} trackColor={token.colorTextQuaternary} />
+            <ComparisonRow label={t('reports.typeOut')} current={currentExpense} previous={previousExpense} max={max} color={semantic.negative} trackColor={token.colorTextQuaternary} />
         </Flex>
     );
 };

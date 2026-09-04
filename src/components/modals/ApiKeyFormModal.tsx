@@ -37,17 +37,17 @@ export const ApiKeyFormModal = ({ open, onCancel, onOk, editingKey, loading }: A
     const handleOk = async () => {
         try {
             const values = await form.validateFields();
-            const data: any = {
+            const data: CreateApiKeyRequest & { active?: boolean } = {
                 name: values.name,
                 scopes: values.scopes ? values.scopes.join(',') : '',
                 expiresAt: values.expiresAt ? values.expiresAt.toISOString() : undefined,
             };
             if (editingKey) {
                 // Keep the existing active state on edit
-                (data as UpdateApiKeyRequest).active = editingKey.active;
+                data.active = editingKey.active;
             }
             onOk(data);
-        } catch (error) {
+        } catch {
             // Form validation failed
         }
     };

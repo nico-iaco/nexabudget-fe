@@ -26,7 +26,7 @@ export const ApiKeysCard = () => {
         try {
             const { data } = await getApiKeys();
             setKeys(data);
-        } catch (error) {
+        } catch {
             message.error(t('settings.apiKeys.fetchError'));
         } finally {
             setLoading(false);
@@ -45,7 +45,7 @@ export const ApiKeysCard = () => {
                 message.success(t('settings.apiKeys.updateSuccess'));
             } else {
                 const response = await createApiKey(data as CreateApiKeyRequest);
-                const resData = response.data as any;
+                const resData = response.data as unknown as Record<string, string | undefined>;
                 // Gestione robusta della chiave in base a possibili variazioni del nome proprietà nel backend
                 const extractedKey = resData.plaintextKey || resData.plainTextKey || resData.token || resData.key || 'ERRORE-CHIAVE-NON-RESTITUITA';
                 setNewPlaintextKey(extractedKey);
@@ -54,7 +54,7 @@ export const ApiKeysCard = () => {
             setFormModalVisible(false);
             setEditingKey(undefined);
             fetchKeys();
-        } catch (error) {
+        } catch {
             message.error(t('settings.apiKeys.saveError'));
         }
     };
@@ -73,7 +73,7 @@ export const ApiKeysCard = () => {
             await updateApiKey(id, req);
             message.success(checked ? t('settings.apiKeys.activated') : t('settings.apiKeys.deactivated'));
             fetchKeys();
-        } catch (error) {
+        } catch {
             message.error(t('settings.apiKeys.toggleError'));
         } finally {
             setLoading(false);
@@ -86,7 +86,7 @@ export const ApiKeysCard = () => {
             await deleteApiKey(id);
             message.success(t('settings.apiKeys.deleteSuccess'));
             fetchKeys();
-        } catch (error) {
+        } catch {
             message.error(t('settings.apiKeys.deleteError'));
         } finally {
             setLoading(false);
@@ -135,7 +135,7 @@ export const ApiKeysCard = () => {
         {
             title: t('settings.apiKeys.active'),
             key: 'active',
-            render: (_: any, record: ApiKeyResponse) => (
+            render: (_: unknown, record: ApiKeyResponse) => (
                 <Switch 
                     checked={record.active} 
                     onChange={(checked) => handleToggleActive(checked, record.id)}
@@ -147,7 +147,7 @@ export const ApiKeysCard = () => {
         {
             title: t('settings.apiKeys.actions'),
             key: 'actions',
-            render: (_: any, record: ApiKeyResponse) => (
+            render: (_: unknown, record: ApiKeyResponse) => (
                 <Space>
                     <Button type="text" icon={<EditOutlined />} onClick={() => openEditModal(record)} aria-label={t('common.edit')} />
                     <Popconfirm

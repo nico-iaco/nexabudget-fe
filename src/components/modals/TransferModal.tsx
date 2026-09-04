@@ -5,6 +5,7 @@ import {useTranslation} from 'react-i18next';
 import type {Account} from '../../types/api';
 import { SafeSelect } from '../common/SafeSelect';
 import { SPACING } from '../../theme/tokens';
+import { commaDecimalParser } from '../../utils/number';
 
 const { Option } = SafeSelect;
 
@@ -99,7 +100,7 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts, loading = fa
                     label={t('transfers.amount')}
                     rules={[{ required: true, message: t('transfers.amountRequired') }]}
                 >
-                    <InputNumber style={{ width: '100%' }} min={0.01} addonAfter={sourceAccount?.currency ?? '€'} parser={(value) => value?.replace(',', '.') as any} />
+                    <InputNumber<number> style={{ width: '100%' }} min={0.01} addonAfter={sourceAccount?.currency ?? '€'} parser={commaDecimalParser} />
                 </Form.Item>
                 <Form.Item
                     name="transferDate"

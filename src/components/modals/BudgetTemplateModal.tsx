@@ -4,6 +4,7 @@ import { useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { BudgetTemplate, BudgetTemplateRequest, Category } from '../../types/api';
 import { SPACING } from '../../theme/tokens';
+import { commaDecimalParser } from '../../utils/number';
 
 interface Props {
     open: boolean;
@@ -54,7 +55,7 @@ export const BudgetTemplateModal = ({ open, onCancel, onFinish, editing, categor
                     </SafeSelect>
                 </Form.Item>
                 <Form.Item name="budgetLimit" label={t('budgets.limit')} rules={[{ required: true, message: t('budgets.limitRequired') }]}>
-                    <InputNumber style={{ width: '100%' }} min={0.01} precision={2} addonAfter="€" parser={(value) => value?.replace(',', '.') as any} />
+                    <InputNumber<number> style={{ width: '100%' }} min={0.01} precision={2} addonAfter="€" parser={commaDecimalParser} />
                 </Form.Item>
                 <Form.Item name="recurrenceType" label={t('budgets.recurrence')} rules={[{ required: true, message: t('budgets.recurrenceRequired') }]}>
                     <SafeSelect>

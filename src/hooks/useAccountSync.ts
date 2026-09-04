@@ -43,7 +43,6 @@ export const useAccountSync = (
             clearInterval(poll);
             clearTimeout(timeout);
         };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isSyncing]);
 
     // Notifica di completamento quando isSyncing passa da true a false

@@ -315,7 +315,6 @@ export const TransactionImportModal = ({
         }
 
         resetImportState();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
     useEffect(() => {

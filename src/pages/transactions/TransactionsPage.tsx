@@ -51,6 +51,7 @@ import { useConfirm } from '../../hooks/useConfirm';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import type { SorterResult } from 'antd/es/table/interface';
 import type { AppOutletContext } from '../../types/outletContext';
+import { commaDecimalParser } from '../../utils/number';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -370,7 +371,6 @@ export const TransactionsPage = () => {
     useEffect(() => {
         setCurrentPage(1);
         fetchTransactionsRef.current(1, filters, /* append */ false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [filters, sortConfig]);
 
     useEffect(() => {
@@ -424,7 +424,6 @@ export const TransactionsPage = () => {
                 }
             }
         });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [t, confirm, fetchLayoutAccounts]);
 
     const handleOpenEditModal = useCallback((record: Transaction) => {
@@ -632,7 +631,7 @@ export const TransactionsPage = () => {
     };
 
     const processedTransactions = useMemo(() => {
-        let data = transactions.map(t => {
+        const data = transactions.map(t => {
             if (!t.accountName) {
                 const account = accounts.find(acc => acc.id === t.accountId);
                 return { ...t, accountName: account?.name || 'N/A' };
@@ -1004,7 +1003,7 @@ export const TransactionsPage = () => {
                         </SafeSelect>
                     </Form.Item>
                     <Form.Item name="amount" label={t('transactions.amount')} rules={[{ required: true }]}>
-                        <InputNumber style={{ width: '100%' }} min={0} addonAfter={formSelectedCurrency} parser={(value) => value?.replace(',', '.') as any} />
+                        <InputNumber<number> style={{ width: '100%' }} min={0} addonAfter={formSelectedCurrency} parser={commaDecimalParser} />
                     </Form.Item>
                     <Form.Item name="type" label={t('transactions.type')} rules={[{ required: true }]}>
                         <SafeSelect placeholder={t('transactions.selectType')}>
@@ -1156,7 +1155,7 @@ export const TransactionsPage = () => {
                         style={{ marginBottom: SPACING.md }}
                     />
                     <Form.Item label={t('transactions.balanceCurrent')}>
-                        <InputNumber
+                        <InputNumber<number>
                             style={{ width: '100%' }}
                             value={currentBalance}
                             onChange={(value) => setCurrentBalance(value)}
@@ -1164,7 +1163,7 @@ export const TransactionsPage = () => {
                             addonAfter={getCurrencySymbol(currentAccount?.currency ?? 'EUR')}
                             precision={2}
                             autoFocus
-                            parser={(value) => value?.replace(',', '.') as any}
+                            parser={commaDecimalParser}
                         />
                     </Form.Item>
                 </Form>

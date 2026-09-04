@@ -11,6 +11,7 @@ import type { BudgetAlert, BudgetTemplate } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { EmptyState } from '../../components/common/EmptyState';
 import { SPACING } from '../../theme/tokens';
+import { commaDecimalParser } from '../../utils/number';
 
 interface Props {
     open: boolean;
@@ -133,7 +134,7 @@ export const BudgetAlertsDrawer = ({ open, onClose, budget }: Props) => {
                 style={{ marginBottom: SPACING.md }}
             >
                 <Form.Item name="thresholdPercentage" rules={[{ required: true, message: t('budgets.alerts.thresholdRequired') }]}>
-                    <InputNumber min={1} max={100} addonAfter="%" placeholder="80" style={{ width: 120 }} parser={(value) => value?.replace(',', '.') as any} />
+                    <InputNumber<number> min={1} max={100} addonAfter="%" placeholder="80" style={{ width: 120 }} parser={commaDecimalParser} />
                 </Form.Item>
                 <Form.Item name="active" valuePropName="checked">
                     <Switch checkedChildren={t('budgets.alerts.active')} unCheckedChildren={t('budgets.alerts.active')} />

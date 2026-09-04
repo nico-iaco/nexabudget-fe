@@ -1,6 +1,6 @@
 // SafeSelect: AntD Select on desktop/Android, native <select> on iOS PWA.
 // Avoids AntD's position:fixed popup coordinate mismatch on iOS standalone mode.
-import React, { useRef } from 'react';
+import React, { useState } from 'react';
 import { Select, theme } from 'antd';
 import type { SelectProps } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
@@ -132,7 +132,10 @@ function NativeSelect({
 }
 
 export function SafeSelect(props: SafeSelectProps) {
-    const isIOS = useRef(detectIOS()).current;
+    // Rilevato una sola volta: il tipo di device non cambia a runtime.
+    // useState con initializer lazy invece di useRef: i ref non si possono leggere
+    // durante il render (react-hooks/refs).
+    const [isIOS] = useState(detectIOS);
 
     if (isIOS) return <NativeSelect {...props} />;
 

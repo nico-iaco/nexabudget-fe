@@ -29,7 +29,7 @@ export const SettingsPage = () => {
             const { data } = await updateUserProfile({ defaultCurrency: newCurrency });
             updateUser(data);
             message.success(t('settings.profileUpdateSuccess'));
-        } catch (error) {
+        } catch {
             message.error(t('settings.profileUpdateError'));
         } finally {
             setUpdatingParams(false);

@@ -606,7 +606,6 @@ export const ChatPage = () => {
                             autoSize={{ minRows: 1, maxRows: isMobile ? 4 : 5 }}
                             disabled={sending}
                             // enterkeyhint="send" mostra il tasto "Invia" sulla tastiera iOS/Android
-                            // eslint-disable-next-line @typescript-eslint/no-explicit-any
                             enterKeyHint="send"
                             style={{ flex: 1, resize: 'none', minHeight: 'unset', fontSize: isMobile ? FONT_SIZE.xl : FONT_SIZE.base }}
                         />
