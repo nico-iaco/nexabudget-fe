@@ -8,12 +8,54 @@ import {App, Alert, Button, Card, Flex, Spin, Typography} from 'antd';
 import {BankOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import * as api from '../../services/api';
-import type {NormalizedBankAccount} from '../../types/api';
+import type {BankLinkCompletionResult, NormalizedBankAccount} from '../../types/api';
 import {SPACING} from '../../theme/tokens';
 import type {AppOutletContext} from '../../types/outletContext';
 import {BankAccountPicker} from '../../components/banking/BankAccountPicker';
 
 const {Title, Text} = Typography;
+
+// Il `code` di Enable Banking è monouso: una seconda POST con lo stesso code viene rifiutata
+// dal backend, e la sua risposta d'errore sovrascriveva i conti appena mostrati. Due livelli
+// di deduplica:
+// - promise per code a livello di modulo: copre i rimontaggi nello stesso documento
+//   (StrictMode in dev, reset dell'ErrorBoundary);
+// - risultato in sessionStorage: copre i reload della pagina (aggiornamento del service
+//   worker in produzione, F5 dell'utente), dopo i quali la URL contiene ancora lo stesso code.
+const sessionRequests = new Map<string, Promise<BankLinkCompletionResult>>();
+const storageKey = (code: string) => `enableBankingSession:${code}`;
+
+const readStoredSession = (code: string): BankLinkCompletionResult | null => {
+    try {
+        const raw = sessionStorage.getItem(storageKey(code));
+        return raw ? JSON.parse(raw) as BankLinkCompletionResult : null;
+    } catch {
+        return null;
+    }
+};
+
+const storeSession = (code: string, session: BankLinkCompletionResult) => {
+    try {
+        sessionStorage.setItem(storageKey(code), JSON.stringify(session));
+    } catch {
+        // Storage non disponibile (es. navigazione privata): resta la deduplica in memoria.
+    }
+};
+
+const completeSessionOnce = (localAccountId: string, code: string) => {
+    let request = sessionRequests.get(code);
+    if (!request) {
+        const stored = readStoredSession(code);
+        request = stored
+            ? Promise.resolve(stored)
+            : api.completeBankSession('enable-banking', localAccountId, {code}).then(res => {
+                storeSession(code, res.data);
+                return res.data;
+            });
+        sessionRequests.set(code, request);
+    }
+    return request;
+};
 
 export const EnableBankingCallbackPage = () => {
     const {t} = useTranslation();
@@ -57,9 +99,9 @@ export const EnableBankingCallbackPage = () => {
 
         const completeSession = async () => {
             try {
-                const sessionRes = await api.completeBankSession('enable-banking', localAccountId, {code});
+                const session = await completeSessionOnce(localAccountId, code);
 
-                const accounts = sessionRes.data.accounts ?? [];
+                const accounts = session.accounts ?? [];
                 setBankAccounts(accounts);
                 if (accounts.length === 0) {
                     setError(tRef.current('enableBankingCallback.noAccounts'));
