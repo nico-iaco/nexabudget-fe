@@ -65,41 +65,23 @@ export default defineConfig(({ mode }) => {
                     ]
                 },
                 workbox: {
-                    // Il precache deve contenere il solo shell d'avvio. Prima erano 101 entry
-                    // per 5,85 MB — scaricate al primo avvio e a ogni deploy, dato che
-                    // registerType è 'autoUpdate' — di cui ~3,85 MB di puro spreco.
                     maximumFileSizeToCacheInBytes: 6000000,
                     globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
-                    globIgnores: [
-                        // Report del bundle: non deve nemmeno esistere in dist (vedi ANALYZE sopra),
-                        // ma lo escludiamo comunque per sicurezza.
-                        'stats.html',
-                        // Chunk di route e componenti lazy: servono solo quando l'utente ci arriva,
-                        // e il runtimeCaching qui sotto li mette in cache al primo uso.
-                        'assets/*Page-*.js',
-                        'assets/*Modal-*.js',
-                        'assets/DashboardCharts-*.js',
-                        'assets/DashboardChartsMobile-*.js',
-                        'assets/BalanceTrendChart-*.js',
-                        'assets/AiAnalysisCard-*.js',
-                    ],
+                    // Report del bundle: non deve nemmeno esistere in dist (vedi ANALYZE sopra),
+                    // ma lo escludiamo comunque per sicurezza.
+                    globIgnores: ['stats.html'],
+                    // TUTTI i chunk JS vanno nel precache, anche quelli di route e componenti
+                    // lazy. Erano esclusi (servivano "al primo uso" via runtime cache) quando
+                    // pesavano MB per colpa di G2; oggi sono ~270 kB non compressi. Escluderli
+                    // rompeva la PWA a ogni deploy: il vecchio service worker serve ancora il
+                    // vecchio index.html, che importa `DashboardPage-<hashVecchio>.js`; se quel
+                    // chunk non era già in runtime cache la richiesta andava in rete, dove il
+                    // nuovo container non lo ha più → 404 → "Importing a module script failed".
+                    // Con il precache completo ogni versione resta autoconsistente finché il
+                    // nuovo SW non prende il controllo e ricarica la pagina.
                     navigateFallback: '/index.html',
                     navigateFallbackDenylist: [/^\/api\//, /^\/mcp/, /^\/offline\.html$/],
                     runtimeCaching: [
-                        {
-                            // Chunk di route esclusi dal precache: cache al primo uso, così
-                            // l'app resta utilizzabile offline sulle sezioni già visitate.
-                            urlPattern: /\/assets\/.*\.js$/i,
-                            handler: 'StaleWhileRevalidate',
-                            options: {
-                                cacheName: 'route-chunks',
-                                expiration: {
-                                    maxEntries: 60,
-                                    maxAgeSeconds: 30 * 24 * 60 * 60,
-                                },
-                                cacheableResponse: { statuses: [0, 200] },
-                            },
-                        },
                         {
                             // Liste transazioni paginate: MAI in cache. La query string
                             // contiene il testo di ricerca, quindi generava una voce di

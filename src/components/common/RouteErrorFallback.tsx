@@ -9,6 +9,17 @@ import { SPACING } from '../../theme/tokens';
 
 const { Text } = Typography;
 
+/**
+ * Errore di caricamento di un chunk lazy: tipicamente la pagina gira su una versione
+ * precedente a un deploy e il chunk con il vecchio hash non esiste più sul server.
+ * Il messaggio dipende dal browser (Safari / Chrome / Firefox).
+ */
+const isChunkLoadError = (error?: Error | null) =>
+    !!error &&
+    /Importing a module script failed|Failed to fetch dynamically imported module|error loading dynamically imported module/i.test(
+        error.message
+    );
+
 interface RouteErrorFallbackProps {
     /** Errore catturato dal boundary (usato per il messaggio di dettaglio). */
     error?: Error | null;
@@ -22,9 +33,16 @@ export const RouteErrorFallback = ({ error, onReset, compact = false }: RouteErr
     const { t } = useTranslation();
     const { token } = theme.useToken();
 
-    const description = t('common.errorBoundaryDescription', {
-        defaultValue: 'Si è verificato un errore imprevisto in questa sezione.',
-    });
+    // React.lazy memorizza la promise rifiutata: resettare il boundary ri-renderizza lo
+    // stesso componente e rilancia lo stesso errore. Serve un reload, che carica
+    // l'index.html della nuova versione.
+    const chunkError = isChunkLoadError(error);
+
+    const description = chunkError
+        ? t('pwa.updateDescription')
+        : t('common.errorBoundaryDescription', {
+              defaultValue: 'Si è verificato un errore imprevisto in questa sezione.',
+          });
 
     return (
         <div
@@ -42,7 +60,15 @@ export const RouteErrorFallback = ({ error, onReset, compact = false }: RouteErr
                 description={description}
                 style={{ marginTop: compact ? 0 : SPACING.xxl }}
                 actions={
-                    onReset
+                    chunkError
+                        ? [
+                              {
+                                  label: t('pwa.updateNow'),
+                                  onClick: () => window.location.reload(),
+                                  type: 'primary',
+                              },
+                          ]
+                        : onReset
                         ? [
                               {
                                   label: t('common.retry', { defaultValue: 'Riprova' }),
@@ -53,7 +79,7 @@ export const RouteErrorFallback = ({ error, onReset, compact = false }: RouteErr
                         : []
                 }
             />
-            {!compact && error?.message && (
+            {!compact && !chunkError && error?.message && (
                 <Text
                     type="secondary"
                     style={{
