@@ -44,6 +44,7 @@ import { StatCard } from '../../components/common/StatCard';
 import { OnboardingChecklist } from '../../components/onboarding/OnboardingChecklist';
 import type { AppOutletContext } from '../../types/outletContext';
 import { DatePresetPicker } from '../../components/common/DatePresetPicker';
+import { SafeDatePicker } from '../../components/common/SafeDatePicker';
 import { formatMoney, formatPercent } from '../../utils/format';
 import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
 
@@ -473,7 +474,8 @@ export const DashboardPage = () => {
                                 <Card
                                     title={t('reports.comparison')}
                                     extra={
-                                        <DatePicker.MonthPicker
+                                        <SafeDatePicker
+                                            picker="month"
                                             value={comparisonMonth}
                                             onChange={m => { if (m) setComparisonMonth(m); }}
                                             getPopupContainer={trigger => trigger.parentElement ?? document.body}

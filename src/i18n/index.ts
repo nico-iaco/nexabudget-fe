@@ -41,7 +41,10 @@ const resources = {
                 loadAccountsErrorDescription: 'Non è stato possibile caricare i conti. Riprova.',
                 loadCategoriesErrorTitle: 'Errore nel caricamento delle categorie',
                 loadCategoriesErrorDescription: 'Non è stato possibile caricare le categorie. Riprova.',
-                closeMenu: 'Chiudi menu'
+                closeMenu: 'Chiudi menu',
+                selectDate: 'Seleziona data',
+                selectMonth: 'Seleziona mese',
+                selectDateTime: 'Seleziona data e ora'
             },
             nav: {
                 dashboard: 'Dashboard',
@@ -780,7 +783,10 @@ const resources = {
                 loadAccountsErrorDescription: 'Failed to load accounts. Please try again.',
                 loadCategoriesErrorTitle: 'Error loading categories',
                 loadCategoriesErrorDescription: 'Failed to load categories. Please try again.',
-                closeMenu: 'Close menu'
+                closeMenu: 'Close menu',
+                selectDate: 'Select date',
+                selectMonth: 'Select month',
+                selectDateTime: 'Select date and time'
             },
             nav: {
                 dashboard: 'Dashboard',

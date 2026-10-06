@@ -1,9 +1,10 @@
-import {Alert, Button, DatePicker, Form, Input, InputNumber, Modal} from 'antd';
+import {Alert, Button, Form, Input, InputNumber, Modal} from 'antd';
 import dayjs, {type Dayjs} from 'dayjs';
 import {useEffect} from 'react';
 import {useTranslation} from 'react-i18next';
 import type {Account} from '../../types/api';
 import { SafeSelect } from '../common/SafeSelect';
+import { SafeDatePicker } from '../common/SafeDatePicker';
 import { SPACING } from '../../theme/tokens';
 import { commaDecimalParser } from '../../utils/number';
 import { getCurrencySymbol } from '../../utils/currency';
@@ -108,7 +109,7 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts, loading = fa
                     label={t('transfers.transferDate')}
                     rules={[{ required: true, message: t('transfers.transferDateRequired') }]}
                 >
-                    <DatePicker style={{ width: '100%' }} />
+                    <SafeDatePicker style={{ width: '100%' }} />
                 </Form.Item>
                 <Form.Item
                     name="description"

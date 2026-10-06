@@ -1,13 +1,14 @@
 // src/components/DatePresetPicker.tsx
 // Chip preset a pillola + selettore range date adattivo:
-//   iOS (qualsiasi) → <input type="date"> nativo con layer visivo AntD-style
-//                     Il wheel picker iOS non usa popup → nessun problema di coordinate PWA
-//   Desktop/Android → AntD DatePicker (popup funziona correttamente)
-import { useEffect, useRef, useState } from 'react';
+//   Touch (iOS/Android) → <input type="date"> nativo con layer visivo AntD-style
+//                         (NativeDateInput, vedi SafeDatePicker per il perché)
+//   Desktop             → AntD DatePicker
+import { useEffect, useState } from 'react';
 import { DatePicker, Flex, theme } from 'antd';
-import { CalendarOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import { FONT_SIZE, RADIUS } from '../../theme/tokens';
+import { NativeDateInput } from './SafeDatePicker';
+import { detectNativeDatePicker } from '../../utils/device';
 
 export interface DatePreset {
     label: string;
@@ -26,109 +27,11 @@ interface DatePresetPickerProps {
     maxDate?: string;
 }
 
-// ─── Rilevamento iOS ─────────────────────────────────────────────────────────
-// Rileva qualsiasi dispositivo iOS (Safari, Chrome iOS, PWA).
-// Su iOS i popup AntD con position:fixed hanno coordinate sfasate in PWA
-// standalone → usiamo sempre input nativi su iOS, AntD su desktop/Android.
-const detectIOS = (): boolean => {
-    if (typeof navigator === 'undefined') return false;
-    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) return true;
-    // iPadOS 13+ si identifica come MacIntel ma ha touch points multipli
-    if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
-    return false;
-};
-
-// ─── NativeDateInput — solo iOS ──────────────────────────────────────────────
-// Layer visivo stile AntD con <input type="date"> invisibile sopra.
-// Il tap apre il wheel picker nativo iOS senza alcun popup.
-
-interface NativeDateInputProps {
-    value: string;           // YYYY-MM-DD
-    onChange: (v: string) => void;
-    placeholder?: string;
-    disabled?: boolean;
-    min?: string;
-    max?: string;
-}
-
 const toStr = (d: Dayjs | null): string => (d ? d.format('YYYY-MM-DD') : '');
 const fromStr = (s: string): Dayjs | null => (s ? dayjs(s, 'YYYY-MM-DD') : null);
 const fmtDisplay = (d: Dayjs | null): string | null => (d ? d.format('D MMM YYYY') : null);
 
-const NativeDateInput = ({
-    value, onChange, placeholder, disabled = false, min, max,
-}: NativeDateInputProps) => {
-    const { token } = theme.useToken();
-    const [focused, setFocused] = useState(false);
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    const formatted = fmtDisplay(fromStr(value));
-
-    return (
-        <div
-            style={{ position: 'relative', flex: 1, minWidth: 0 }}
-            onClick={() => inputRef.current?.showPicker?.()}
-        >
-            {/* Layer visivo — pointerEvents:none lascia passare i tap all'input */}
-            <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                height: 32,
-                padding: '0 11px',
-                borderRadius: token.borderRadius,
-                border: `1px solid ${focused ? token.colorPrimary : token.colorBorder}`,
-                boxShadow: focused ? `0 0 0 2px ${token.colorPrimaryBorder}` : 'none',
-                background: disabled ? token.colorBgContainerDisabled : token.colorBgContainer,
-                transition: 'border-color 0.2s, box-shadow 0.2s',
-                pointerEvents: 'none',
-                userSelect: 'none',
-                overflow: 'hidden',
-            }}>
-                <CalendarOutlined style={{
-                    fontSize: FONT_SIZE.md, flexShrink: 0,
-                    color: focused ? token.colorPrimary : token.colorTextTertiary,
-                    transition: 'color 0.2s',
-                }} />
-                <span style={{
-                    flex: 1, fontSize: FONT_SIZE.base,
-                    color: formatted ? token.colorText : token.colorTextPlaceholder,
-                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                    opacity: disabled ? 0.5 : 1,
-                }}>
-                    {formatted ?? placeholder}
-                </span>
-            </div>
-
-            {/* Input nativo invisibile — copre tutta l'area, apre wheel picker iOS */}
-            <input
-                ref={inputRef}
-                type="date"
-                value={value}
-                min={min}
-                max={max}
-                disabled={disabled}
-                onChange={e => onChange(e.target.value)}
-                onFocus={() => setFocused(true)}
-                onBlur={() => setFocused(false)}
-                style={{
-                    position: 'absolute',
-                    inset: 0,
-                    width: '100%',
-                    height: '100%',
-                    opacity: 0,
-                    cursor: disabled ? 'not-allowed' : 'pointer',
-                    zIndex: 1,
-                    border: 'none',
-                    padding: 0,
-                    margin: 0,
-                }}
-            />
-        </div>
-    );
-};
-
-// ─── RangeDatePicker — branch iOS/Desktop ────────────────────────────────────
+// ─── RangeDatePicker — branch touch/Desktop ────────────────────────────────────
 
 interface RangePickerProps {
     start: Dayjs | null;
@@ -139,22 +42,23 @@ interface RangePickerProps {
     endPlaceholder?: string;
     disabled?: boolean;
     maxDate?: string;
-    isIOS: boolean;
+    nativePicker: boolean;
 }
 
 const RangeDatePicker = ({
     start, end, onChangeStart, onChangeEnd,
     startPlaceholder = 'Inizio', endPlaceholder = 'Fine',
-    disabled = false, maxDate, isIOS,
+    disabled = false, maxDate, nativePicker,
 }: RangePickerProps) => {
     const maxDayjs = maxDate ? dayjs(maxDate, 'YYYY-MM-DD') : undefined;
 
-    if (isIOS) {
+    if (nativePicker) {
         return (
             <Flex gap={8} style={{ animation: 'datePickerSlideIn 0.18s ease' }}>
                 <NativeDateInput
                     value={toStr(start)}
                     onChange={s => onChangeStart(fromStr(s))}
+                    display={fmtDisplay(start)}
                     placeholder={startPlaceholder}
                     disabled={disabled}
                     max={toStr(end) || maxDate}
@@ -162,6 +66,7 @@ const RangeDatePicker = ({
                 <NativeDateInput
                     value={toStr(end)}
                     onChange={s => onChangeEnd(fromStr(s))}
+                    display={fmtDisplay(end)}
                     placeholder={endPlaceholder}
                     disabled={disabled}
                     min={toStr(start) || undefined}
@@ -221,7 +126,7 @@ export const DatePresetPicker = ({
     // Rilevato una sola volta: il tipo di device non cambia a runtime.
     // useState con initializer lazy invece di useRef: i ref non si possono leggere
     // durante il render (react-hooks/refs).
-    const [isIOS] = useState(detectIOS);
+    const [nativePicker] = useState(detectNativeDatePicker);
 
     const activePresetIdx = presets.findIndex(
         p =>
@@ -311,7 +216,7 @@ export const DatePresetPicker = ({
                     endPlaceholder={endPlaceholder}
                     disabled={disabled}
                     maxDate={maxDate}
-                    isIOS={isIOS}
+                    nativePicker={nativePicker}
                 />
             )}
         </Flex>

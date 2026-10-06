@@ -26,6 +26,7 @@ import {
     Typography
 } from 'antd';
 import { SafeSelect } from '../../components/common/SafeSelect';
+import { SafeDatePicker } from '../../components/common/SafeDatePicker';
 import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, FilterOutlined, MoreOutlined, PlusOutlined, RetweetOutlined, RobotOutlined, SearchOutlined, SwapOutlined, UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
@@ -1112,19 +1113,17 @@ export const TransactionsPage = () => {
                     >
                         {categories.map(c => <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>)}
                     </SafeSelect>
-                    <DatePicker
+                    <SafeDatePicker
                         placeholder={t('transactions.fromDate')}
                         value={draftFilters.startDate}
                         style={{ width: '100%' }}
                         onChange={(date) => setDraftFilters(prev => ({ ...prev, startDate: date }))}
-                       
                     />
-                    <DatePicker
+                    <SafeDatePicker
                         placeholder={t('transactions.toDate')}
                         value={draftFilters.endDate}
                         style={{ width: '100%' }}
                         onChange={(date) => setDraftFilters(prev => ({ ...prev, endDate: date }))}
-                       
                     />
                     <SafeSelect
                         placeholder={t('transactions.sortBy')}
@@ -1178,7 +1177,7 @@ export const TransactionsPage = () => {
                         <Input />
                     </Form.Item>
                     <Form.Item name="date" label={t('transactions.data')} initialValue={dayjs()}>
-                        <DatePicker style={{ width: '100%' }} />
+                        <SafeDatePicker style={{ width: '100%' }} />
                     </Form.Item>
                     <Form.Item name="note" label={t('transactions.note')}>
                         <Input.TextArea />

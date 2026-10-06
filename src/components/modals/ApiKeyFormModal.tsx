@@ -1,8 +1,9 @@
-import { Form, Input, Modal, Select, DatePicker } from 'antd';
+import { Form, Input, Modal, Select } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { useEffect } from 'react';
 import type { ApiKeyResponse, CreateApiKeyRequest, UpdateApiKeyRequest } from '../../types/api';
 import dayjs from 'dayjs';
+import { SafeDatePicker } from '../common/SafeDatePicker';
 
 interface ApiKeyFormModalProps {
     open: boolean;
@@ -98,11 +99,10 @@ export const ApiKeyFormModal = ({ open, onCancel, onOk, editingKey, loading }: A
                     label={t('settings.apiKeys.expiresAt')}
                     tooltip={t('settings.apiKeys.expiresAtTooltip')}
                 >
-                    <DatePicker
+                    <SafeDatePicker
                         style={{ width: '100%' }}
                         format="YYYY-MM-DD HH:mm"
                         showTime
-                       
                     />
                 </Form.Item>
             </Form>

@@ -90,7 +90,8 @@ Fonts (Inter body / Manrope headings) load from Google Fonts in `index.html`; `s
 
 ### Component conventions
 
-- `src/components/common/` holds the generic primitives: `StatCard`, `EmptyState`, `PageHeader`, `AsyncBoundary`, `ErrorBoundary`, `RouteErrorFallback`, `SafeSelect`, `DatePresetPicker`, `Fab`, `AppLogo`, `AuthCard`, `ItemList`. Put new generic primitives here.
+- `src/components/common/` holds the generic primitives: `StatCard`, `EmptyState`, `PageHeader`, `AsyncBoundary`, `ErrorBoundary`, `RouteErrorFallback`, `SafeSelect`, `SafeDatePicker`, `DatePresetPicker`, `Fab`, `AppLogo`, `AuthCard`, `ItemList`. Put new generic primitives here.
+- **Date fields that can render on mobile use `SafeDatePicker`**, not a bare AntD `DatePicker`: on touch devices it renders a native `<input type="date|month|datetime-local">` (the AntD popup gets clipped by the mobile `.ant-modal-body` overflow and is misplaced in the iOS PWA). It works inside `Form.Item`. Desktop-only filters may keep `DatePicker`/`RangePicker`.
 - **Don't use AntD `List`** (deprecated in AntD 6, removed in 7): use `ItemList` (`<ul>/<li>`, `renderItem`, optional `loading`/`empty`/`bordered`+`header`/`pagination`) and compose row content with `Flex`/`Typography`. Omit `loading` on lists that never load — the Spin wrapper inherits a 200px `min-height` from `mobile.css`. `deferOffscreen` enables `content-visibility` for long card lists only, never on focusable rows (paint containment clips the focus ring).
 - All shared modals live in `src/components/modals/`. Feature-specific ones stay colocated under `src/pages/**` (e.g. `BudgetAlertsDrawer`).
 - Feature component folders: `dashboard/`, `reports/`, `layout/`, `banking/`, `onboarding/`.
