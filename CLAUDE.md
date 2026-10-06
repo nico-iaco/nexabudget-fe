@@ -56,7 +56,7 @@ Error handling for fetches: a failed load must never render as "no data" or as `
 
 Navigation items are defined once in `src/components/layout/navItems.ts` (`NAV_ITEMS`, with `showInBottomBar` selecting the mobile subset) and consumed by both `AppSider` and `BottomNavBar`. Add a route there, not in both components.
 
-Destructive-action confirmations go through `useConfirm()` (documented convention in `src/hooks/useConfirm.ts`); inline `Popconfirm` is for single table-row actions only.
+Destructive-action confirmations go through `useConfirm()` (documented convention in `src/hooks/useConfirm.ts`); inline `Popconfirm` is for single table-row actions only. Exception: transaction deletes (single and bulk) are soft deletes and skip the confirmation — they delete immediately and show a notification with an Undo button that restores from the trash (`deleteWithUndo` in `TransactionsPage`).
 
 ### Key integrations
 
@@ -82,7 +82,7 @@ Production build also emits `.br`/`.gz` variants and splits `vendor-react` / `ve
 
 `src/theme/tokens.ts` is the styling source of truth and is now fairly complete: `SPACING`, `FONT_SIZE`, `RADIUS`/`RADIUS_BASE`, `SHADOW`, the theme-aware brand primary (`PRIMARY_LIGHT_HEX`/`PRIMARY_DARK_HEX` — hex, because AntD's color derivation can't parse the `oklch()` variants), `SEMANTIC` + `getSemanticColors(isDark)`, brand/auth gradients, and `FONT_HEADING`/`FONT_BODY`. Wired into `ConfigProvider` in `App.tsx` (primary, radii, font family, plus Button/Menu/Card/Modal component overrides).
 
-Import from `theme/tokens.ts` instead of adding another inline magic number, and extend the file when a token is missing. Note the old `COLOR_POSITIVE`/`COLOR_NEGATIVE`/`COLOR_ACCENT`/`COLOR_WARNING` exports no longer exist — use `getSemanticColors(isDark)`.
+Import from `theme/tokens.ts` instead of adding another inline magic number, and extend the file when a token is missing. Date-range presets ("this month", "last 6 months", …) come from `src/utils/datePresets.ts` (`getRangePresets`, `lastMonthsRange`) so every page means the same range by the same label. Note the old `COLOR_POSITIVE`/`COLOR_NEGATIVE`/`COLOR_ACCENT`/`COLOR_WARNING` exports no longer exist — use `getSemanticColors(isDark)`.
 
 Fonts (Inter body / Manrope headings) load from Google Fonts in `index.html`; `src/index.css` forces Manrope onto headings and `.ant-statistic-content` with `!important` because AntD injects its own font-family via CSS-in-JS afterwards.
 

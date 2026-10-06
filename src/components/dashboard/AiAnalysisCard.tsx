@@ -4,6 +4,7 @@ import { RobotOutlined, DownloadOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import dayjs, { Dayjs } from 'dayjs';
+import { getRangePresets } from '../../utils/datePresets';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
@@ -23,12 +24,9 @@ const AI_ANALYSIS_POLL_INTERVAL_MS = 5_000;
 const AI_ANALYSIS_POLL_TIMEOUT_MS = 5 * 60 * 1000;
 const { Title, Text } = Typography;
 
-const PRESETS = (t: (k: string) => string) => [
-    { label: t('dashboard.presets.lastWeek'), value: [dayjs().subtract(1, 'week').startOf('day'), dayjs().endOf('day')] as [Dayjs, Dayjs] },
-    { label: t('dashboard.presets.lastMonth'), value: [dayjs().startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
-    { label: t('dashboard.presets.last6Months'), value: [dayjs().subtract(6, 'month').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
-    { label: t('dashboard.presets.lastYear'), value: [dayjs().subtract(1, 'year').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
-];
+// Preset condivisi (utils/datePresets): stessi intervalli della dashboard e dei report.
+const PRESETS = (t: (k: string) => string) =>
+    getRangePresets(t, ['last7Days', 'thisMonth', 'last6Months', 'last12Months']);
 
 export const AiAnalysisCard: React.FC = () => {
     const { t } = useTranslation();

@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { Flex, theme, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { FONT_SIZE, RADIUS, SHADOW, getSemanticColors } from '../../theme/tokens';
@@ -29,6 +30,25 @@ const formatTickShort = (v: number): string => {
     return formatNumber(v, 0);
 };
 
+/** Testo leggibile solo dagli screen reader (live region del mese selezionato). */
+const VISUALLY_HIDDEN: CSSProperties = {
+    position: 'absolute',
+    width: 1,
+    height: 1,
+    padding: 0,
+    margin: -1,
+    overflow: 'hidden',
+    clip: 'rect(0 0 0 0)',
+    whiteSpace: 'nowrap',
+    border: 0,
+};
+
+/** Scorre il contenitore quanto basta per rendere visibile il punto in `x`. */
+const revealX = (el: HTMLElement, x: number, pad: number) => {
+    if (x - pad < el.scrollLeft) el.scrollLeft = x - pad;
+    else if (x + pad > el.scrollLeft + el.clientWidth) el.scrollLeft = x + pad - el.clientWidth;
+};
+
 export const BalanceTrendChart = ({ points, currency, height = 300 }: Props) => {
     const { t } = useTranslation();
     const { token } = theme.useToken();
@@ -36,14 +56,14 @@ export const BalanceTrendChart = ({ points, currency, height = 300 }: Props) => 
     const semantic = getSemanticColors(preferences.theme === 'dark');
 
     const containerRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
     const [containerW, setContainerW] = useState(0);
     const [hoverIdx, setHoverIdx] = useState<number | null>(null);
-    // Rect memorizzata all'ingresso del puntatore: `getBoundingClientRect()` a ogni
-    // mousemove è una lettura di layout forzata, e il riquadro non cambia durante l'hover.
+    // true quando il grafico ha il focus: solo allora la live region annuncia il mese.
+    const [focused, setFocused] = useState(false);
+    // Rect memorizzata e invalidata a ingresso/uscita/scroll: `getBoundingClientRect()` a
+    // ogni pointermove è una lettura di layout forzata (vedi TrendDualChart).
     const rectRef = useRef<DOMRect | null>(null);
-    const handleEnter = (e: React.MouseEvent<SVGSVGElement>) => {
-        rectRef.current = e.currentTarget.getBoundingClientRect();
-    };
 
     useEffect(() => {
         if (!containerRef.current) return;
@@ -52,11 +72,41 @@ export const BalanceTrendChart = ({ points, currency, height = 300 }: Props) => 
         return () => ro.disconnect();
     }, []);
 
+    // Qualsiasi scroll (pagina o contenitore orizzontale) sposta il riquadro dell'SVG.
+    useEffect(() => {
+        const invalidate = () => { rectRef.current = null; };
+        window.addEventListener('scroll', invalidate, { capture: true, passive: true });
+        return () => window.removeEventListener('scroll', invalidate, { capture: true });
+    }, []);
+
+    // Su mobile l'SVG è più largo dello schermo: si parte dal mese più recente (a destra).
+    const count = points?.length ?? 0;
+    useLayoutEffect(() => {
+        const el = scrollRef.current;
+        if (el) el.scrollLeft = el.scrollWidth;
+    }, [count, containerW]);
+
+    // Al tocco non esiste un "mouse leave": il tooltip si chiude toccando fuori dal grafico.
+    const tooltipOpen = hoverIdx != null;
+    useEffect(() => {
+        if (!tooltipOpen) return;
+        const onDown = (e: PointerEvent) => {
+            if (!scrollRef.current?.contains(e.target as Node)) setHoverIdx(null);
+        };
+        document.addEventListener('pointerdown', onDown);
+        return () => document.removeEventListener('pointerdown', onDown);
+    }, [tooltipOpen]);
+
     // Formattazione condivisa (utils/format): separatori coerenti col resto dell'app.
     const formatAmount = (v: number) => formatMoney(v, currency);
     const formatSignedAmount = (v: number) => formatMoney(v, currency, { signed: true });
 
     if (!points || points.length === 0) return <EmptyState description={t('charts.noData')} />;
+
+    const closingLabel = t('reports.balanceTrend.closingBalance');
+    const monthlyNetLabel = t('reports.balanceTrend.monthlyNet');
+    const describeMonth = (p: BalanceTrendChartPoint) =>
+        `${p.label}: ${closingLabel} ${formatAmount(p.closingBalance)}, ${monthlyNetLabel} ${formatSignedAmount(p.monthlyNet)}`;
 
     const N = points.length;
     const MARGIN_LEFT = 64;
@@ -94,8 +144,9 @@ export const BalanceTrendChart = ({ points, currency, height = 300 }: Props) => 
 
     const labelStep = colW < 56 ? Math.ceil(56 / Math.max(colW, 1)) : 1;
 
-    const handleMove = (e: React.MouseEvent<SVGSVGElement>) => {
-        const rect = rectRef.current ?? e.currentTarget.getBoundingClientRect();
+    const handleMove = (e: React.PointerEvent<SVGSVGElement>) => {
+        if (!rectRef.current) rectRef.current = e.currentTarget.getBoundingClientRect();
+        const rect = rectRef.current;
         const x = ((e.clientX - rect.left) / rect.width) * totalW;
         const localX = x - MARGIN_LEFT;
         if (localX < -colW / 2 || localX > plotW + colW / 2) {
@@ -107,35 +158,92 @@ export const BalanceTrendChart = ({ points, currency, height = 300 }: Props) => 
         setHoverIdx(prev => (prev === idx ? prev : idx));
     };
 
+    // Tap su touch: pointerdown seleziona il mese toccato. Niente preventDefault, così il
+    // pan orizzontale del contenitore resta nativo (touch-action di default = auto).
+    const handleDown = (e: React.PointerEvent<SVGSVGElement>) => {
+        rectRef.current = null;
+        handleMove(e);
+    };
+
+    // Dopo un tap il browser emette pointerleave appena il dito si alza: lì il tooltip
+    // deve restare visibile, e si chiude toccando fuori (vedi effect sopra).
+    const handleLeave = (e: React.PointerEvent<SVGSVGElement>) => {
+        rectRef.current = null;
+        if (e.pointerType !== 'touch') setHoverIdx(null);
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+        if (e.key === 'Escape') {
+            setHoverIdx(null);
+            return;
+        }
+        const cur = hoverIdx ?? N - 1;
+        const next = e.key === 'ArrowLeft' ? Math.max(0, cur - 1)
+            : e.key === 'ArrowRight' ? Math.min(N - 1, cur + 1)
+                : e.key === 'Home' ? 0
+                    : e.key === 'End' ? N - 1
+                        : null;
+        if (next == null) return;
+        e.preventDefault();
+        setHoverIdx(next);
+        revealX(e.currentTarget, xCenter(next), Math.max(colW, MARGIN_LEFT));
+    };
+
     const polyline = points.map((p, i) => `${xCenter(i)},${yToPx(p.closingBalance)}`).join(' ');
     const areaPath = `M ${xCenter(0)},${zeroY} L ${points
         .map((p, i) => `${xCenter(i)},${yToPx(p.closingBalance)}`)
         .join(' L ')} L ${xCenter(N - 1)},${zeroY} Z`;
 
     const tooltipW = 220;
+    // Tooltip a destra del punto; a sinistra se non c'è spazio.
     const tooltipLeft = hoverIdx != null
-        ? Math.max(4, Math.min(xCenter(hoverIdx) + 12, totalW - tooltipW - 4))
+        ? (xCenter(hoverIdx) + 12 + tooltipW <= totalW - 4
+            ? xCenter(hoverIdx) + 12
+            : Math.max(4, xCenter(hoverIdx) - 12 - tooltipW))
         : 0;
     const hoverPoint = hoverIdx != null ? points[hoverIdx] : null;
+
+    const ariaSummary = `${closingLabel} — ${t('charts.lastMonths', { months: N, defaultValue: 'Ultimi {{months}} mesi' })}. ${describeMonth(points[N - 1])}.`;
 
     return (
         <div ref={containerRef}>
             <Flex gap={16} style={{ marginBottom: 6 }} wrap>
                 <Flex align="center" gap={6}>
-                    <span style={{ display: 'inline-block', width: 14, height: 2, backgroundColor: token.colorPrimary }} />
-                    <Text style={{ fontSize: FONT_SIZE.sm }}>{t('reports.balanceTrend.closingBalance')}</Text>
+                    <span aria-hidden style={{ display: 'inline-block', width: 14, height: 2, backgroundColor: token.colorPrimary }} />
+                    <Text style={{ fontSize: FONT_SIZE.sm }}>{closingLabel}</Text>
                 </Flex>
             </Flex>
 
-            <div style={{ overflowX: fits ? 'visible' : 'auto', WebkitOverflowScrolling: 'touch', position: 'relative' }}>
+            {/* Focusabile: le frecce scorrono i mesi e mostrano il tooltip */}
+            <div
+                ref={scrollRef}
+                tabIndex={0}
+                role="group"
+                aria-label={t('charts.keyboardHint', { defaultValue: 'Usa le frecce sinistra e destra per scorrere i mesi' })}
+                onFocus={e => {
+                    if (e.target !== e.currentTarget) return;
+                    setFocused(true);
+                    setHoverIdx(prev => prev ?? N - 1);
+                }}
+                onBlur={() => {
+                    setFocused(false);
+                    setHoverIdx(null);
+                }}
+                onKeyDown={handleKeyDown}
+                style={{ overflowX: fits ? 'visible' : 'auto', WebkitOverflowScrolling: 'touch', position: 'relative' }}
+            >
                 <svg
                     width={totalW}
                     height={height}
                     viewBox={`0 0 ${totalW} ${height}`}
                     style={{ display: 'block' }}
-                    onMouseEnter={handleEnter}
-                    onMouseMove={handleMove}
-                    onMouseLeave={() => setHoverIdx(null)}
+                    role="img"
+                    aria-label={ariaSummary}
+                    onPointerEnter={() => { rectRef.current = null; }}
+                    onPointerDown={handleDown}
+                    onPointerMove={handleMove}
+                    onPointerLeave={handleLeave}
+                    onPointerCancel={() => setHoverIdx(null)}
                 >
                     {ticks.map((tv, i) => {
                         const y = yToPx(tv);
@@ -219,6 +327,7 @@ export const BalanceTrendChart = ({ points, currency, height = 300 }: Props) => 
 
                 {hoverPoint && hoverIdx != null && (
                     <div
+                        aria-hidden
                         style={{
                             position: 'absolute',
                             left: tooltipLeft,
@@ -236,11 +345,11 @@ export const BalanceTrendChart = ({ points, currency, height = 300 }: Props) => 
                     >
                         <div style={{ fontWeight: 600, marginBottom: 6 }}>{hoverPoint.label}</div>
                         <Flex justify="space-between" gap={12}>
-                            <span>{t('reports.balanceTrend.closingBalance')}</span>
+                            <span>{closingLabel}</span>
                             <span style={{ fontWeight: 500 }}>{formatAmount(hoverPoint.closingBalance)}</span>
                         </Flex>
                         <Flex justify="space-between" gap={12}>
-                            <span>{t('reports.balanceTrend.monthlyNet')}</span>
+                            <span>{monthlyNetLabel}</span>
                             <span
                                 style={{
                                     fontWeight: 500,
@@ -256,6 +365,11 @@ export const BalanceTrendChart = ({ points, currency, height = 300 }: Props) => 
                         </Flex>
                     </div>
                 )}
+            </div>
+
+            {/* Annuncia il mese selezionato da tastiera (il tooltip visivo è aria-hidden) */}
+            <div aria-live="polite" style={VISUALLY_HIDDEN}>
+                {focused && hoverPoint ? describeMonth(hoverPoint) : ''}
             </div>
         </div>
     );

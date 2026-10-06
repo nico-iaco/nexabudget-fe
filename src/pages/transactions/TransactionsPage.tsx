@@ -17,13 +17,16 @@ import {
     notification,
     Progress,
     Radio,
+    Segmented,
     Select,
     Space,
     Spin,
     Table,
     Tag,
+    Tooltip,
     Typography
 } from 'antd';
+import type { GetRef } from 'antd';
 import { SafeSelect } from '../../components/common/SafeSelect';
 import { SafeDatePicker } from '../../components/common/SafeDatePicker';
 import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, FilterOutlined, MoreOutlined, PlusOutlined, RetweetOutlined, RobotOutlined, SearchOutlined, SwapOutlined, UploadOutlined } from '@ant-design/icons';
@@ -50,7 +53,6 @@ import { getCurrencySymbol } from '../../utils/currency';
 import { formatMoney, formatNumber } from '../../utils/format';
 import { FONT_SIZE, RADIUS, SHADOW, SPACING, getSemanticColors } from '../../theme/tokens';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { useConfirm } from '../../hooks/useConfirm';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import type { MenuProps } from 'antd';
 import type { AppOutletContext } from '../../types/outletContext';
@@ -64,9 +66,12 @@ import {
     type TransactionSortField,
 } from '../../hooks/useTransactionFilters';
 import { TRANSACTIONS_PAGE_SIZE, useTransactionsList } from '../../hooks/useTransactionsList';
+import { getRangePresets } from '../../utils/datePresets';
+import { DatePresetPicker } from '../../components/common/DatePresetPicker';
 
 const { Text } = Typography;
 const { Option } = Select;
+const { RangePicker } = DatePicker;
 
 interface FormValues extends Omit<TransactionRequest, 'date'> {
     date?: dayjs.Dayjs | null;
@@ -111,7 +116,6 @@ const LoadMore = ({ onLoadMore, loading, label }: { onLoadMore: () => void; load
 export const TransactionsPage = () => {
     const { t } = useTranslation();
     const { accountId } = useParams<{ accountId?: string }>();
-    const confirm = useConfirm();
     const {
         accounts,
         fetchAccounts: fetchLayoutAccounts,
@@ -123,9 +127,15 @@ export const TransactionsPage = () => {
         () => [...rawCategories].sort((a, b) => a.name.localeCompare(b.name)),
         [rawCategories]
     );
+    // Opzioni con `label` per le Select con ricerca (showSearch filtra su optionFilterProp).
+    const categoryOptions = useMemo(
+        () => categories.map(c => ({ value: c.id, label: c.name })),
+        [categories]
+    );
 
     const [saving, setSaving] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const amountInputRef = useRef<GetRef<typeof InputNumber>>(null);
     const [editingRecord, setEditingRecord] = useState<Transaction | null>(null);
 
     const [form] = Form.useForm<FormValues>();
@@ -203,6 +213,18 @@ export const TransactionsPage = () => {
         setSearchInput('');
         clearFilters();
     };
+
+    // Selezione multipla (solo tabella desktop) per eliminare o ricategorizzare in blocco.
+    // Si azzera quando cambia ciò che è a schermo: righe selezionate e non più visibili
+    // verrebbero modificate "alla cieca".
+    const [selectedIds, setSelectedIds] = useState<string[]>([]);
+    const [bulkWorking, setBulkWorking] = useState(false);
+    const selectionScope = `${accountId ?? ''}|${JSON.stringify(apiFilters)}|${currentPage}`;
+    const [prevSelectionScope, setPrevSelectionScope] = useState(selectionScope);
+    if (prevSelectionScope !== selectionScope) {
+        setPrevSelectionScope(selectionScope);
+        setSelectedIds([]);
+    }
 
     // State for "Convert to Transfer" modal
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
@@ -435,6 +457,13 @@ export const TransactionsPage = () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
     }, [queryClient]);
 
+    // Dopo una modifica: lista, saldi dei conti e dati derivati.
+    const afterTransactionsChange = useCallback(() => {
+        refreshTransactions();
+        fetchLayoutAccounts();
+        invalidateDerivedData();
+    }, [refreshTransactions, fetchLayoutAccounts, invalidateDerivedData]);
+
     useEffect(() => {
         if (!destinationAccountId || !sourceTransaction) return;
 
@@ -485,27 +514,81 @@ export const TransactionsPage = () => {
     }, [destinationAccountId, sourceTransaction]);
 
 
-    const handleDelete = useCallback(async (id: string) => {
-        confirm({
-            title: t('transactions.deleteConfirm'),
-            content: t('trash.recoverableFor30Days'),
-            okText: t('common.delete'),
-            danger: true,
-            cancelText: t('common.cancel'),
-            onOk: async () => {
-                try {
-                    await api.deleteTransaction(id);
-                    message.success(t('trash.movedToTrash'));
-                    refreshTransactions();
-                    fetchLayoutAccounts();
-                    invalidateDerivedData();
-                } catch (error) {
-                    console.error("Failed to delete transaction", error);
-                    message.error(t('transactions.deleteError'));
-                }
+    // Eliminazione senza conferma preventiva ma con "Annulla": è un soft delete (finisce nel
+    // cestino), e un modale di conferma a ogni riga rallentava l'operazione più comune
+    // senza proteggere da nulla che l'annullamento non copra già.
+    const deleteWithUndo = useCallback(async (ids: string[]) => {
+        const results = await Promise.allSettled(ids.map(id => api.deleteTransaction(id)));
+        const deleted = ids.filter((_, i) => results[i].status === 'fulfilled');
+        if (deleted.length < ids.length) {
+            console.error('Failed to delete transactions', results.filter(r => r.status === 'rejected'));
+            message.error(t('transactions.deleteError'));
+        }
+        if (deleted.length === 0) return;
+        afterTransactionsChange();
+        setSelectedIds(prev => prev.filter(id => !deleted.includes(id)));
+
+        const key = `undo-delete-${deleted[0]}`;
+        const undo = async () => {
+            apiNotification.destroy(key);
+            const restored = await Promise.allSettled(deleted.map(id => api.restoreTransaction(id)));
+            afterTransactionsChange();
+            if (restored.some(r => r.status === 'rejected')) {
+                message.error(t('trash.restoreError'));
+            } else {
+                message.success(t('trash.restoreSuccess'));
             }
+        };
+        apiNotification.success({
+            key,
+            title: deleted.length === 1
+                ? t('trash.movedToTrash')
+                : t('transactions.bulk.movedToTrash', { count: deleted.length }),
+            description: t('trash.recoverableFor30Days'),
+            // In alto: in basso finirebbe sopra la bottom bar su mobile.
+            placement: 'top',
+            duration: 8,
+            actions: <Button size="small" onClick={undo}>{t('common.undo')}</Button>,
         });
-    }, [t, confirm, fetchLayoutAccounts, invalidateDerivedData, refreshTransactions]);
+    }, [t, afterTransactionsChange, apiNotification]);
+
+    const handleDelete = useCallback((id: string) => { void deleteWithUndo([id]); }, [deleteWithUndo]);
+
+    const handleBulkDelete = async () => {
+        setBulkWorking(true);
+        try {
+            await deleteWithUndo(selectedIds);
+        } finally {
+            setBulkWorking(false);
+        }
+    };
+
+    const handleBulkCategorize = async (categoryId: string | undefined) => {
+        const targets = transactions.filter(tx => selectedIds.includes(tx.id));
+        if (targets.length === 0) return;
+        setBulkWorking(true);
+        try {
+            const results = await Promise.allSettled(targets.map(tx => api.updateTransaction(tx.id, {
+                accountId: tx.accountId,
+                categoryId,
+                amount: tx.amount,
+                type: tx.type,
+                description: tx.description,
+                date: tx.date,
+                note: tx.note,
+            })));
+            const failed = results.filter(r => r.status === 'rejected').length;
+            if (failed > 0) {
+                message.error(t('transactions.bulk.categorizeError', { count: failed }));
+            } else {
+                message.success(t('transactions.bulk.categorized', { count: targets.length }));
+                setSelectedIds([]);
+            }
+            afterTransactionsChange();
+        } finally {
+            setBulkWorking(false);
+        }
+    };
 
     const handleOpenEditModal = useCallback((record: Transaction) => {
         setEditingRecord(record);
@@ -846,10 +929,41 @@ export const TransactionsPage = () => {
         return (
             <>
                 {staleWarning}
+                {selectedIds.length > 0 && (
+                    <Flex
+                        align="center"
+                        gap="small"
+                        wrap="wrap"
+                        role="toolbar"
+                        aria-label={t('transactions.bulk.toolbar')}
+                        style={{ marginBottom: SPACING.sm }}
+                    >
+                        <Text strong>{t('transactions.bulk.selected', { count: selectedIds.length })}</Text>
+                        <Select
+                            placeholder={t('transactions.bulk.setCategory')}
+                            value={null}
+                            onChange={(value: string) => { void handleBulkCategorize(value); }}
+                            options={categoryOptions}
+                            showSearch={{ optionFilterProp: 'label' }}
+                            disabled={bulkWorking}
+                            style={{ minWidth: 220 }}
+                        />
+                        <Button danger icon={<DeleteOutlined />} onClick={handleBulkDelete} loading={bulkWorking}>
+                            {t('common.delete')}
+                        </Button>
+                        <Button type="link" onClick={() => setSelectedIds([])} disabled={bulkWorking}>
+                            {t('transactions.bulk.clearSelection')}
+                        </Button>
+                    </Flex>
+                )}
                 <Table
                     columns={columns}
                     dataSource={processedTransactions}
                     rowKey="id"
+                    rowSelection={{
+                        selectedRowKeys: selectedIds,
+                        onChange: (keys) => setSelectedIds(keys.map(String)),
+                    }}
                     loading={loading}
                     onChange={handleTableChange}
                     size={'small'}
@@ -885,7 +999,16 @@ export const TransactionsPage = () => {
             onClick: handleStartAiCategorization,
         },
         { key: 'transfer', icon: <RetweetOutlined />, label: t('transactions.newTransfer'), onClick: handleOpenTransferModal },
-        { key: 'import', icon: <UploadOutlined />, label: t('transactions.import.open'), disabled: !accountId, onClick: () => setIsImportModalOpen(true) },
+        {
+            key: 'import',
+            icon: <UploadOutlined />,
+            label: t('transactions.import.open'),
+            // Su mobile non c'è hover per un tooltip: la voce resta attiva e spiega il motivo.
+            onClick: () => {
+                if (accountId) setIsImportModalOpen(true);
+                else message.info(t('transactions.import.selectAccountFirst'));
+            },
+        },
     ];
 
     return (
@@ -932,14 +1055,20 @@ export const TransactionsPage = () => {
                         >
                             {t('transactions.newTransfer')}
                         </Button>
-                        <Button
-                            icon={<UploadOutlined />}
-                            onClick={() => setIsImportModalOpen(true)}
-                            size="large"
-                            disabled={!accountId}
-                        >
-                            {t('transactions.import.open')}
-                        </Button>
+                        {/* Disabilitato fuori da un conto: il tooltip spiega perché (lo span
+                            serve perché un bottone disabilitato non riceve eventi hover). */}
+                        <Tooltip title={accountId ? undefined : t('transactions.import.selectAccountFirst')}>
+                            <span>
+                                <Button
+                                    icon={<UploadOutlined />}
+                                    onClick={() => setIsImportModalOpen(true)}
+                                    size="large"
+                                    disabled={!accountId}
+                                >
+                                    {t('transactions.import.open')}
+                                </Button>
+                            </span>
+                        </Tooltip>
                         <Button
                             type="primary"
                             icon={<PlusOutlined />}
@@ -1003,22 +1132,21 @@ export const TransactionsPage = () => {
                             onChange={(value) => setFilter('categoryId', value)}
                             style={{ flex: 1, minWidth: 120 }}
                             allowClear
-                        >
-                            {categories.map(c => <Option key={c.id} value={c.id}>{c.name}</Option>)}
-                        </Select>
-                        <DatePicker
-                            placeholder={t('transactions.fromDate')}
-                            value={filters.startDate}
-                            style={{ flex: 1, minWidth: 120 }}
-                            onChange={(date) => setFilter('startDate', date)}
-                           
+                            options={categoryOptions}
+                            showSearch={{ optionFilterProp: 'label' }}
                         />
-                        <DatePicker
-                            placeholder={t('transactions.toDate')}
-                            value={filters.endDate}
-                            style={{ flex: 1, minWidth: 120 }}
-                            onChange={(date) => setFilter('endDate', date)}
-                           
+                        {/* Un solo RangePicker con preset: erano due DatePicker separati,
+                            senza scorciatoie e senza vincolo inizio ≤ fine. */}
+                        <RangePicker
+                            placeholder={[t('transactions.fromDate'), t('transactions.toDate')]}
+                            value={[filters.startDate ?? null, filters.endDate ?? null]}
+                            allowEmpty={[true, true]}
+                            presets={getRangePresets(t)}
+                            style={{ flex: 2, minWidth: 240 }}
+                            onChange={(dates) => applyFiltersAndSort(
+                                { ...filters, startDate: dates?.[0] ?? null, endDate: dates?.[1] ?? null },
+                                sortConfig,
+                            )}
                         />
                         <Select
                             placeholder={t('transactions.sortBy')}
@@ -1091,20 +1219,17 @@ export const TransactionsPage = () => {
                         onChange={(value) => setDraftFilters(prev => ({ ...prev, categoryId: value as string | undefined }))}
                         style={{ width: '100%' }}
                         allowClear
-                    >
-                        {categories.map(c => <Select.Option key={c.id} value={c.id}>{c.name}</Select.Option>)}
-                    </SafeSelect>
-                    <SafeDatePicker
-                        placeholder={t('transactions.fromDate')}
-                        value={draftFilters.startDate}
-                        style={{ width: '100%' }}
-                        onChange={(date) => setDraftFilters(prev => ({ ...prev, startDate: date }))}
+                        options={categoryOptions}
+                        showSearch={{ optionFilterProp: 'label' }}
                     />
-                    <SafeDatePicker
-                        placeholder={t('transactions.toDate')}
-                        value={draftFilters.endDate}
-                        style={{ width: '100%' }}
-                        onChange={(date) => setDraftFilters(prev => ({ ...prev, endDate: date }))}
+                    {/* Preset + intervallo personalizzato; i picker impediscono inizio > fine. */}
+                    <DatePresetPicker
+                        presets={getRangePresets(t)}
+                        value={[draftFilters.startDate ?? null, draftFilters.endDate ?? null]}
+                        onChange={([start, end]) => setDraftFilters(prev => ({ ...prev, startDate: start, endDate: end }))}
+                        customLabel={t('dashboard.presets.custom')}
+                        startPlaceholder={t('transactions.fromDate')}
+                        endPlaceholder={t('transactions.toDate')}
                     />
                     <SafeSelect
                         placeholder={t('transactions.sortBy')}
@@ -1131,26 +1256,47 @@ export const TransactionsPage = () => {
             {renderContent()}
 
             <Modal title={editingRecord ? t('transactions.editTransaction') : t('transactions.newTransaction')} open={isModalOpen}
-                onCancel={handleCancel} footer={null} destroyOnHidden>
+                onCancel={handleCancel} footer={null} destroyOnHidden
+                // Nuova transazione: focus sull'importo, il primo dato da inserire. Dopo
+                // l'apertura e non con autoFocus, che il focus trap del Modal annullerebbe.
+                afterOpenChange={(open) => { if (open && !editingRecord) amountInputRef.current?.focus(); }}>
                 <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: SPACING.lg }}>
                     <Form.Item name="accountId" label={t('transactions.account')} rules={[{ required: true }]}>
                         <SafeSelect placeholder={t('transactions.selectAccount')} disabled={!!accountId || !!editingRecord}>
                             {accounts.map(acc => <Select.Option key={acc.id} value={acc.id}>{acc.name}</Select.Option>)}
                         </SafeSelect>
                     </Form.Item>
-                    <Form.Item name="amount" label={t('transactions.amount')} rules={[{ required: true }]}>
-                        <InputNumber<number> style={{ width: '100%' }} min={0} suffix={formSelectedCurrency} parser={commaDecimalParser} />
+                    {/* Tipo come segmented con default "Uscita" (il caso più comune), sopra
+                        l'importo: era una Select obbligatoria senza default, due tap in più
+                        a ogni inserimento. */}
+                    <Form.Item name="type" label={t('transactions.type')} rules={[{ required: true }]} initialValue="OUT">
+                        <Segmented
+                            block
+                            options={[
+                                { value: 'OUT', label: t('transactions.typeOut'), icon: <ArrowDownOutlined /> },
+                                { value: 'IN', label: t('transactions.typeIn'), icon: <ArrowUpOutlined /> },
+                            ]}
+                        />
                     </Form.Item>
-                    <Form.Item name="type" label={t('transactions.type')} rules={[{ required: true }]}>
-                        <SafeSelect placeholder={t('transactions.selectType')}>
-                            <Select.Option value="IN">{t('transactions.typeIn')}</Select.Option>
-                            <Select.Option value="OUT">{t('transactions.typeOut')}</Select.Option>
-                        </SafeSelect>
+                    <Form.Item name="amount" label={t('transactions.amount')} rules={[{ required: true }]}>
+                        {/* inputMode="decimal": su mobile apre il tastierino numerico invece
+                            della tastiera completa. */}
+                        <InputNumber<number>
+                            ref={amountInputRef}
+                            style={{ width: '100%' }}
+                            min={0}
+                            suffix={formSelectedCurrency}
+                            parser={commaDecimalParser}
+                            inputMode="decimal"
+                        />
                     </Form.Item>
                     <Form.Item name="categoryId" label={t('transactions.category')}>
-                        <SafeSelect placeholder={t('transactions.selectCategory')} allowClear>
-                            {categories.map(cat => <Select.Option key={cat.id} value={cat.id}>{cat.name}</Select.Option>)}
-                        </SafeSelect>
+                        <SafeSelect
+                            placeholder={t('transactions.selectCategory')}
+                            allowClear
+                            options={categoryOptions}
+                            showSearch={{ optionFilterProp: 'label' }}
+                        />
                     </Form.Item>
                     <Form.Item name="description" label={t('transactions.description')} rules={[{ required: true }]}>
                         <Input />

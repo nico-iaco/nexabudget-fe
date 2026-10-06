@@ -95,10 +95,18 @@ interface ComparisonBarsProps {
     previousIncome: number;
     currentExpense: number;
     previousExpense: number;
+    /**
+     * Etichetta del periodo corrente (es. "Ottobre 2026"). L'utente può scegliere un mese
+     * qualsiasi, quindi "Mese corrente" è solo il fallback. Stessa firma in
+     * DashboardCharts: DashboardPage carica in lazy l'uno o l'altro modulo.
+     */
+    currentLabel?: string;
+    /** Etichetta del periodo di confronto (fallback: "Mese precedente"). */
+    previousLabel?: string;
 }
 
 export const ComparisonBars = ({
-    currentIncome, previousIncome, currentExpense, previousExpense,
+    currentIncome, previousIncome, currentExpense, previousExpense, currentLabel, previousLabel,
 }: ComparisonBarsProps) => {
     const { t } = useTranslation();
     const { token } = theme.useToken();
@@ -110,12 +118,23 @@ export const ComparisonBars = ({
         <Flex vertical gap={12}>
             <Flex gap={12} style={{ fontSize: FONT_SIZE.xs }}>
                 <Flex gap={4} align="center">
-                    <div style={{ width: 8, height: 8, backgroundColor: token.colorTextQuaternary, borderRadius: RADIUS.xs }} />
-                    <Text style={{ fontSize: FONT_SIZE.xs }}>{t('reports.previousMonth')}</Text>
+                    <div aria-hidden style={{ width: 8, height: 8, backgroundColor: token.colorTextQuaternary, borderRadius: RADIUS.xs, flexShrink: 0 }} />
+                    <Text style={{ fontSize: FONT_SIZE.xs }}>{previousLabel ?? t('reports.previousMonth')}</Text>
                 </Flex>
                 <Flex gap={4} align="center">
-                    <div style={{ width: 8, height: 8, backgroundColor: token.colorPrimary, borderRadius: RADIUS.xs }} />
-                    <Text style={{ fontSize: FONT_SIZE.xs }}>{t('reports.currentMonth')}</Text>
+                    {/* Le barre del periodo corrente sono verdi (entrate) e rosse (uscite):
+                        il campione le riporta entrambe, non il colore primario. */}
+                    <div
+                        aria-hidden
+                        style={{
+                            width: 12,
+                            height: 8,
+                            background: `linear-gradient(90deg, ${semantic.positive} 50%, ${semantic.negative} 50%)`,
+                            borderRadius: RADIUS.xs,
+                            flexShrink: 0,
+                        }}
+                    />
+                    <Text style={{ fontSize: FONT_SIZE.xs }}>{currentLabel ?? t('reports.currentMonth')}</Text>
                 </Flex>
             </Flex>
             <ComparisonRow label={t('reports.typeIn')} current={currentIncome} previous={previousIncome} max={max} color={semantic.positive} trackColor={token.colorTextQuaternary} />
@@ -144,7 +163,8 @@ export const Sparkline = ({ values, color, height = 32 }: SparklineProps) => {
         .join(' ');
     const areaPoints = `0,${height} ${points} ${w},${height}`;
     return (
-        <svg width="100%" height={height} viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" style={{ display: 'block' }}>
+        // Decorativa: accompagna un valore già leggibile nella card, niente da annunciare.
+        <svg aria-hidden="true" focusable="false" width="100%" height={height} viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" style={{ display: 'block' }}>
             <polygon points={areaPoints} fill={resolvedColor} fillOpacity={0.18} />
             <polyline points={points} fill="none" stroke={resolvedColor} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
         </svg>

@@ -16,7 +16,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
-import dayjs, { type Dayjs } from 'dayjs';
+import type { Dayjs } from 'dayjs';
 import { AxiosError } from 'axios';
 import * as api from '../../services/api';
 import type { BalanceTrendItem, BalanceTrendResponse } from '../../types/api';
@@ -27,6 +27,7 @@ import { EmptyState } from '../common/EmptyState';
 import { InlineError } from '../common/InlineError';
 import { StatCard } from '../common/StatCard';
 import { formatMoney, formatPercent } from '../../utils/format';
+import { lastMonthsRange } from '../../utils/datePresets';
 
 const BalanceTrendChart = lazy(() =>
     import('./BalanceTrendChart').then(m => ({ default: m.BalanceTrendChart })),
@@ -37,29 +38,10 @@ const { Text } = Typography;
 
 const DEBOUNCE_MS = 300;
 
-const defaultRange = (): [Dayjs, Dayjs] => [
-    dayjs().subtract(11, 'month').startOf('month'),
-    dayjs().endOf('month'),
-];
+const defaultRange = (): [Dayjs, Dayjs] => lastMonthsRange(12);
 
-const TREND_PRESETS = (t: (k: string) => string) => [
-    {
-        label: t('reports.months3'),
-        value: [dayjs().subtract(2, 'month').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs],
-    },
-    {
-        label: t('reports.months6'),
-        value: [dayjs().subtract(5, 'month').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs],
-    },
-    {
-        label: t('reports.months12'),
-        value: [dayjs().subtract(11, 'month').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs],
-    },
-    {
-        label: t('reports.months24'),
-        value: [dayjs().subtract(23, 'month').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs],
-    },
-];
+const TREND_PRESETS = (t: (k: string) => string) =>
+    [3, 6, 12, 24].map(n => ({ label: t(`reports.months${n}`), value: lastMonthsRange(n) }));
 
 const useDebounced = <T,>(value: T, delay = DEBOUNCE_MS): T => {
     const [debounced, setDebounced] = useState(value);
@@ -70,7 +52,15 @@ const useDebounced = <T,>(value: T, delay = DEBOUNCE_MS): T => {
     return debounced;
 };
 
-export const BalanceTrendSection = () => {
+interface BalanceTrendSectionProps {
+    /**
+     * Tabella mese per mese sotto il grafico. Sulla dashboard è nascosta: ripeteva gli
+     * stessi valori del grafico (fino a 24 righe) in fondo a una pagina già lunga.
+     */
+    showTable?: boolean;
+}
+
+export const BalanceTrendSection = ({ showTable = true }: BalanceTrendSectionProps) => {
     const { t } = useTranslation();
     const { preferences } = usePreferences();
     const { message } = App.useApp();
@@ -276,7 +266,7 @@ export const BalanceTrendSection = () => {
                                     />
                                 </Suspense>
 
-                                <Table
+                                {showTable && <Table
                                     style={{ marginTop: SPACING.md }}
                                     size="small"
                                     rowKey={(item) => `${item.year}-${item.month}`}
@@ -284,7 +274,7 @@ export const BalanceTrendSection = () => {
                                     dataSource={items}
                                     pagination={false}
                                     scroll={{ x: 'max-content' }}
-                                />
+                                />}
                             </>
                         )}
                     </div>

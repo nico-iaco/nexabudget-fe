@@ -47,18 +47,15 @@ import type { AppOutletContext } from '../../types/outletContext';
 import { DatePresetPicker } from '../../components/common/DatePresetPicker';
 import { SafeDatePicker } from '../../components/common/SafeDatePicker';
 import { formatMoney, formatPercent } from '../../utils/format';
+import { getRangePresets } from '../../utils/datePresets';
 import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
-const PRESETS = (t: (k: string) => string) => [
-    { label: t('dashboard.presets.lastWeek'), value: () => [dayjs().subtract(1, 'week').startOf('day'), dayjs().endOf('day')] as [Dayjs, Dayjs] },
-    { label: t('dashboard.presets.previousMonth'), value: () => [dayjs().subtract(1, 'month').startOf('month'), dayjs().subtract(1, 'month').endOf('month')] as [Dayjs, Dayjs] },
-    { label: t('dashboard.presets.lastMonth'), value: () => [dayjs().startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
-    { label: t('dashboard.presets.last6Months'), value: () => [dayjs().subtract(6, 'month').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
-    { label: t('dashboard.presets.lastYear'), value: () => [dayjs().subtract(1, 'year').startOf('month'), dayjs().endOf('month')] as [Dayjs, Dayjs] },
-];
+// Preset condivisi (utils/datePresets): stessi intervalli di report e transazioni.
+const PRESETS = (t: (k: string) => string) =>
+    getRangePresets(t, ['last7Days', 'thisMonth', 'previousMonth', 'last6Months', 'last12Months']);
 
 export const DashboardPage = () => {
     const { t } = useTranslation();
@@ -238,7 +235,7 @@ export const DashboardPage = () => {
                     </Suspense>
                 </div>
                 <div style={{ marginTop: SPACING.md }}>
-                    <BalanceTrendSection />
+                    <BalanceTrendSection showTable={false} />
                 </div>
             </>
         );
@@ -248,7 +245,7 @@ export const DashboardPage = () => {
         <div style={{ width: isMobile ? '100%' : 'auto' }}>
             {isMobile ? (
                         <DatePresetPicker
-                            presets={PRESETS(t).map(p => ({ label: p.label, value: p.value() }))}
+                            presets={PRESETS(t)}
                             value={[dateRange?.[0] ?? null, dateRange?.[1] ?? null]}
                             onChange={(range) => setDateRange(range)}
                             customLabel={t('dashboard.presets.custom')}
@@ -257,15 +254,14 @@ export const DashboardPage = () => {
                         />
                     ) : (
                         <Flex gap={6} align="center" justify="flex-end" wrap>
-                            {PRESETS(t).map((p, i) => {
-                                const v = p.value();
-                                const isActive = dateRange?.[0]?.isSame(v[0], 'day') && dateRange?.[1]?.isSame(v[1], 'day');
+                            {PRESETS(t).map(p => {
+                                const isActive = dateRange?.[0]?.isSame(p.value[0], 'day') && dateRange?.[1]?.isSame(p.value[1], 'day');
                                 return (
                                     <Button
-                                        key={i}
+                                        key={p.key}
                                         size="small"
                                         type={isActive ? 'primary' : 'default'}
-                                        onClick={() => setDateRange(p.value())}
+                                        onClick={() => setDateRange(p.value)}
                                     >
                                         {p.label}
                                     </Button>
@@ -370,7 +366,7 @@ export const DashboardPage = () => {
                                                         <Text type={expenseComparison.percentageChange >= 0 ? 'danger' : 'success'}>
                                                             {formatPercent(expenseComparison.percentageChange, 2, true)}
                                                         </Text>
-                                                        <Text type="secondary"> {t('dashboard.vsPeriod', { period: t('dashboard.previousMonth') })}</Text>
+                                                        <Text type="secondary"> {t('dashboard.thisMonthVsPrevious')}</Text>
                                                     </div>
                                                 )}
                                                 <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
@@ -394,18 +390,11 @@ export const DashboardPage = () => {
                         )}
                     </Row>
 
-                    {/* Analisi Finanziaria AI */}
+                    {/* Bento: analytics a sinistra, budget + proiezione + confronto a destra.
+                        Su mobile la colonna destra viene prima (order): budget e proiezione
+                        rispondono a "come sto andando questo mese?" e stavano sotto due grafici. */}
                     <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
-                        <Col xs={24}>
-                            <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
-                                <AiAnalysisCard />
-                            </Suspense>
-                        </Col>
-                    </Row>
-
-                    {/* Bento: analytics a sinistra, budget + proiezione + confronto a destra */}
-                    <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
-                        <Col xs={24} lg={15}>
+                        <Col xs={{ span: 24, order: 2 }} lg={{ span: 15, order: 1 }}>
                             <Flex vertical gap={16}>
                                 <Card title={t('reports.categoryBreakdown')}>
                                     {breakdownFailed ? (
@@ -475,7 +464,7 @@ export const DashboardPage = () => {
                             </Flex>
                         </Col>
 
-                        <Col xs={24} lg={9}>
+                        <Col xs={{ span: 24, order: 1 }} lg={{ span: 9, order: 2 }}>
                             <Flex vertical gap={16}>
                                 {budgetsFailed ? (
                                     <Card title={t('dashboard.budgetSummary.title')}>
@@ -499,17 +488,17 @@ export const DashboardPage = () => {
                                             il simbolo € andava a capo. Due per riga finché non c'è spazio. */}
                                         <Row gutter={[16, 8]} align="middle">
                                             <Col xs={12} sm={8} lg={12} xxl={8}>
-                                                <Statistic title={t('reports.projectedIncome')} value={projection.projectedMonthlyIncome} formatter={moneyFormatter} styles={{ content: { color: semantic.positive, fontSize: '16px' } }} />
+                                                <Statistic title={t('reports.projectedIncome')} value={projection.projectedMonthlyIncome} formatter={moneyFormatter} styles={{ content: { color: semantic.positive, fontSize: FONT_SIZE.xl } }} />
                                             </Col>
                                             <Col xs={12} sm={8} lg={12} xxl={8}>
-                                                <Statistic title={t('reports.projectedExpense')} value={projection.projectedMonthlyExpense} formatter={moneyFormatter} styles={{ content: { color: semantic.negative, fontSize: '16px' } }} />
+                                                <Statistic title={t('reports.projectedExpense')} value={projection.projectedMonthlyExpense} formatter={moneyFormatter} styles={{ content: { color: semantic.negative, fontSize: FONT_SIZE.xl } }} />
                                             </Col>
                                             <Col xs={12} sm={8} lg={12} xxl={8}>
                                                 <Statistic
                                                     title={t('reports.projectedSavings')}
                                                     value={projection.projectedMonthlySavings}
                                                     formatter={moneyFormatter}
-                                                    styles={{ content: { color: projection.projectedMonthlySavings >= 0 ? semantic.positive : semantic.negative, fontSize: '16px' } }}
+                                                    styles={{ content: { color: projection.projectedMonthlySavings >= 0 ? semantic.positive : semantic.negative, fontSize: FONT_SIZE.xl } }}
                                                 />
                                             </Col>
                                             <Col xs={24}>
@@ -541,6 +530,8 @@ export const DashboardPage = () => {
                                     ) : customComparison ? (
                                         <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
                                             <ComparisonBars
+                                                currentLabel={comparisonMonth.format('MMM YYYY')}
+                                                previousLabel={comparisonMonth.subtract(1, 'month').format('MMM YYYY')}
                                                 currentIncome={customComparison.currentMonth?.income ?? 0}
                                                 previousIncome={customComparison.previousMonth?.income ?? 0}
                                                 currentExpense={customComparison.currentMonth?.expense ?? 0}
@@ -555,10 +546,21 @@ export const DashboardPage = () => {
                         </Col>
                     </Row>
 
+                    {/* Analisi AI: dopo i dati, non sopra. È una card su richiesta (vuota finché
+                        l'utente non avvia un'analisi) e su mobile spingeva budget e proiezione
+                        sotto la piega. */}
+                    <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
+                        <Col xs={24}>
+                            <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
+                                <AiAnalysisCard />
+                            </Suspense>
+                        </Col>
+                    </Row>
+
                     {/* Andamento saldo netto cumulato */}
                     <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
                         <Col xs={24}>
-                            <BalanceTrendSection />
+                            <BalanceTrendSection showTable={false} />
                         </Col>
                     </Row>
                 </>

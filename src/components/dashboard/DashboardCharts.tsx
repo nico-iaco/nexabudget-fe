@@ -144,6 +144,14 @@ interface ComparisonBarsProps {
     previousIncome: number;
     currentExpense: number;
     previousExpense: number;
+    /**
+     * Etichetta del periodo corrente (es. "Ottobre 2026"). L'utente può scegliere un mese
+     * qualsiasi, quindi "Mese corrente" è solo il fallback. Stessa firma in
+     * DashboardChartsMobile: DashboardPage carica in lazy l'uno o l'altro modulo.
+     */
+    currentLabel?: string;
+    /** Etichetta del periodo di confronto (fallback: "Mese precedente"). */
+    previousLabel?: string;
 }
 
 interface ComparisonRowProps {
@@ -206,13 +214,13 @@ const ComparisonRow = ({ label, current, previous, color, deltaIsBad, prevLabel,
 };
 
 export const ComparisonBars = ({
-    currentIncome, previousIncome, currentExpense, previousExpense,
+    currentIncome, previousIncome, currentExpense, previousExpense, currentLabel, previousLabel,
 }: ComparisonBarsProps) => {
     const { t } = useTranslation();
     const { preferences } = usePreferences();
     const semantic = getSemanticColors(preferences.theme === 'dark');
-    const prevLabel = t('reports.previousMonth');
-    const currLabel = t('reports.currentMonth');
+    const prevLabel = previousLabel ?? t('reports.previousMonth');
+    const currLabel = currentLabel ?? t('reports.currentMonth');
 
     return (
         <Flex vertical gap={20}>
@@ -258,7 +266,8 @@ export const Sparkline = ({ values, color, height = 32 }: SparklineProps) => {
         .join(' ');
     const areaPoints = `0,${height} ${points} ${w},${height}`;
     return (
-        <svg width="100%" height={height} viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" style={{ display: 'block', marginTop: 8 }}>
+        // Decorativa: accompagna un valore già leggibile nella card, niente da annunciare.
+        <svg aria-hidden="true" focusable="false" width="100%" height={height} viewBox={`0 0 ${w} ${height}`} preserveAspectRatio="none" style={{ display: 'block', marginTop: 8 }}>
             <polygon points={areaPoints} fill={resolvedColor} fillOpacity={0.18} />
             <polyline points={points} fill="none" stroke={resolvedColor} strokeWidth={1.5} vectorEffect="non-scaling-stroke" />
         </svg>

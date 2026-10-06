@@ -6,7 +6,6 @@ import {
     Descriptions,
     Flex,
     Form,
-    Input,
     message,
     Modal,
     Radio,
@@ -15,8 +14,9 @@ import {
     Table,
     Tag,
     Typography,
+    Upload,
 } from 'antd';
-import { FileSearchOutlined } from '@ant-design/icons';
+import { FileSearchOutlined, InboxOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import * as api from '../../services/api';
@@ -33,7 +33,62 @@ import { usePreferences } from '../../contexts/PreferencesContext';
 import { formatMoney } from '../../utils/format';
 
 const { Text } = Typography;
-const { Option } = Select;
+
+// Default pensati per gli export delle banche italiane (";" e date gg/mm/aaaa): prima erano
+// "," e yyyy-MM-dd, quindi quasi ogni import richiedeva di correggere il mapping a mano.
+const DEFAULT_CSV_MAPPING: CsvColumnMapping = {
+    dateColumn: 0,
+    amountColumn: 2,
+    descriptionColumn: 1,
+    typeColumn: null,
+    dateFormat: 'dd/MM/yyyy',
+    delimiter: ';',
+    hasHeader: true,
+};
+
+const DELIMITERS = [';', ',', '\t', '|'] as const;
+
+// Formati data supportati (pattern Java, letti dal backend) con l'equivalente Day.js per
+// mostrare un esempio leggibile: prima il formato era un campo di testo libero.
+const DATE_FORMATS: { java: string; dayjs: string; pattern: RegExp }[] = [
+    { java: 'dd/MM/yyyy', dayjs: 'DD/MM/YYYY', pattern: /^\d{1,2}\/\d{1,2}\/\d{4}$/ },
+    { java: 'dd-MM-yyyy', dayjs: 'DD-MM-YYYY', pattern: /^\d{1,2}-\d{1,2}-\d{4}$/ },
+    { java: 'dd.MM.yyyy', dayjs: 'DD.MM.YYYY', pattern: /^\d{1,2}\.\d{1,2}\.\d{4}$/ },
+    { java: 'dd/MM/yy', dayjs: 'DD/MM/YY', pattern: /^\d{1,2}\/\d{1,2}\/\d{2}$/ },
+    { java: 'yyyy-MM-dd', dayjs: 'YYYY-MM-DD', pattern: /^\d{4}-\d{2}-\d{2}/ },
+    { java: 'yyyyMMdd', dayjs: 'YYYYMMDD', pattern: /^\d{8}$/ },
+    { java: 'MM/dd/yyyy', dayjs: 'MM/DD/YYYY', pattern: /^$/ }, // mai rilevato: ambiguo con dd/MM
+];
+
+/** Separatore più frequente fuori dalle virgolette nelle prime righe del file. */
+const detectDelimiter = (lines: string[]): string => {
+    const counts = new Map<string, number>(DELIMITERS.map(d => [d, 0]));
+    for (const line of lines) {
+        let inQuotes = false;
+        for (const char of line) {
+            if (char === '"') inQuotes = !inQuotes;
+            else if (!inQuotes && counts.has(char)) counts.set(char, (counts.get(char) ?? 0) + 1);
+        }
+    }
+    let best: string = DEFAULT_CSV_MAPPING.delimiter ?? ';';
+    let bestCount = 0;
+    counts.forEach((count, delimiter) => {
+        if (count > bestCount) {
+            best = delimiter;
+            bestCount = count;
+        }
+    });
+    return best;
+};
+
+/** Primo formato che riconosce il valore; dd/MM ha la precedenza su MM/dd (banche italiane). */
+const detectDateFormat = (value: string | undefined): string | undefined =>
+    value ? DATE_FORMATS.find(f => f.pattern.test(value.trim()))?.java : undefined;
+
+const errorMessage = (error: unknown): string | undefined => {
+    const data = (error as { response?: { data?: { message?: unknown } } })?.response?.data;
+    return typeof data?.message === 'string' ? data.message : undefined;
+};
 
 interface TransactionImportModalProps {
     open: boolean;
@@ -64,15 +119,7 @@ export const TransactionImportModal = ({
     const [importStep, setImportStep] = useState(0);
     const [importFormat, setImportFormat] = useState<ImportFileFormat>('CSV');
     const [importFile, setImportFile] = useState<File | null>(null);
-    const [csvMapping, setCsvMapping] = useState<CsvColumnMapping>({
-        dateColumn: 0,
-        amountColumn: 2,
-        descriptionColumn: 1,
-        typeColumn: null,
-        dateFormat: 'yyyy-MM-dd',
-        delimiter: ',',
-        hasHeader: true,
-    });
+    const [csvMapping, setCsvMapping] = useState<CsvColumnMapping>(DEFAULT_CSV_MAPPING);
     const [csvSampleRows, setCsvSampleRows] = useState<string[][]>([]);
     const [previewResult, setPreviewResult] = useState<ImportPreviewResponse | null>(null);
     const [selectedImportHashes, setSelectedImportHashes] = useState<string[]>([]);
@@ -80,20 +127,15 @@ export const TransactionImportModal = ({
     const [importResult, setImportResult] = useState<ImportResultResponse | null>(null);
     const [previewLoading, setPreviewLoading] = useState(false);
     const [confirmImportLoading, setConfirmImportLoading] = useState(false);
+    const [autoDetected, setAutoDetected] = useState(false);
+    // Data d'esempio per le opzioni del formato (31 dicembre: giorno e mese non ambigui).
+    const [dateExample] = useState(() => dayjs().month(11).date(31));
 
     const resetImportState = () => {
         setImportStep(0);
         setImportFormat('CSV');
         setImportFile(null);
-        setCsvMapping({
-            dateColumn: 0,
-            amountColumn: 2,
-            descriptionColumn: 1,
-            typeColumn: null,
-            dateFormat: 'yyyy-MM-dd',
-            delimiter: ',',
-            hasHeader: true,
-        });
+        setCsvMapping(DEFAULT_CSV_MAPPING);
         setCsvSampleRows([]);
         setPreviewResult(null);
         setSelectedImportHashes([]);
@@ -101,6 +143,7 @@ export const TransactionImportModal = ({
         setImportResult(null);
         setPreviewLoading(false);
         setConfirmImportLoading(false);
+        setAutoDetected(false);
     };
 
     const parseCsvLine = (line: string, delimiter: string): string[] => {
@@ -173,17 +216,31 @@ export const TransactionImportModal = ({
     }, [csvSampleRows, csvMapping.hasHeader, csvMaxColumns]);
 
     const csvPreviewColumns = useMemo<ColumnsType<CsvSampleRow>>(() => {
+        // Le colonne mappate sono marcate nell'anteprima, così si vede subito se il mapping
+        // punta ai dati giusti.
+        const roles = new Map<number, string>([
+            [csvMapping.dateColumn, t('transactions.import.roleDate')],
+            [csvMapping.amountColumn, t('transactions.import.roleAmount')],
+            [csvMapping.descriptionColumn, t('transactions.import.roleDescription')],
+            ...(csvMapping.typeColumn != null ? [[csvMapping.typeColumn, t('transactions.import.roleType')] as [number, string]] : []),
+        ]);
         return Array.from({ length: csvMaxColumns }, (_, idx) => {
             const header = csvMapping.hasHeader ? csvSampleRows[0]?.[idx] : undefined;
+            const role = roles.get(idx);
             return {
-                title: header || `#${idx}`,
+                title: (
+                    <Flex vertical gap={2}>
+                        <span>{header || `#${idx}`}</span>
+                        {role && <Tag color="blue" style={{ margin: 0, width: 'fit-content' }}>{role}</Tag>}
+                    </Flex>
+                ),
                 dataIndex: String(idx),
                 key: `csv-col-${idx}`,
                 ellipsis: true,
                 render: (value: string) => value || '-',
             };
         });
-    }, [csvMaxColumns, csvMapping.hasHeader, csvSampleRows]);
+    }, [csvMaxColumns, csvMapping, csvSampleRows, t]);
 
     const selectedPreviewCount = selectedImportHashes.length;
 
@@ -274,7 +331,8 @@ export const TransactionImportModal = ({
             setImportStep(1);
         } catch (error) {
             console.error('Failed to preview import', error);
-            message.error(t('transactions.import.previewError'));
+            const detail = errorMessage(error);
+            message.error(detail ? `${t('transactions.import.previewError')} ${detail}` : t('transactions.import.previewError'));
         } finally {
             setPreviewLoading(false);
         }
@@ -308,9 +366,32 @@ export const TransactionImportModal = ({
             onImported();
         } catch (error) {
             console.error('Failed to import transactions', error);
-            message.error(t('transactions.import.confirmError'));
+            const detail = errorMessage(error);
+            message.error(detail ? `${t('transactions.import.confirmError')} ${detail}` : t('transactions.import.confirmError'));
         } finally {
             setConfirmImportLoading(false);
+        }
+    };
+
+    // Alla scelta del file CSV: separatore e formato data vengono dedotti dalle prime righe.
+    const handleFileSelected = async (file: File) => {
+        setImportFile(file);
+        setPreviewResult(null);
+        setSelectedImportHashes([]);
+        setImportResult(null);
+        setAutoDetected(false);
+        if (importFormat !== 'CSV') return;
+        try {
+            const lines = (await file.text()).split(/\r?\n/).map(l => l.trim()).filter(Boolean).slice(0, 12);
+            if (lines.length === 0) return;
+            const delimiter = detectDelimiter(lines);
+            const rows = lines.map(line => parseCsvLine(line, delimiter));
+            const firstDataRow = csvMapping.hasHeader ? rows[1] : rows[0];
+            const dateFormat = detectDateFormat(firstDataRow?.[csvMapping.dateColumn]);
+            setCsvMapping(prev => ({ ...prev, delimiter, ...(dateFormat ? { dateFormat } : {}) }));
+            setAutoDetected(true);
+        } catch (error) {
+            console.error('Failed to inspect CSV file', error);
         }
     };
 
@@ -412,26 +493,29 @@ export const TransactionImportModal = ({
                         </Form.Item>
 
                         <Form.Item label={t('transactions.import.fileLabel')}>
-                            <Input
-                                type="file"
+                            {/* Dragger: trascina il file o tocca per sceglierlo. beforeUpload
+                                restituisce false: il file resta in memoria, nessun upload automatico. */}
+                            <Upload.Dragger
                                 accept={importFormat === 'CSV' ? '.csv,text/csv' : '.ofx,.qfx,application/x-ofx,application/ofx'}
-                                onChange={(event) => {
-                                    const file = event.target.files?.[0] ?? null;
-                                    setImportFile(file);
-                                    setPreviewResult(null);
-                                    setSelectedImportHashes([]);
-                                    setImportResult(null);
+                                maxCount={1}
+                                showUploadList={false}
+                                beforeUpload={(file) => {
+                                    void handleFileSelected(file);
+                                    return false;
                                 }}
-                            />
+                            >
+                                <p className="ant-upload-drag-icon"><InboxOutlined /></p>
+                                <p className="ant-upload-text">
+                                    {importFile
+                                        ? t('transactions.import.fileSelected', { filename: importFile.name })
+                                        : t('transactions.import.dropHint')}
+                                </p>
+                            </Upload.Dragger>
                         </Form.Item>
                     </Form>
 
-                    {importFile && (
-                        <Alert
-                            type="info"
-                            showIcon
-                            title={t('transactions.import.fileSelected', { filename: importFile.name })}
-                        />
+                    {autoDetected && (
+                        <Alert type="info" showIcon title={t('transactions.import.autoDetected')} />
                     )}
 
                     {importFormat === 'CSV' && (
@@ -468,10 +552,13 @@ export const TransactionImportModal = ({
                                     />
                                 </Descriptions.Item>
                                 <Descriptions.Item label={t('transactions.import.dateFormat')}>
-                                    <Input
+                                    <Select
                                         value={csvMapping.dateFormat}
-                                        onChange={(event) => setCsvMapping(prev => ({ ...prev, dateFormat: event.target.value }))}
-                                        placeholder="yyyy-MM-dd"
+                                        onChange={(value) => setCsvMapping(prev => ({ ...prev, dateFormat: value }))}
+                                        options={DATE_FORMATS.map(f => ({
+                                            value: f.java,
+                                            label: `${f.java} — ${dateExample.format(f.dayjs)}`,
+                                        }))}
                                     />
                                 </Descriptions.Item>
                                 <Descriptions.Item label={t('transactions.import.delimiter')}>
@@ -519,7 +606,7 @@ export const TransactionImportModal = ({
 
             {importStep === 1 && previewResult && (
                 <Flex vertical gap="middle">
-                    <Descriptions bordered size="small" column={3}>
+                    <Descriptions bordered size="small" column={{ xs: 1, sm: 3 }}>
                         <Descriptions.Item label={t('transactions.import.totalFound')}>{previewResult.total}</Descriptions.Item>
                         <Descriptions.Item label={t('transactions.import.duplicatesFound')}>{previewResult.duplicates}</Descriptions.Item>
                         <Descriptions.Item label={t('transactions.import.selectedToImport')}>{selectedPreviewCount}</Descriptions.Item>
@@ -544,16 +631,22 @@ export const TransactionImportModal = ({
                         }}
                     />
 
-                    <Select
-                        placeholder={t('transactions.import.defaultCategoryPlaceholder')}
-                        value={defaultImportCategoryId}
-                        onChange={(value) => setDefaultImportCategoryId(value)}
-                        allowClear
-                    >
-                        {categories.map(category => (
-                            <Option key={category.id} value={category.id}>{category.name}</Option>
-                        ))}
-                    </Select>
+                    <Form layout="vertical">
+                        <Form.Item
+                            label={t('transactions.import.defaultCategoryLabel')}
+                            extra={t('transactions.import.defaultCategoryHelp')}
+                            style={{ marginBottom: 0 }}
+                        >
+                            <Select
+                                placeholder={t('transactions.import.defaultCategoryPlaceholder')}
+                                value={defaultImportCategoryId}
+                                onChange={(value) => setDefaultImportCategoryId(value)}
+                                allowClear
+                                options={categories.map(c => ({ value: c.id, label: c.name }))}
+                                showSearch={{ optionFilterProp: 'label' }}
+                            />
+                        </Form.Item>
+                    </Form>
                 </Flex>
             )}
 
@@ -565,7 +658,7 @@ export const TransactionImportModal = ({
                         title={t('transactions.import.resultTitle')}
                         description={t('transactions.import.resultDescription')}
                     />
-                    <Descriptions bordered size="small" column={3}>
+                    <Descriptions bordered size="small" column={{ xs: 1, sm: 3 }}>
                         <Descriptions.Item label={t('transactions.import.imported')}>{importResult.imported}</Descriptions.Item>
                         <Descriptions.Item label={t('transactions.import.skipped')}>{importResult.skipped}</Descriptions.Item>
                         <Descriptions.Item label={t('transactions.import.errors')}>{importResult.errors}</Descriptions.Item>
