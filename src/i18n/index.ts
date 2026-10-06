@@ -529,7 +529,7 @@ const resources = {
                     lastUsedAt: 'Ultimo utilizzo',
                     active: 'Attiva',
                     actions: 'Azioni',
-                    noExpiration: 'Nessuna scandenza',
+                    noExpiration: 'Nessuna scadenza',
                     never: 'Mai usato',
                     deleteConfirm: 'Sei sicuro di voler eliminare questa chiave? L\'accesso alle applicazioni che la usano verrà interrotto immediatamente.',
                     createTitle: 'Nuova API Key',

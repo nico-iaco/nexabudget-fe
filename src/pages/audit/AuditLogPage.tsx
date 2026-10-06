@@ -81,18 +81,22 @@ export const AuditLogPage = () => {
 
     useEffect(() => { fetchLog(1); }, []);
 
+    // Larghezze fisse tranne l'azione, che prende lo spazio rimanente: con tableLayout="fixed"
+    // la tabella resta larga quanto il contenitore. L'IP (IPv6 fino a 39 caratteri) va in
+    // ellissi e sparisce sotto xl, dove lo spazio serve alle colonne principali.
     const columns: ColumnsType<AuditLogEntry> = [
         {
             title: t('audit.timestamp'),
             dataIndex: 'timestamp',
             key: 'timestamp',
             render: (v: string) => dayjs(v).format('DD/MM/YYYY HH:mm:ss'),
-            width: 160,
+            width: 150,
         },
         {
             title: t('audit.action'),
             dataIndex: 'action',
             key: 'action',
+            ellipsis: true,
             render: (v: AuditAction) => (
                 <Tag color={ACTION_COLORS[v]}>
                     {t(`audit.actions.${v}`)}
@@ -103,11 +107,14 @@ export const AuditLogPage = () => {
             title: t('audit.entityType'),
             dataIndex: 'entityType',
             key: 'entityType',
+            width: 120,
+            ellipsis: { showTitle: true },
         },
         {
             title: t('audit.entityId'),
             dataIndex: 'entityId',
             key: 'entityId',
+            width: 120,
             render: (v: string) => (
                 <Text copyable={{ text: v }} style={{ fontSize: FONT_SIZE.sm, fontFamily: 'monospace' }}>
                     {v.substring(0, 8)}…
@@ -118,6 +125,9 @@ export const AuditLogPage = () => {
             title: t('audit.ipAddress'),
             dataIndex: 'ipAddress',
             key: 'ipAddress',
+            width: 200,
+            ellipsis: { showTitle: true },
+            responsive: ['xl'],
         },
     ];
 
@@ -191,7 +201,7 @@ export const AuditLogPage = () => {
                     rowKey="id"
                     loading={loading}
                     size="small"
-                    scroll={{ x: 'max-content' }}
+                    tableLayout="fixed"
                     expandable={{
                         expandedRowRender: (record) => (
                             <JsonPreview

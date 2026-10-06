@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { App, Button, Table, Tabs, Tag } from 'antd';
+import { App, Button, Table, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import dayjs from 'dayjs';
@@ -9,7 +9,10 @@ import type { ColumnsType } from 'antd/es/table';
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { getSemanticColors } from '../../theme/tokens';
+import { FONT_SIZE, getSemanticColors } from '../../theme/tokens';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
+
+const { Text } = Typography;
 
 export const TrashPage = () => {
     const { t } = useTranslation();
@@ -17,6 +20,7 @@ export const TrashPage = () => {
     usePageTitle(t('trash.title'));
     const { preferences } = usePreferences();
     const semantic = getSemanticColors(preferences.theme === 'dark');
+    const { isSmallMobile } = useBreakpoints();
 
     const [deletedTransactions, setDeletedTransactions] = useState<Transaction[]>([]);
     const [deletedAccounts, setDeletedAccounts] = useState<DeletedAccount[]>([]);
@@ -91,29 +95,46 @@ export const TrashPage = () => {
         }
     };
 
+    // Larghezze fisse ovunque tranne descrizione/nome, che con tableLayout="fixed" prendono
+    // lo spazio rimanente in ellissi: prima con scroll x 'max-content' la tabella diventava
+    // larga quanto la descrizione più lunga. Su mobile la data scende sotto la descrizione
+    // e le colonne secondarie spariscono, così la tabella sta nello schermo.
     const txColumns: ColumnsType<Transaction> = [
         {
             title: t('transactions.data'),
             dataIndex: 'date',
             key: 'date',
+            width: 110,
             render: (v: string) => dayjs(v).format('DD/MM/YYYY'),
             sorter: (a, b) => dayjs(a.date).unix() - dayjs(b.date).unix(),
             defaultSortOrder: 'descend',
+            hidden: isSmallMobile,
         },
         {
             title: t('transactions.description'),
             dataIndex: 'description',
             key: 'description',
+            ellipsis: { showTitle: true },
+            render: (v: string, record: Transaction) => isSmallMobile ? (
+                <>
+                    <Text ellipsis={{ tooltip: v }} style={{ display: 'block' }}>{v}</Text>
+                    <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>{dayjs(record.date).format('DD/MM/YYYY')}</Text>
+                </>
+            ) : v,
         },
         {
             title: t('transactions.account'),
             dataIndex: 'accountName',
             key: 'accountName',
+            width: 160,
+            ellipsis: { showTitle: true },
+            responsive: ['xl'],
         },
         {
             title: t('transactions.amount'),
             dataIndex: 'amount',
             key: 'amount',
+            width: isSmallMobile ? 100 : 130,
             render: (amount: number, record: Transaction) => (
                 <span style={{ color: record.type === 'IN' ? semantic.positive : semantic.negative }}>
                     {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} €
@@ -124,6 +145,8 @@ export const TrashPage = () => {
             title: t('transactions.type'),
             dataIndex: 'type',
             key: 'type',
+            width: 100,
+            responsive: ['xxl'],
             render: (type: 'IN' | 'OUT') => (
                 <Tag color={type === 'IN' ? 'success' : 'error'}>
                     {type === 'IN' ? t('transactions.typeIn') : t('transactions.typeOut')}
@@ -133,6 +156,7 @@ export const TrashPage = () => {
         {
             title: t('common.actions'),
             key: 'actions',
+            width: 120,
             render: (_: unknown, record: Transaction) => (
                 <Button
                     size="small"
@@ -150,11 +174,15 @@ export const TrashPage = () => {
             title: t('accounts.accountName'),
             dataIndex: 'name',
             key: 'name',
+            ellipsis: { showTitle: true },
         },
         {
             title: t('accounts.accountType'),
             dataIndex: 'type',
             key: 'type',
+            width: 150,
+            ellipsis: { showTitle: true },
+            responsive: ['md'],
             render: (type: DeletedAccount['type']) => {
                 const map: Record<DeletedAccount['type'], string> = {
                     CONTO_CORRENTE: t('accounts.accountTypeChecking'),
@@ -169,11 +197,14 @@ export const TrashPage = () => {
             title: t('accounts.currency'),
             dataIndex: 'currency',
             key: 'currency',
+            width: 90,
+            responsive: ['sm'],
         },
         {
             title: t('trash.deletedAt'),
             dataIndex: 'deletedAt',
             key: 'deletedAt',
+            width: isSmallMobile ? 110 : 150,
             render: (v: string) => dayjs(v).format('DD/MM/YYYY HH:mm'),
             sorter: (a, b) => dayjs(a.deletedAt).unix() - dayjs(b.deletedAt).unix(),
             defaultSortOrder: 'descend',
@@ -181,6 +212,7 @@ export const TrashPage = () => {
         {
             title: t('common.actions'),
             key: 'actions',
+            width: 120,
             render: (_: unknown, record: DeletedAccount) => (
                 <Button
                     size="small"
@@ -210,7 +242,7 @@ export const TrashPage = () => {
                                 rowKey="id"
                                 loading={loadingTx}
                                 size="small"
-                                scroll={{ x: 'max-content' }}
+                                tableLayout="fixed"
                                 locale={{ emptyText: <EmptyState description={t('trash.emptyTransactions')} /> }}
                                 pagination={{ defaultPageSize: 20, showSizeChanger: false }}
                             />
@@ -226,7 +258,7 @@ export const TrashPage = () => {
                                 rowKey="id"
                                 loading={loadingAcc}
                                 size="small"
-                                scroll={{ x: 'max-content' }}
+                                tableLayout="fixed"
                                 locale={{ emptyText: <EmptyState description={t('trash.emptyAccounts')} /> }}
                                 pagination={{ defaultPageSize: 20, showSizeChanger: false }}
                             />

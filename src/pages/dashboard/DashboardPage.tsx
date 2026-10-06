@@ -107,17 +107,19 @@ export const DashboardPage = () => {
     });
 
     const showCrypto = portfolioValue && portfolioValue.totalValue > 0;
-    const statCols = showCrypto ? { xs: 24, sm: 12, md: 6 } : { xs: 24, sm: 8 };
+    // Quattro card affiancate solo da xl: fra 992 e 1199px la Sider da 300px lascia ~600px
+    // e gli importi andavano a capo a metà (valore e simbolo su righe diverse).
+    const statCols = showCrypto ? { xs: 24, sm: 12, xl: 6 } : { xs: 24, sm: 8 };
 
     const breakdownColumns: ColumnsType<CategoryBreakdownItem> = [
-        { title: t('reports.categoryName'), dataIndex: 'categoryName', key: 'categoryName' },
+        { title: t('reports.categoryName'), dataIndex: 'categoryName', key: 'categoryName', ellipsis: { showTitle: true } },
         {
-            title: t('reports.net'), dataIndex: 'net', key: 'net',
+            title: t('reports.net'), dataIndex: 'net', key: 'net', width: 110, align: 'right',
             render: (v: number) => `${v.toFixed(2)} €`,
             defaultSortOrder: 'ascend',
             sorter: (a, b) => b.net - a.net,
         },
-        { title: t('reports.percentage'), dataIndex: 'percentage', key: 'percentage', render: (v: number) => `${v.toFixed(1)}%` },
+        { title: t('reports.percentage'), dataIndex: 'percentage', key: 'percentage', width: 70, align: 'right', render: (v: number) => `${v.toFixed(1)}%` },
     ];
 
     const budgetProgressColor = (pct: number): string => {
@@ -345,13 +347,14 @@ export const DashboardPage = () => {
                                                 label: t('reports.typeOut'),
                                                 children: (
                                                     <Row gutter={[16, 16]}>
-                                                        <Col xs={24} md={10}>
+                                                        <Col xs={24} md={10} lg={24} xl={10}>
                                                             <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} />}>
                                                                 <GenericPieChart data={expensesByCategory} />
                                                             </Suspense>
                                                         </Col>
-                                                        <Col xs={24} md={14}>
+                                                        <Col xs={24} md={14} lg={24} xl={14}>
                                                             <Table
+                                                                tableLayout="fixed"
                                                                 columns={breakdownColumns}
                                                                 dataSource={expenseBreakdown}
                                                                 rowKey={(record) => record.categoryId ?? 'uncategorized'}
@@ -368,13 +371,14 @@ export const DashboardPage = () => {
                                                 label: t('reports.typeIn'),
                                                 children: (
                                                     <Row gutter={[16, 16]}>
-                                                        <Col xs={24} md={10}>
+                                                        <Col xs={24} md={10} lg={24} xl={10}>
                                                             <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} />}>
                                                                 <GenericPieChart data={incomeByCategory} />
                                                             </Suspense>
                                                         </Col>
-                                                        <Col xs={24} md={14}>
+                                                        <Col xs={24} md={14} lg={24} xl={14}>
                                                             <Table
+                                                                tableLayout="fixed"
                                                                 columns={breakdownColumns}
                                                                 dataSource={incomeBreakdown}
                                                                 rowKey={(record) => record.categoryId ?? 'uncategorized'}

@@ -7,13 +7,16 @@ import type { ApiKeyResponse, CreateApiKeyRequest, UpdateApiKeyRequest } from '.
 import { ApiKeyFormModal } from '../../components/modals/ApiKeyFormModal';
 import { ApiKeySecretModal } from '../../components/modals/ApiKeySecretModal';
 import dayjs from 'dayjs';
-import { SPACING } from '../../theme/tokens';
+import type { ColumnsType } from 'antd/es/table';
+import { FONT_SIZE, SPACING } from '../../theme/tokens';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 
 const { Text } = Typography;
 
 export const ApiKeysCard = () => {
     const { t } = useTranslation();
     const { message } = App.useApp();
+    const { isSmallMobile } = useBreakpoints();
     const [keys, setKeys] = useState<ApiKeyResponse[]>([]);
     const [loading, setLoading] = useState(false);
     const [formModalVisible, setFormModalVisible] = useState(false);
@@ -98,43 +101,58 @@ export const ApiKeysCard = () => {
         setFormModalVisible(true);
     };
 
-    const columns = [
+    const renderScopes = (scopes: string) => {
+        if (!scopes) return <Text type="secondary">{t('common.none')}</Text>;
+        return (
+            <Space size={[0, 4]} wrap>
+                {scopes.split(',').filter(Boolean).map(scope => (
+                    <Tag key={scope} color="blue">{t(`settings.apiKeys.scopesList.${scope}`, scope)}</Tag>
+                ))}
+            </Space>
+        );
+    };
+
+    // La card vive in un contenitore da max 720px: prima la tabella aveva scroll x fisso a
+    // 800 e scorreva sempre. Ora scadenza e ultimo utilizzo condividono una colonna, e su
+    // mobile le date spariscono e gli scope scendono sotto il nome.
+    const columns: ColumnsType<ApiKeyResponse> = [
         {
             title: t('settings.apiKeys.name'),
             dataIndex: 'name',
             key: 'name',
-            render: (text: string) => <Text strong>{text}</Text>,
+            render: (text: string, record: ApiKeyResponse) => isSmallMobile ? (
+                <Space direction="vertical" size={4}>
+                    <Text strong>{text}</Text>
+                    {renderScopes(record.scopes)}
+                </Space>
+            ) : <Text strong>{text}</Text>,
         },
         {
             title: t('settings.apiKeys.scopes'),
             dataIndex: 'scopes',
             key: 'scopes',
-            render: (scopes: string) => {
-                if (!scopes) return <Text type="secondary">{t('common.none')}</Text>;
-                return (
-                    <Space size={[0, 4]} wrap>
-                        {scopes.split(',').filter(Boolean).map(scope => (
-                            <Tag key={scope} color="blue">{t(`settings.apiKeys.scopesList.${scope}`, scope)}</Tag>
-                        ))}
-                    </Space>
-                );
-            }
+            hidden: isSmallMobile,
+            render: renderScopes,
         },
         {
             title: t('settings.apiKeys.expiresAt'),
             dataIndex: 'expiresAt',
             key: 'expiresAt',
-            render: (date: string) => date ? dayjs(date).format('DD/MM/YYYY HH:mm') : <Text type="secondary">{t('settings.apiKeys.noExpiration')}</Text>,
-        },
-        {
-            title: t('settings.apiKeys.lastUsedAt'),
-            dataIndex: 'lastUsedAt',
-            key: 'lastUsedAt',
-            render: (date: string) => date ? dayjs(date).format('DD/MM/YYYY HH:mm') : <Text type="secondary">{t('settings.apiKeys.never')}</Text>,
+            width: 150,
+            hidden: isSmallMobile,
+            render: (date: string, record: ApiKeyResponse) => (
+                <Space direction="vertical" size={0}>
+                    {date ? dayjs(date).format('DD/MM/YYYY HH:mm') : <Text type="secondary">{t('settings.apiKeys.noExpiration')}</Text>}
+                    <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
+                        {t('settings.apiKeys.lastUsedAt')}: {record.lastUsedAt ? dayjs(record.lastUsedAt).format('DD/MM/YYYY HH:mm') : t('settings.apiKeys.never')}
+                    </Text>
+                </Space>
+            ),
         },
         {
             title: t('settings.apiKeys.active'),
             key: 'active',
+            width: 80,
             render: (_: unknown, record: ApiKeyResponse) => (
                 <Switch 
                     checked={record.active} 
@@ -147,6 +165,7 @@ export const ApiKeysCard = () => {
         {
             title: t('settings.apiKeys.actions'),
             key: 'actions',
+            width: 120,
             render: (_: unknown, record: ApiKeyResponse) => (
                 <Space>
                     <Button type="text" icon={<EditOutlined />} onClick={() => openEditModal(record)} aria-label={t('common.edit')} />
@@ -175,9 +194,9 @@ export const ApiKeysCard = () => {
                 columns={columns}
                 rowKey="id"
                 loading={loading}
+                tableLayout="fixed"
                 pagination={false}
                 locale={{ emptyText: t('settings.apiKeys.emptyList') }}
-                scroll={{ x: 800 }}
             />
             {formModalVisible && (
                 <ApiKeyFormModal

@@ -187,22 +187,29 @@ export const TransactionImportModal = ({
 
     const selectedPreviewCount = selectedImportHashes.length;
 
+    // Descrizione senza larghezza: prende lo spazio rimanente in ellissi, così le descrizioni
+    // bancarie lunghe non allargano la tabella oltre il modale. Data e tipo spariscono sugli
+    // schermi stretti (il tipo è già nel colore dell'importo).
     const importPreviewColumns: ColumnsType<NonNullable<ImportPreviewResponse['transactions']>[number]> = [
         {
             title: t('transactions.data'),
             dataIndex: 'date',
             key: 'date',
+            width: 110,
+            responsive: ['sm'],
             render: (value: string) => dayjs(value).format('DD/MM/YYYY'),
         },
         {
             title: t('transactions.description'),
             dataIndex: 'description',
             key: 'description',
+            ellipsis: { showTitle: true },
         },
         {
             title: t('transactions.amount'),
             dataIndex: 'amount',
             key: 'amount',
+            width: 120,
             render: (value: number, record) => (
                 <span style={{ color: record.type === 'IN' ? semantic.positive : semantic.negative }}>
                     {value.toFixed(2)} {getCurrencySymbol(currency ?? 'EUR')}
@@ -213,6 +220,8 @@ export const TransactionImportModal = ({
             title: t('transactions.type'),
             dataIndex: 'type',
             key: 'type',
+            width: 90,
+            responsive: ['md'],
             render: (value: 'IN' | 'OUT') => (
                 <Tag color={value === 'IN' ? 'success' : 'error'}>
                     {value === 'IN' ? t('transactions.typeIn') : t('transactions.typeOut')}
@@ -223,6 +232,7 @@ export const TransactionImportModal = ({
             title: t('transactions.import.duplicateColumn'),
             dataIndex: 'duplicate',
             key: 'duplicate',
+            width: 100,
             render: (duplicate: boolean) => (
                 duplicate
                     ? <Tag color="warning">{t('transactions.import.duplicateYes')}</Tag>
@@ -524,6 +534,7 @@ export const TransactionImportModal = ({
                     <Table
                         size="small"
                         rowKey="importHash"
+                        tableLayout="fixed"
                         columns={importPreviewColumns}
                         dataSource={previewResult.transactions}
                         pagination={{ pageSize: 8, showSizeChanger: false }}

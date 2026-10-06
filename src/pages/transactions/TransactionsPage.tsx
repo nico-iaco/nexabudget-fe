@@ -40,6 +40,7 @@ import type {
 import { useAuth } from '../../contexts/AuthContext';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
+import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { TransactionCard } from '../../components/TransactionCard';
 import { TransactionImportModal } from '../../components/modals/TransactionImportModal';
@@ -104,6 +105,12 @@ export const TransactionsPage = () => {
 
     const [form] = Form.useForm<FormValues>();
     const { isSmallMobile: isMobile } = useBreakpoints();
+    // Su touch (tablet in vista tabella) i bottoni hanno min 44px (mobile.css): la colonna
+    // azioni deve allargarsi di conseguenza, altrimenti i tre bottoni escono dalla cella.
+    const isCoarsePointer = useMediaQuery('(pointer: coarse)');
+    // Fra 992 e 1199px la Sider (300px) è aperta e restano ~600px: data e categoria
+    // diventano una riga secondaria sotto la descrizione invece di colonne proprie.
+    const isCompactTable = useMediaQuery('(min-width: 992px) and (max-width: 1199px)');
     const { preferences } = usePreferences();
     const semantic = getSemanticColors(preferences.theme === 'dark');
 
@@ -625,12 +632,19 @@ export const TransactionsPage = () => {
     // Memoizzate: erano ricostruite a ogni render, con closure render/sorter nuove, quindi
     // la Table ri-renderizzava tutte le celle. I tre handler usati qui dentro sono già
     // useCallback e `semantic` è ora una costante per tema.
+    //
+    // Larghezze: tutte le colonne hanno una larghezza fissa tranne la descrizione, che con
+    // tableLayout="fixed" prende lo spazio rimanente e va in ellissi. Le colonne secondarie
+    // spariscono sotto certi breakpoint (`responsive`) così la tabella sta sempre nello
+    // schermo: il tipo è già espresso da freccia e colore dell'importo, il conto è
+    // ridondante nella vista del singolo conto.
     const columns: ColumnsType<Transaction> = useMemo(() => [
         {
             title: t('transactions.data'),
             dataIndex: 'date',
             key: 'date',
-            width: 120,
+            width: 110,
+            hidden: isCompactTable,
             render: (text: string) => dayjs(text).format('DD/MM/YYYY'),
             sorter: (a, b) => dayjs(a.date).unix() - dayjs(b.date).unix(),
             sortOrder: sortConfig.field === 'date' ? sortConfig.order : null,
@@ -643,12 +657,23 @@ export const TransactionsPage = () => {
             sorter: (a, b) => a.description.localeCompare(b.description),
             sortOrder: sortConfig.field === 'description' ? sortConfig.order : null,
             ellipsis: { showTitle: true },
+            render: (text: string, record: Transaction) => isCompactTable ? (
+                <>
+                    <Text ellipsis={{ tooltip: text }} style={{ display: 'block' }}>{text}</Text>
+                    <Text type="secondary" ellipsis style={{ display: 'block', fontSize: FONT_SIZE.xs }}>
+                        {dayjs(record.date).format('DD/MM/YYYY')}
+                        {record.categoryName && ` · ${record.categoryName}`}
+                    </Text>
+                </>
+            ) : text,
         },
         {
             title: t('transactions.account'),
             dataIndex: 'accountName',
             key: 'accountName',
             width: 160,
+            responsive: ['xl'],
+            hidden: !!accountId,
             ellipsis: { showTitle: true },
             sorter: (a, b) => a.accountName.localeCompare(b.accountName),
             sortOrder: sortConfig.field === 'accountName' ? sortConfig.order : null,
@@ -657,7 +682,8 @@ export const TransactionsPage = () => {
             title: t('transactions.category'),
             dataIndex: 'categoryName',
             key: 'categoryName',
-            width: 160,
+            width: 150,
+            hidden: isCompactTable,
             ellipsis: { showTitle: true },
             sorter: (a, b) => (a.categoryName || '').localeCompare(b.categoryName || ''),
             sortOrder: sortConfig.field === 'categoryName' ? sortConfig.order : null,
@@ -666,7 +692,7 @@ export const TransactionsPage = () => {
             title: t('transactions.amount'),
             dataIndex: 'amount',
             key: 'amount',
-            width: 180,
+            width: 150,
             sorter: (a, b) => {
                 const amountA = a.type === 'OUT' ? -a.amount : a.amount;
                 const amountB = b.type === 'OUT' ? -b.amount : b.amount;
@@ -698,7 +724,8 @@ export const TransactionsPage = () => {
             title: t('transactions.type'),
             dataIndex: 'type',
             key: 'type',
-            width: 110,
+            width: 100,
+            responsive: ['xxl'],
             render: (type: 'IN' | 'OUT') => (
                 <Tag color={type === 'IN' ? 'success' : 'error'}>{typeLabel(type)}</Tag>
             ),
@@ -710,7 +737,7 @@ export const TransactionsPage = () => {
         {
             title: t('transactions.actions'),
             key: 'actions',
-            width: 140,
+            width: isCoarsePointer ? 170 : 130,
             render: (_: unknown, record: Transaction) => (
                 <Flex gap="small">
                     <Button icon={<EditOutlined />} onClick={() => handleOpenEditModal(record)} aria-label={t('common.edit')} />
@@ -721,7 +748,7 @@ export const TransactionsPage = () => {
                 </Flex>
             )
         },
-    ], [t, sortConfig, semantic, accountsById, typeLabel, handleDelete, handleOpenEditModal, handleOpenLinkTransferModal]);
+    ], [t, sortConfig, semantic, accountsById, typeLabel, handleDelete, handleOpenEditModal, handleOpenLinkTransferModal, isCoarsePointer, isCompactTable, accountId]);
 
     const handleTableChange: TableProps<Transaction>['onChange'] = (_, _tableFilters, sorter) => {
         const nextSorter = Array.isArray(sorter) ? sorter[0] : sorter;
@@ -810,7 +837,6 @@ export const TransactionsPage = () => {
                     onChange={handleTableChange}
                     size={'small'}
                     tableLayout="fixed"
-                    scroll={{ x: 'max-content' }}
                     locale={{ emptyText: <EmptyState description={t('transactions.emptyDescription')} /> }}
                     pagination={{
                         current: currentPage,
@@ -837,7 +863,6 @@ export const TransactionsPage = () => {
                 onChange={handleTableChange}
                 size={'small'}
                 tableLayout="fixed"
-                scroll={{ x: 'max-content' }}
                 locale={{ emptyText: <EmptyState description={t('transactions.emptyDescription')} /> }}
                 pagination={{
                     current: currentPage,
