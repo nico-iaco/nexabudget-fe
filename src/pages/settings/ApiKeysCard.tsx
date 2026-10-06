@@ -23,6 +23,7 @@ export const ApiKeysCard = () => {
     const [secretModalVisible, setSecretModalVisible] = useState(false);
     const [editingKey, setEditingKey] = useState<ApiKeyResponse | undefined>(undefined);
     const [newPlaintextKey, setNewPlaintextKey] = useState('');
+    const [saving, setSaving] = useState(false);
 
     const fetchKeys = async () => {
         setLoading(true);
@@ -41,6 +42,8 @@ export const ApiKeysCard = () => {
     }, []);
 
     const handleCreateOrUpdate = async (data: CreateApiKeyRequest | UpdateApiKeyRequest) => {
+        if (saving) return;
+        setSaving(true);
         try {
             if (editingKey) {
                 const req = data as UpdateApiKeyRequest;
@@ -50,15 +53,22 @@ export const ApiKeysCard = () => {
                 const response = await createApiKey(data as CreateApiKeyRequest);
                 const resData = response.data as unknown as Record<string, string | undefined>;
                 // Gestione robusta della chiave in base a possibili variazioni del nome proprietà nel backend
-                const extractedKey = resData.plaintextKey || resData.plainTextKey || resData.token || resData.key || 'ERRORE-CHIAVE-NON-RESTITUITA';
-                setNewPlaintextKey(extractedKey);
-                setSecretModalVisible(true);
+                const extractedKey = resData.plaintextKey || resData.plainTextKey || resData.token || resData.key;
+                if (extractedKey) {
+                    setNewPlaintextKey(extractedKey);
+                    setSecretModalVisible(true);
+                } else {
+                    // Mai mostrare un segnaposto copiabile come se fosse la chiave vera.
+                    message.error(t('settings.apiKeys.missingKeyError'));
+                }
             }
             setFormModalVisible(false);
             setEditingKey(undefined);
             fetchKeys();
         } catch {
             message.error(t('settings.apiKeys.saveError'));
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -204,6 +214,7 @@ export const ApiKeysCard = () => {
                     onCancel={() => setFormModalVisible(false)}
                     onOk={handleCreateOrUpdate}
                     editingKey={editingKey}
+                    loading={saving}
                 />
             )}
             {secretModalVisible && (

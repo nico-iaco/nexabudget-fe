@@ -16,6 +16,8 @@ interface BankLinkState {
     banks: BankInstitutionDto[];
     loadingBanks: boolean;
     selectedBank: string | null;
+    /** Richiesta del link in corso: blocca il doppio click che creava più requisition/sessioni. */
+    linking: boolean;
     /** Rinnovo di un collegamento attivo: il provider è fissato e lo step 0 non è raggiungibile. */
     providerLocked: boolean;
 }
@@ -29,6 +31,7 @@ const INITIAL_STATE: BankLinkState = {
     banks: [],
     loadingBanks: false,
     selectedBank: null,
+    linking: false,
     providerLocked: false,
 };
 
@@ -59,6 +62,7 @@ export const useBankLink = () => {
             banks: [],
             loadingBanks: false,
             selectedBank: null,
+            linking: false,
             providerLocked: presetProvider !== null,
         });
     }, []);
@@ -107,8 +111,9 @@ export const useBankLink = () => {
     };
 
     const handleConfirmBankLink = async () => {
-        const { selectedProvider, selectedBank, linkingAccount } = state;
-        if (!selectedProvider || !selectedBank || !linkingAccount) return;
+        const { selectedProvider, selectedBank, linkingAccount, linking } = state;
+        if (!selectedProvider || !selectedBank || !linkingAccount || linking) return;
+        setState(s => ({ ...s, linking: true }));
         try {
             const response = await api.getBankLink(selectedProvider, {
                 institutionId: selectedBank,
@@ -119,6 +124,7 @@ export const useBankLink = () => {
         } catch (error) {
             message.error(t('bankLink.linkError'));
             console.error(error);
+            setState(s => ({ ...s, linking: false }));
         }
     };
 

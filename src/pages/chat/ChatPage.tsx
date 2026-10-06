@@ -280,6 +280,9 @@ export const ChatPage = () => {
         } catch {
             message.error(t('chat.sendError'));
             setMessages(prev => prev.filter(m => m.id !== `${tempBase}-loading` && m.id !== `${tempBase}-user`));
+            // Il testo era già stato svuotato dall'input: lo rimettiamo lì, così un errore
+            // non fa perdere una domanda lunga e basta un invio per riprovare.
+            setInputText(prev => (prev.trim() ? prev : text));
         } finally {
             setSending(false);
         }

@@ -104,6 +104,10 @@ export const TransactionsPage = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const pageSize = 20;
     const [loading, setLoading] = useState(true);
+    // Lo spinner a pagina intera serve solo al primo caricamento: dopo, smontare la pagina
+    // a ogni fetch farebbe perdere il focus al campo di ricerca (e chiudere la tastiera mobile).
+    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+    const [saving, setSaving] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState<Transaction | null>(null);
 
@@ -415,7 +419,10 @@ export const TransactionsPage = () => {
                 message.error(t('transactions.loadError'));
             })
             .finally(() => {
-                if (seq === requestSeqRef.current) setLoading(false);
+                if (seq === requestSeqRef.current) {
+                    setLoading(false);
+                    setHasLoadedOnce(true);
+                }
             });
     };
 
@@ -559,6 +566,8 @@ export const TransactionsPage = () => {
     };
 
     const onFinish = async (values: FormValues) => {
+        if (saving) return;
+        setSaving(true);
         try {
             const dataToSend: TransactionRequest = {
                 ...values,
@@ -576,12 +585,15 @@ export const TransactionsPage = () => {
             }
 
             setIsModalOpen(false);
+            message.success(t(editingRecord ? 'transactions.updatedSuccess' : 'transactions.createdSuccess'));
             fetchTransactions();
             fetchLayoutAccounts();
             invalidateDerivedData();
         } catch (error) {
             console.error("Failed to save transaction", error);
             message.error(t('transactions.saveError'));
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -776,7 +788,7 @@ export const TransactionsPage = () => {
         ? t('transactions.titleAccount', { account: currentAccount?.name })
         : t('transactions.titleAll');
 
-    if (loading && transactions.length === 0) return <Spin size="large" />;
+    if (loading && !hasLoadedOnce) return <Spin size="large" />;
 
     const renderContent = () => {
         if (isMobile) {
@@ -1183,7 +1195,7 @@ export const TransactionsPage = () => {
                         <Input.TextArea />
                     </Form.Item>
                     <Form.Item>
-                        <Button type="primary" htmlType="submit" block>{t('transactions.save')}</Button>
+                        <Button type="primary" htmlType="submit" block loading={saving}>{t('transactions.save')}</Button>
 
                     </Form.Item>
                 </Form>

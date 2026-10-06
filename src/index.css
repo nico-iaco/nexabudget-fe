@@ -121,11 +121,6 @@ html {
         padding-bottom: max(0px, env(safe-area-inset-bottom));
     }
 }
-button:focus,
-button:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-}
-
 /* Global input placeholder centering for all devices */
 .ant-input::placeholder,
 .ant-input-affix-wrapper input::placeholder,

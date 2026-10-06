@@ -365,6 +365,7 @@ export const Layout = () => {
                         banks={bankLinkState.banks}
                         loadingBanks={bankLinkState.loadingBanks}
                         selectedBank={bankLinkState.selectedBank}
+                        linking={bankLinkState.linking}
                         onProviderSelect={bankLinkActions.handleProviderSelect}
                         onCountrySelect={bankLinkActions.handleCountrySelect}
                         onBankSelect={bankLinkActions.handleBankSelect}

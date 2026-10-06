@@ -44,7 +44,9 @@ const resources = {
                 closeMenu: 'Chiudi menu',
                 selectDate: 'Seleziona data',
                 selectMonth: 'Seleziona mese',
-                selectDateTime: 'Seleziona data e ora'
+                selectDateTime: 'Seleziona data e ora',
+                none: 'Nessuno',
+                skipToContent: 'Salta al contenuto'
             },
             nav: {
                 dashboard: 'Dashboard',
@@ -260,6 +262,7 @@ const resources = {
                     empty: 'Nessun budget attivo per questo mese',
                     spent: 'Speso',
                     remaining: 'Rimanente',
+                    overBy: 'Sforato di',
                     limit: 'Limite',
                 },
                 aiAnalysis: {
@@ -404,6 +407,8 @@ const resources = {
                 accountLabelFallback: 'Conto',
                 deleteError: "Errore durante l'eliminazione della transazione",
                 saveError: 'Errore durante il salvataggio della transazione',
+                createdSuccess: 'Transazione creata',
+                updatedSuccess: 'Transazione aggiornata',
                 loadError: 'Errore durante il caricamento delle transazioni',
                 exchangeRateHint: 'da {{originalAmount}} {{originalCurrency}} @ {{exchangeRate}}',
                 deleteConfirm: 'Sei sicuro di voler spostare questa transazione nel cestino?',
@@ -550,6 +555,7 @@ const resources = {
                     deleteSuccess: 'Chiave eliminata',
                     deleteError: 'Errore durante l\'eliminazione',
                     saveError: 'Errore nel salvataggio',
+                    missingKeyError: 'La chiave è stata creata ma il server non ne ha restituito il valore. Eliminala e creane una nuova.',
                     updateSuccess: 'Chiave aggiornata',
                     secretModalTitle: 'Chiave API Generata',
                     secretWarningTitle: 'Attenzione',
@@ -674,6 +680,7 @@ const resources = {
                 recurrenceYearly: 'Annuale',
                 active: 'Attivo',
                 inactive: 'Disattivo',
+                used: 'Utilizzato',
                 createdAt: 'Creato il',
                 actions: 'Azioni',
                 manageAlerts: 'Gestisci Alert',
@@ -786,7 +793,9 @@ const resources = {
                 closeMenu: 'Close menu',
                 selectDate: 'Select date',
                 selectMonth: 'Select month',
-                selectDateTime: 'Select date and time'
+                selectDateTime: 'Select date and time',
+                none: 'None',
+                skipToContent: 'Skip to content'
             },
             nav: {
                 dashboard: 'Dashboard',
@@ -1002,6 +1011,7 @@ const resources = {
                     empty: 'No active budgets for this month',
                     spent: 'Spent',
                     remaining: 'Remaining',
+                    overBy: 'Over by',
                     limit: 'Limit',
                 },
                 aiAnalysis: {
@@ -1146,6 +1156,8 @@ const resources = {
                 accountLabelFallback: 'Account',
                 deleteError: 'Error deleting transaction',
                 saveError: 'Error saving transaction',
+                createdSuccess: 'Transaction created',
+                updatedSuccess: 'Transaction updated',
                 loadError: 'Error loading transactions',
                 exchangeRateHint: 'from {{originalAmount}} {{originalCurrency}} @ {{exchangeRate}}',
                 deleteConfirm: 'Are you sure you want to move this transaction to the trash?',
@@ -1292,6 +1304,7 @@ const resources = {
                     deleteSuccess: 'API Key deleted',
                     deleteError: 'Error deleting API Key',
                     saveError: 'Error saving API Key',
+                    missingKeyError: 'The key was created but the server did not return its value. Delete it and create a new one.',
                     updateSuccess: 'API Key updated',
                     secretModalTitle: 'API Key Generated',
                     secretWarningTitle: 'Warning',
@@ -1416,6 +1429,7 @@ const resources = {
                 recurrenceYearly: 'Yearly',
                 active: 'Active',
                 inactive: 'Inactive',
+                used: 'Used',
                 createdAt: 'Created on',
                 actions: 'Actions',
                 manageAlerts: 'Manage Alerts',

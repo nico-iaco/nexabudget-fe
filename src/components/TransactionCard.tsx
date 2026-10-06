@@ -100,13 +100,14 @@ const TransactionCardInner = ({ transaction, currency = 'EUR', onEdit, onDelete,
     );
 };
 
+// Confronto per riferimento: ogni fetch produce oggetti nuovi, quindi una card si
+// ri-renderizza solo quando la sua transazione cambia davvero. Un confronto campo per
+// campo dimenticava tipo, data, conto e transferId, lasciando la card con dati vecchi
+// dopo una modifica. Gli handler sono ignorati di proposito: non sono stabili nel padre.
 export const TransactionCard = memo(
     TransactionCardInner,
     (prev, next) =>
-        prev.transaction.id === next.transaction.id &&
-        prev.transaction.amount === next.transaction.amount &&
-        prev.transaction.description === next.transaction.description &&
-        prev.transaction.categoryName === next.transaction.categoryName &&
+        prev.transaction === next.transaction &&
         prev.currency === next.currency,
 );
 TransactionCard.displayName = 'TransactionCard';

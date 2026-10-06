@@ -4,7 +4,6 @@ import {
     BankOutlined,
     ContainerOutlined,
     DeleteOutlined,
-    DisconnectOutlined,
     EditOutlined,
     EllipsisOutlined,
     ExclamationCircleFilled,
@@ -157,11 +156,13 @@ export const AppSider = ({
             const isCheckingAccount = acc.type === 'CONTO_CORRENTE';
 
             const dropdownItems = [
-                ...(isCheckingAccount ? [{
+                // "Disconnetti banca" non viene offerto: il backend non espone ancora un
+                // endpoint di scollegamento, e una voce di menu inerte è peggio di nessuna.
+                ...(isCheckingAccount && !isConnectedToBank ? [{
                     key: 'bankLink',
-                    icon: isConnectedToBank ? <DisconnectOutlined /> : <LinkOutlined />,
-                    label: isConnectedToBank ? t('accounts.disconnectBank') : t('accounts.connectBank'),
-                    onClick: () => { if (!isConnectedToBank) onOpenBankLink(acc); },
+                    icon: <LinkOutlined />,
+                    label: t('accounts.connectBank'),
+                    onClick: () => onOpenBankLink(acc),
                 }] : []),
                 ...(isConnectedToBank && acc.requiresReauth ? [{
                     key: 'renewConnection',

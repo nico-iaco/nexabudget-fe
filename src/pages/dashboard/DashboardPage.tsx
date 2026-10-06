@@ -174,17 +174,24 @@ export const DashboardPage = () => {
                         {formatMoney(item.spent, currency)} / {formatMoney(item.limit, currency)}
                     </Text>
                 </Flex>
+                {/* La barra si ferma al 100%, l'etichetta no: un budget al 140% deve leggersi 140%. */}
                 <Progress
-                    aria-label={`${t('budgets.used')}: ${item.percentageUsed.toFixed(0)}%`}
+                    aria-label={`${t('budgets.used')}: ${formatPercent(item.percentageUsed, 0)}`}
                     percent={Math.min(item.percentageUsed, 100)}
                     size="small"
                     strokeColor={budgetProgressColor(item.percentageUsed)}
-                    format={pct => <Text style={{ fontSize: FONT_SIZE.xs }}>{pct}%</Text>}
+                    format={() => <Text style={{ fontSize: FONT_SIZE.xs }}>{formatPercent(item.percentageUsed, 0)}</Text>}
                 />
                 <Flex justify="space-between">
-                    <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
-                        {t('dashboard.budgetSummary.remaining')}: {formatMoney(item.remaining, currency)}
-                    </Text>
+                    {item.remaining < 0 ? (
+                        <Text type="danger" style={{ fontSize: FONT_SIZE.xs }}>
+                            {t('dashboard.budgetSummary.overBy')}: {formatMoney(-item.remaining, currency)}
+                        </Text>
+                    ) : (
+                        <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
+                            {t('dashboard.budgetSummary.remaining')}: {formatMoney(item.remaining, currency)}
+                        </Text>
+                    )}
                 </Flex>
             </div>
         </Col>

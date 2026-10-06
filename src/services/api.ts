@@ -83,6 +83,17 @@ apiClient.interceptors.request.use((config) => {
     return config;
 });
 
+/**
+ * Svuota la cache Workbox delle risposte /api (NetworkFirst, vedi vite.config.ts).
+ * Le voci sono indicizzate per URL e non per utente: senza questa pulizia, offline,
+ * chi fa login dopo un logout potrebbe vedere i dati dell'utente precedente.
+ */
+export const clearCachedApiResponses = () => {
+    if ('caches' in window) {
+        caches.delete('api-cache').catch(() => { /* cache assente: niente da pulire */ });
+    }
+};
+
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
@@ -90,6 +101,7 @@ apiClient.interceptors.response.use(
             // Rimuovi il token e reindirizza al login
             localStorage.removeItem('authToken');
             localStorage.removeItem('auth');
+            clearCachedApiResponses();
             window.location.href = '/login';
         }
         return Promise.reject(error);

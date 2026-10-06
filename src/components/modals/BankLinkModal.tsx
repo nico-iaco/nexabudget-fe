@@ -18,6 +18,7 @@ interface BankLinkModalProps {
     banks: BankInstitutionDto[];
     loadingBanks: boolean;
     selectedBank: string | null;
+    linking: boolean;
     onProviderSelect: (provider: BankProvider) => void;
     onCountrySelect: (countryCode: string) => void;
     onBankSelect: (bankId: string) => void;
@@ -35,6 +36,7 @@ export const BankLinkModal = ({
     banks,
     loadingBanks,
     selectedBank,
+    linking,
     onProviderSelect,
     onCountrySelect,
     onBankSelect,
@@ -54,6 +56,7 @@ export const BankLinkModal = ({
                     type="primary"
                     onClick={onConfirm}
                     disabled={!selectedBank}
+                    loading={linking}
                 >
                     {t('bankLink.linkBank')}
                 </Button>,

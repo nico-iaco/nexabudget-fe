@@ -1,7 +1,9 @@
 // src/contexts/AuthContext.tsx
 /* eslint-disable react-refresh/only-export-components */
 import {createContext, type ReactNode, useContext, useEffect, useState} from 'react';
+import {useQueryClient} from '@tanstack/react-query';
 import type {AuthResponse} from '../types/api';
+import {clearCachedApiResponses} from '../services/api';
 
 interface AuthContextType {
     auth: AuthResponse | null;
@@ -13,6 +15,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+    const queryClient = useQueryClient();
     const [auth, setAuth] = useState<AuthResponse | null>(() => {
         const storedAuth = localStorage.getItem('auth');
         return storedAuth ? JSON.parse(storedAuth) : null;
@@ -35,6 +38,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const logout = () => {
         setAuth(null);
+        // Le query key non sono legate all'utente: senza clear(), chi fa login nella stessa
+        // scheda entro lo staleTime vedrebbe conti e saldi dell'utente precedente.
+        queryClient.clear();
+        clearCachedApiResponses();
     };
 
     const updateUser = (userData: Partial<AuthResponse>) => {
