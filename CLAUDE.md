@@ -21,7 +21,7 @@ The backend is reached through the Vite dev proxy: both `/api` **and** `/mcp` ar
 
 ## Stack
 
-React 19 · TypeScript 6.0 · Vite 8 · Ant Design 6 · React Router 7 · `@tanstack/react-query` 5 · Axios · i18next · Day.js · `@ant-design/charts`.
+React 19 · TypeScript 6.0 · Vite 8 · Ant Design 6.6 · React Router 7 · `@tanstack/react-query` 5 · Axios · i18next · Day.js · `@ant-design/charts`.
 
 `tsconfig.app.json` is strict and adds `noUnusedLocals`, `noUnusedParameters`, `verbatimModuleSyntax`, and `erasableSyntaxOnly` — unused imports/params and non-`type`-prefixed type imports are build errors, not warnings.
 
@@ -100,7 +100,7 @@ Fonts (Inter body / Manrope headings) load from Google Fonts in `index.html`; `s
 - Prefer `theme.useToken()` (`token.colorText`, `token.colorBgContainer`) over `isDark ? '#fff' : '#000'` branching; most components already do. AntD charts take `theme: isDark ? 'dark' : undefined`.
 - File naming: PascalCase with `*Page`/`*Modal`/`*Card`/`*Drawer`/`*Chart` suffixes.
 - **Amounts, numbers and percentages go through `src/utils/format.ts`** (`formatMoney(value, currency, { signed? })`, `formatNumber`, `formatPercent`): locale follows the app language, Intl formatters are cached, grouping is always on. Never `toFixed(2) + ' €'` or a bare `Statistic precision` (AntD's Statistic uses US separators) — pass `currency` to `StatCard`, or `formatter` to `Statistic`. Aggregates from dashboard/report/budget endpoints are in the user's base currency: `useDefaultCurrency()`.
-- AntD locale: `App.tsx` passes `LOCALE_IT`, which patches `it_IT` (missing month/year placeholders, `DD/MM/YYYY` field format) on **both** `DatePicker` and `Calendar` — the RangePicker reads `Calendar`. Import locales from `antd/es/locale/*`: the CJS `antd/locale/*` path reaches ConfigProvider with the wrong shape under Vite and silently falls back to English. Day.js follows `i18n` via a `languageChanged` listener in `src/i18n/index.ts`.
+- AntD locale: `App.tsx` passes `LOCALE_IT`, which patches `it_IT` with the `DD/MM/YYYY` / `MM/YYYY` field formats on **both** `DatePicker` and `Calendar` — the RangePicker reads `Calendar` (still true in 6.6.5). Import locales from `antd/es/locale/*`: the CJS `antd/locale/*` path reaches ConfigProvider with the wrong shape under Vite and silently falls back to English. Day.js follows `i18n` via a `languageChanged` listener in `src/i18n/index.ts`.
 - Any `InputNumber` that should accept a comma as decimal separator uses the shared `commaDecimalParser` from `src/utils/number.ts` and **must** pin the generic (`<InputNumber<number> …>`): without it TypeScript infers the value type from the `min`/`max` literal (`min={0}` → `T = 0`) and the parser no longer type-checks.
 - Components are declared at module scope, never inside another component's render (that changes their identity every render and remounts the subtree) — pass what they need as props, as `ComparisonRow` in `DashboardChartsMobile.tsx` does.
 - Values computed once per mount (e.g. iOS detection in `SafeSelect`/`DatePresetPicker`) use a lazy `useState(fn)` initializer, not `useRef(fn()).current`: refs may not be read during render.

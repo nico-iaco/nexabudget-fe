@@ -12,10 +12,10 @@
     "generate-icons": "node scripts/generate-icons.mjs"
   },
   "dependencies": {
-    "@ant-design/plots": "^2.6.8",
     "@ant-design/icons": "^6.1.1",
+    "@ant-design/plots": "^2.6.8",
     "@tanstack/react-query": "^5.100.9",
-    "antd": "^6.3.6",
+    "antd": "^6.6.5",
     "axios": "^1.15.1",
     "i18next": "^26.0.6",
     "react": "^19.2.5",
@@ -42,7 +42,7 @@
     "typescript-eslint": "^8.58.2",
     "vite": "8.0.8",
     "vite-plugin-compression": "^0.5.1",
-    "vite-plugin-pwa": "^1.2.0",
+    "vite-plugin-pwa": "^2.0.0",
     "workbox-window": "^7.4.0"
   }
 }
