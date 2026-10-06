@@ -24,6 +24,7 @@ import { usePreferences } from '../../contexts/PreferencesContext';
 import { SPACING, FONT_SIZE, getSemanticColors } from '../../theme/tokens';
 import { DatePresetPicker } from '../common/DatePresetPicker';
 import { EmptyState } from '../common/EmptyState';
+import { InlineError } from '../common/InlineError';
 import { StatCard } from '../common/StatCard';
 import { formatMoney, formatPercent } from '../../utils/format';
 
@@ -89,7 +90,7 @@ export const BalanceTrendSection = () => {
 
     const queryEnabled = isValidRange && !!debouncedStart && !!debouncedEnd;
 
-    const { data, isPending, isFetching, isError, error } = useQuery<BalanceTrendResponse>({
+    const { data, isPending, isFetching, isError, error, refetch } = useQuery<BalanceTrendResponse>({
         queryKey: ['reports', 'balance-trend', debouncedStart, debouncedEnd],
         queryFn: () => api.getBalanceTrend({ startDate: debouncedStart!, endDate: debouncedEnd! }).then(r => r.data),
         enabled: queryEnabled,
@@ -212,6 +213,14 @@ export const BalanceTrendSection = () => {
                     </Row>
                     <Skeleton active paragraph={{ rows: 6 }} style={{ marginTop: SPACING.md }} />
                 </>
+            )}
+
+            {/* Errore senza dati da mostrare: prima la card restava vuota, senza spiegazioni. */}
+            {isValidRange && !isLoading && !data && isError && (
+                <InlineError
+                    message={t('reports.balanceTrend.loadError')}
+                    onRetry={() => { void refetch(); }}
+                />
             )}
 
             {isValidRange && !isLoading && data && (

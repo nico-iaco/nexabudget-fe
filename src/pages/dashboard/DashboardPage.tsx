@@ -40,6 +40,7 @@ import { usePreferences } from '../../contexts/PreferencesContext';
 import { PRIMARY_LIGHT_HEX, PRIMARY_DARK_HEX, SPACING, FONT_SIZE, GRADIENT_BALANCE, GRADIENT_BALANCE_DARK, getSemanticColors } from '../../theme/tokens';
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
+import { InlineError } from '../../components/common/InlineError';
 import { StatCard } from '../../components/common/StatCard';
 import { OnboardingChecklist } from '../../components/onboarding/OnboardingChecklist';
 import type { AppOutletContext } from '../../types/outletContext';
@@ -93,19 +94,33 @@ export const DashboardPage = () => {
         projection,
         budgetSummary,
         hasData,
+        failedSections,
         refetch: refetchDashboard,
     } = useDashboardData(transactionRefreshKey, trendMonths);
+
+    // Una sezione fallita mostra un errore con Riprova al posto del valore di fallback:
+    // "0,00 €" o un grafico vuoto sarebbero indistinguibili da dati reali.
+    const breakdownFailed = failedSections.has('categoryBreakdown');
+    const trendFailed = failedSections.has('monthlyTrend');
+    const budgetsFailed = failedSections.has('budgetSummary');
+    const projectionFailed = failedSections.has('monthlyProjection');
+    // Senza breakdown né trend non sappiamo se l'utente ha dati: niente onboarding né
+    // "aggiungi la prima transazione", solo l'errore.
+    const coreFailed = breakdownFailed && trendFailed;
+    const retryDashboard = () => { void refetchDashboard(); };
 
     usePullToRefresh(refetchDashboard ?? (() => {}), isMobile);
 
     // Confronto mese scelto dall'utente — cached via React Query.
     const [comparisonMonth, setComparisonMonth] = useState<Dayjs>(dayjs());
-    const { data: customComparison, isPending: loadingComparison } = useQuery<MonthComparisonResponse | null>({
+    const {
+        data: customComparison,
+        isPending: loadingComparison,
+        isError: comparisonFailed,
+        refetch: refetchComparison,
+    } = useQuery<MonthComparisonResponse>({
         queryKey: queryKeys.monthComparison(comparisonMonth.year(), comparisonMonth.month() + 1),
-        queryFn: () =>
-            api.getMonthComparison(comparisonMonth.year(), comparisonMonth.month() + 1)
-                .then(r => r.data)
-                .catch(() => null),
+        queryFn: () => api.getMonthComparison(comparisonMonth.year(), comparisonMonth.month() + 1).then(r => r.data),
         placeholderData: keepPreviousData,
     });
 
@@ -271,16 +286,21 @@ export const DashboardPage = () => {
         <>
             <PageHeader title={t('dashboard.title')} actions={filterControls} />
 
-            <OnboardingChecklist
-                hasAccounts={accounts.length > 0}
-                hasTransactions={hasData}
-                hasBudgets={budgetSummary.length > 0}
-                onCreateAccount={onOpenCreateAccount}
-                onAddTransaction={() => navigate('/transactions')}
-                onCreateBudget={() => navigate('/budgets')}
-            />
+            {/* Con dati mancanti la checklist segnerebbe come "da fare" passi già completati. */}
+            {!coreFailed && !budgetsFailed && (
+                <OnboardingChecklist
+                    hasAccounts={accounts.length > 0}
+                    hasTransactions={hasData}
+                    hasBudgets={budgetSummary.length > 0}
+                    onCreateAccount={onOpenCreateAccount}
+                    onAddTransaction={() => navigate('/transactions')}
+                    onCreateBudget={() => navigate('/budgets')}
+                />
+            )}
 
-            {!hasData ? (
+            {coreFailed ? (
+                <InlineError message={t('dashboard.loadErrorFull')} onRetry={retryDashboard} />
+            ) : !hasData ? (
                 <EmptyState
                     description={
                         accounts.length === 0
@@ -302,58 +322,66 @@ export const DashboardPage = () => {
                 <>
                     {/* Statistiche mese corrente */}
                     <Row gutter={[16, 16]}>
-                        <Col {...statCols}>
-                            <StatCard
-                                title={t('dashboard.netBalance')}
-                                value={netBalance}
-                                currency={currency}
-                                gradient={balanceGradient}
-                                prefix={netBalance >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                                footer={
-                                    <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
-                                        <Sparkline values={netSparkline} color="rgba(255,255,255,0.55)" />
-                                    </Suspense>
-                                }
-                            />
-                        </Col>
-                        <Col {...statCols}>
-                            <StatCard
-                                title={t('dashboard.totalIncome')}
-                                value={totalIncome}
-                                currency={currency}
-                                color={semantic.positive}
-                                prefix={<ArrowUpOutlined />}
-                                footer={
-                                    <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
-                                        <Sparkline values={incomeSparkline} color={semantic.positive} />
-                                    </Suspense>
-                                }
-                            />
-                        </Col>
-                        <Col {...statCols}>
-                            <StatCard
-                                title={t('dashboard.totalExpenses')}
-                                value={totalExpenses}
-                                currency={currency}
-                                color={semantic.negative}
-                                prefix={<ArrowDownOutlined />}
-                                footer={
-                                    <>
-                                        {expenseComparison && (
-                                            <div style={{ marginTop: 4, fontSize: FONT_SIZE.sm }}>
-                                                <Text type={expenseComparison.percentageChange >= 0 ? 'danger' : 'success'}>
-                                                    {formatPercent(expenseComparison.percentageChange, 2, true)}
-                                                </Text>
-                                                <Text type="secondary"> {t('dashboard.vsPeriod', { period: t('dashboard.previousMonth') })}</Text>
-                                            </div>
-                                        )}
-                                        <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
-                                            <Sparkline values={expenseSparkline} color={semantic.negative} />
-                                        </Suspense>
-                                    </>
-                                }
-                            />
-                        </Col>
+                        {breakdownFailed ? (
+                            <Col xs={24} xl={showCrypto ? 18 : 24}>
+                                <InlineError message={t('dashboard.totalsLoadError')} onRetry={retryDashboard} />
+                            </Col>
+                        ) : (
+                            <>
+                                <Col {...statCols}>
+                                    <StatCard
+                                        title={t('dashboard.netBalance')}
+                                        value={netBalance}
+                                        currency={currency}
+                                        gradient={balanceGradient}
+                                        prefix={netBalance >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
+                                        footer={
+                                            <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
+                                                <Sparkline values={netSparkline} color="rgba(255,255,255,0.55)" />
+                                            </Suspense>
+                                        }
+                                    />
+                                </Col>
+                                <Col {...statCols}>
+                                    <StatCard
+                                        title={t('dashboard.totalIncome')}
+                                        value={totalIncome}
+                                        currency={currency}
+                                        color={semantic.positive}
+                                        prefix={<ArrowUpOutlined />}
+                                        footer={
+                                            <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
+                                                <Sparkline values={incomeSparkline} color={semantic.positive} />
+                                            </Suspense>
+                                        }
+                                    />
+                                </Col>
+                                <Col {...statCols}>
+                                    <StatCard
+                                        title={t('dashboard.totalExpenses')}
+                                        value={totalExpenses}
+                                        currency={currency}
+                                        color={semantic.negative}
+                                        prefix={<ArrowDownOutlined />}
+                                        footer={
+                                            <>
+                                                {expenseComparison && (
+                                                    <div style={{ marginTop: 4, fontSize: FONT_SIZE.sm }}>
+                                                        <Text type={expenseComparison.percentageChange >= 0 ? 'danger' : 'success'}>
+                                                            {formatPercent(expenseComparison.percentageChange, 2, true)}
+                                                        </Text>
+                                                        <Text type="secondary"> {t('dashboard.vsPeriod', { period: t('dashboard.previousMonth') })}</Text>
+                                                    </div>
+                                                )}
+                                                <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
+                                                    <Sparkline values={expenseSparkline} color={semantic.negative} />
+                                                </Suspense>
+                                        </>
+                                    }
+                                />
+                            </Col>
+                            </>
+                        )}
                         {showCrypto && (
                             <Col {...statCols}>
                                 <StatCard
@@ -380,20 +408,24 @@ export const DashboardPage = () => {
                         <Col xs={24} lg={15}>
                             <Flex vertical gap={16}>
                                 <Card title={t('reports.categoryBreakdown')}>
-                                    <Tabs
-                                        items={[
-                                            {
-                                                key: 'OUT',
-                                                label: t('reports.typeOut'),
-                                                children: renderBreakdown(expensesByCategory, expenseBreakdown),
-                                            },
-                                            {
-                                                key: 'IN',
-                                                label: t('reports.typeIn'),
-                                                children: renderBreakdown(incomeByCategory, incomeBreakdown),
-                                            },
-                                        ]}
-                                    />
+                                    {breakdownFailed ? (
+                                        <InlineError onRetry={retryDashboard} />
+                                    ) : (
+                                        <Tabs
+                                            items={[
+                                                {
+                                                    key: 'OUT',
+                                                    label: t('reports.typeOut'),
+                                                    children: renderBreakdown(expensesByCategory, expenseBreakdown),
+                                                },
+                                                {
+                                                    key: 'IN',
+                                                    label: t('reports.typeIn'),
+                                                    children: renderBreakdown(incomeByCategory, incomeBreakdown),
+                                                },
+                                            ]}
+                                        />
+                                    )}
                                 </Card>
 
                                 <Card
@@ -432,16 +464,24 @@ export const DashboardPage = () => {
                                             ))}
                                         </Flex>
                                     )}
-                                    <Suspense fallback={<Skeleton active paragraph={{ rows: 8 }} />}>
-                                        <TrendDualChart points={trendPoints} />
-                                    </Suspense>
+                                    {trendFailed ? (
+                                        <InlineError onRetry={retryDashboard} />
+                                    ) : (
+                                        <Suspense fallback={<Skeleton active paragraph={{ rows: 8 }} />}>
+                                            <TrendDualChart points={trendPoints} />
+                                        </Suspense>
+                                    )}
                                 </Card>
                             </Flex>
                         </Col>
 
                         <Col xs={24} lg={9}>
                             <Flex vertical gap={16}>
-                                {budgetSummary.length > 0 && (
+                                {budgetsFailed ? (
+                                    <Card title={t('dashboard.budgetSummary.title')}>
+                                        <InlineError onRetry={retryDashboard} />
+                                    </Card>
+                                ) : budgetSummary.length > 0 && (
                                     <Card title={t('dashboard.budgetSummary.title')}>
                                         <Row gutter={[16, 16]}>
                                             {budgetSummary.map(renderBudgetSummaryItem)}
@@ -449,7 +489,11 @@ export const DashboardPage = () => {
                                     </Card>
                                 )}
 
-                                {projection && (
+                                {projectionFailed ? (
+                                    <Card title={t('dashboard.projection')}>
+                                        <InlineError onRetry={retryDashboard} />
+                                    </Card>
+                                ) : projection && (
                                     <Card title={t('dashboard.projection')}>
                                         {/* Nella colonna destra (9/24) fra lg e xl tre importi affiancati non ci stanno:
                                             il simbolo € andava a capo. Due per riga finché non c'è spazio. */}
@@ -492,6 +536,8 @@ export const DashboardPage = () => {
                                 >
                                     {loadingComparison ? (
                                         <Skeleton active paragraph={{ rows: 2 }} />
+                                    ) : comparisonFailed ? (
+                                        <InlineError onRetry={() => { void refetchComparison(); }} />
                                     ) : customComparison ? (
                                         <Suspense fallback={<Skeleton active paragraph={{ rows: 2 }} />}>
                                             <ComparisonBars

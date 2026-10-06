@@ -46,6 +46,7 @@ const resources = {
                 selectMonth: 'Seleziona mese',
                 selectDateTime: 'Seleziona data e ora',
                 none: 'Nessuno',
+                sectionLoadError: 'Impossibile caricare questi dati.',
                 skipToContent: 'Salta al contenuto'
             },
             nav: {
@@ -229,6 +230,8 @@ const resources = {
                 title: 'Dashboard',
                 empty: 'Nessuna transazione trovata per il periodo selezionato.',
                 loadError: 'Alcuni dati della dashboard non sono stati caricati correttamente.',
+                loadErrorFull: 'Impossibile caricare i dati della dashboard. Controlla la connessione e riprova.',
+                totalsLoadError: 'Impossibile caricare entrate, uscite e saldo del periodo.',
                 emptyNoAccounts: 'Nessun conto trovato. Crea il tuo primo conto per iniziare.',
                 emptyCtaAccount: 'Crea un conto',
                 emptyCtaBankLink: 'Collega una banca',
@@ -415,6 +418,10 @@ const resources = {
                 syncing: 'Sincronizzazione...',
                 totalLabel: '{{total}} transazioni',
                 loadMore: 'Carica altri {{count}}',
+                shownOfTotal: '{{shown}} di {{total}} transazioni',
+                noResults: 'Nessuna transazione corrisponde ai filtri o alla ricerca.',
+                resetFilters: 'Azzera filtri',
+                refreshError: 'Impossibile aggiornare le transazioni: quelle mostrate potrebbero non essere aggiornate.',
                 filters: 'Filtri',
                 clearFilters: 'Azzera',
                 applyFilters: 'Applica',
@@ -617,6 +624,7 @@ const resources = {
                 recoverableFor30Days: 'Gli elementi nel cestino vengono eliminati definitivamente dopo 30 giorni.',
                 restoreSuccess: 'Elemento ripristinato con successo',
                 restoreError: 'Errore durante il ripristino',
+                loadError: 'Impossibile caricare il contenuto del cestino.',
                 emptyTransactions: 'Nessuna transazione nel cestino',
                 emptyAccounts: 'Nessun conto nel cestino',
                 deletedAt: 'Eliminato il'
@@ -667,6 +675,8 @@ const resources = {
             },
             budgets: {
                 title: 'Budget',
+                loadError: 'Impossibile caricare i budget.',
+                summaryLoadError: 'Impossibile caricare la spesa del mese: le percentuali non sono disponibili.',
                 newBudget: 'Nuovo Budget',
                 editBudget: 'Modifica Budget',
                 category: 'Categoria',
@@ -795,6 +805,7 @@ const resources = {
                 selectMonth: 'Select month',
                 selectDateTime: 'Select date and time',
                 none: 'None',
+                sectionLoadError: 'Could not load this data.',
                 skipToContent: 'Skip to content'
             },
             nav: {
@@ -978,6 +989,8 @@ const resources = {
                 title: 'Dashboard',
                 empty: 'No transactions found for the selected period.',
                 loadError: 'Some dashboard data failed to load.',
+                loadErrorFull: 'Could not load the dashboard. Check your connection and try again.',
+                totalsLoadError: 'Could not load income, expenses and net for the period.',
                 emptyNoAccounts: 'No accounts found. Create your first account to get started.',
                 emptyCtaAccount: 'Create an account',
                 emptyCtaBankLink: 'Link a bank',
@@ -1164,6 +1177,10 @@ const resources = {
                 syncing: 'Syncing...',
                 totalLabel: '{{total}} transactions',
                 loadMore: 'Load {{count}} more',
+                shownOfTotal: '{{shown}} of {{total}} transactions',
+                noResults: 'No transactions match your filters or search.',
+                resetFilters: 'Clear filters',
+                refreshError: 'Could not refresh transactions: the ones shown may be out of date.',
                 filters: 'Filters',
                 clearFilters: 'Clear',
                 applyFilters: 'Apply',
@@ -1366,6 +1383,7 @@ const resources = {
                 recoverableFor30Days: 'Items in the trash are permanently deleted after 30 days.',
                 restoreSuccess: 'Item restored successfully',
                 restoreError: 'Error restoring item',
+                loadError: 'Could not load the trash.',
                 emptyTransactions: 'No transactions in trash',
                 emptyAccounts: 'No accounts in trash',
                 deletedAt: 'Deleted on'
@@ -1416,6 +1434,8 @@ const resources = {
             },
             budgets: {
                 title: 'Budgets',
+                loadError: 'Could not load budgets.',
+                summaryLoadError: 'Could not load this month\'s spending: percentages are unavailable.',
                 newBudget: 'New Budget',
                 editBudget: 'Edit Budget',
                 category: 'Category',

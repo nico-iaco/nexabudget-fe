@@ -6,6 +6,7 @@ import {
 import { BellOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import { EmptyState } from '../../components/common/EmptyState';
+import { InlineError } from '../../components/common/InlineError';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
 import type { BudgetTemplate, BudgetTemplateRequest, MonthlySummaryResponse } from '../../types/api';
@@ -43,6 +44,11 @@ export const BudgetsPage = () => {
     const [budgets, setBudgets] = useState<BudgetTemplate[]>([]);
     const [summaries, setSummaries] = useState<MonthlySummaryResponse[]>([]);
     const [loading, setLoading] = useState(true);
+    // Errori distinti: senza template la lista non esiste; senza riepilogo i budget ci sono
+    // ma le percentuali no. Prima il riepilogo fallito diventava silenziosamente "—" ovunque
+    // e i template falliti mostravano "nessun budget, crea il primo".
+    const [templatesError, setTemplatesError] = useState(false);
+    const [summaryError, setSummaryError] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editing, setEditing] = useState<BudgetTemplate | null>(null);
     const [alertsBudget, setAlertsBudget] = useState<BudgetTemplate | null>(null);
@@ -57,19 +63,28 @@ export const BudgetsPage = () => {
 
     const fetchBudgets = async () => {
         setLoading(true);
-        try {
-            const today = dayjs().format('YYYY-MM-DD');
-            const [templatesResp, summaryResp] = await Promise.all([
-                api.getBudgetTemplates(),
-                api.getBudgetMonthlySummary(today).catch(() => ({ data: [] as MonthlySummaryResponse[] })),
-            ]);
-            setBudgets(Array.isArray(templatesResp.data) ? templatesResp.data : []);
-            setSummaries(Array.isArray(summaryResp.data) ? summaryResp.data : []);
-        } catch {
-            message.error(t('budgets.loadError', { defaultValue: 'Failed to load budgets' }));
-        } finally {
-            setLoading(false);
+        const today = dayjs().format('YYYY-MM-DD');
+        const [templatesResult, summaryResult] = await Promise.allSettled([
+            api.getBudgetTemplates(),
+            api.getBudgetMonthlySummary(today),
+        ]);
+        if (templatesResult.status === 'fulfilled') {
+            const data = templatesResult.value.data;
+            setBudgets(Array.isArray(data) ? data : []);
+            setTemplatesError(false);
+        } else {
+            console.error('[budgets] failed to load templates', templatesResult.reason);
+            setTemplatesError(true);
         }
+        if (summaryResult.status === 'fulfilled') {
+            const data = summaryResult.value.data;
+            setSummaries(Array.isArray(data) ? data : []);
+            setSummaryError(false);
+        } else {
+            console.error('[budgets] failed to load monthly summary', summaryResult.reason);
+            setSummaryError(true);
+        }
+        setLoading(false);
     };
 
     useEffect(() => { fetchBudgets(); }, []);
@@ -222,19 +237,30 @@ export const BudgetsPage = () => {
                         </Col>
                     ))}
                 </Row>
+            ) : templatesError ? (
+                <InlineError message={t('budgets.loadError')} onRetry={fetchBudgets} />
             ) : budgets.length === 0 ? (
                 <EmptyState
                     description={t('budgets.emptyList')}
                     actions={[{ label: t('budgets.emptyListCta'), onClick: () => { setEditing(null); setIsModalOpen(true); } }]}
                 />
             ) : (
-                <Row gutter={[16, 16]}>
-                    {budgets.map(record => (
-                        <Col key={record.id} xs={24} sm={isMobile ? 24 : 12} lg={8}>
-                            {renderBudgetCard(record)}
-                        </Col>
-                    ))}
-                </Row>
+                <>
+                    {summaryError && (
+                        <InlineError
+                            message={t('budgets.summaryLoadError')}
+                            onRetry={fetchBudgets}
+                            style={{ marginBottom: SPACING.md }}
+                        />
+                    )}
+                    <Row gutter={[16, 16]}>
+                        {budgets.map(record => (
+                            <Col key={record.id} xs={24} sm={isMobile ? 24 : 12} lg={8}>
+                                {renderBudgetCard(record)}
+                            </Col>
+                        ))}
+                    </Row>
+                </>
             )}
 
             <BudgetTemplateModal

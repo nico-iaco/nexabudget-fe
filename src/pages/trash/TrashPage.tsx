@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { App, Button, Table, Tabs, Tag, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import dayjs from 'dayjs';
 import * as api from '../../services/api';
@@ -8,6 +9,8 @@ import type { DeletedAccount, Transaction } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
+import { InlineError } from '../../components/common/InlineError';
+import { queryKeys } from '../../queryKeys';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { FONT_SIZE, getSemanticColors } from '../../theme/tokens';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
@@ -36,14 +39,30 @@ export const TrashPage = () => {
     const [loadingTx, setLoadingTx] = useState(false);
     const [loadingAcc, setLoadingAcc] = useState(false);
     const [restoringId, setRestoringId] = useState<string | null>(null);
+    // Un caricamento fallito non è un cestino vuoto: la tabella mostra l'errore con Riprova.
+    const [txLoadError, setTxLoadError] = useState(false);
+    const [accLoadError, setAccLoadError] = useState(false);
+    const queryClient = useQueryClient();
+
+    // Un elemento ripristinato ricompare in conti, saldi, transazioni e grafici: senza
+    // invalidazione restava invisibile fino allo scadere dello staleTime.
+    const invalidateRestoredData = () => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.accounts });
+        queryClient.invalidateQueries({ queryKey: queryKeys.totalBalance });
+        queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
+        queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
+        queryClient.invalidateQueries({ queryKey: ['reports'] });
+    };
 
     const fetchDeletedTransactions = async () => {
         setLoadingTx(true);
         try {
             const resp = await api.getDeletedTransactions();
             setDeletedTransactions(Array.isArray(resp.data) ? resp.data : []);
+            setTxLoadError(false);
         } catch {
-            message.error(t('trash.restoreError'));
+            message.error(t('trash.loadError'));
+            setTxLoadError(true);
         } finally {
             setLoadingTx(false);
         }
@@ -54,8 +73,10 @@ export const TrashPage = () => {
         try {
             const resp = await api.getDeletedAccounts();
             setDeletedAccounts(Array.isArray(resp.data) ? resp.data : []);
+            setAccLoadError(false);
         } catch {
-            message.error(t('trash.restoreError'));
+            message.error(t('trash.loadError'));
+            setAccLoadError(true);
         } finally {
             setLoadingAcc(false);
         }
@@ -84,6 +105,7 @@ export const TrashPage = () => {
             await api.restoreTransaction(id);
             message.success(t('trash.restoreSuccess'));
             fetchDeletedTransactions();
+            invalidateRestoredData();
         } catch {
             message.error(t('trash.restoreError'));
         } finally {
@@ -97,6 +119,7 @@ export const TrashPage = () => {
             await api.restoreAccount(id);
             message.success(t('trash.restoreSuccess'));
             fetchDeletedAccounts();
+            invalidateRestoredData();
         } catch {
             message.error(t('trash.restoreError'));
         } finally {
@@ -252,7 +275,11 @@ export const TrashPage = () => {
                                 loading={loadingTx}
                                 size="small"
                                 tableLayout="fixed"
-                                locale={{ emptyText: <EmptyState description={t('trash.emptyTransactions')} /> }}
+                                locale={{
+                                    emptyText: txLoadError
+                                        ? <InlineError message={t('trash.loadError')} onRetry={fetchDeletedTransactions} />
+                                        : <EmptyState description={t('trash.emptyTransactions')} />,
+                                }}
                                 pagination={{ defaultPageSize: 20, showSizeChanger: false }}
                             />
                         ),
@@ -268,7 +295,11 @@ export const TrashPage = () => {
                                 loading={loadingAcc}
                                 size="small"
                                 tableLayout="fixed"
-                                locale={{ emptyText: <EmptyState description={t('trash.emptyAccounts')} /> }}
+                                locale={{
+                                    emptyText: accLoadError
+                                        ? <InlineError message={t('trash.loadError')} onRetry={fetchDeletedAccounts} />
+                                        : <EmptyState description={t('trash.emptyAccounts')} />,
+                                }}
                                 pagination={{ defaultPageSize: 20, showSizeChanger: false }}
                             />
                         ),

@@ -10,13 +10,14 @@ export const queryKeys = {
     // Categorie
     categories: ['categories'] as const,
 
-    // Transazioni paginate
+    // Transazioni paginate. `queryKeys.transactions()` senza argomenti è il prefisso che
+    // invalida tutte le liste (paginata desktop e infinita mobile, ogni conto e filtro).
     transactions: (scope?: {
         accountId?: string;
         page?: number;
         size?: number;
         filters?: unknown;
-        sort?: unknown;
+        mode?: 'paged' | 'infinite';
     }) => ['transactions', scope ?? {}] as const,
 
     // Dashboard (mantiene la stessa struttura usata da useDashboardData)

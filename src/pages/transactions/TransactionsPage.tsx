@@ -15,7 +15,6 @@ import {
     message,
     Modal,
     notification,
-    Pagination,
     Progress,
     Radio,
     Select,
@@ -31,15 +30,13 @@ import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, Filte
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import * as api from '../../services/api';
-import type { TransactionFilters } from '../../services/api';
 import type {
     CategorizationJobResponse,
     LinkTransferRequest,
     Transaction,
     TransactionRequest
 } from '../../types/api';
-import { useAuth } from '../../contexts/AuthContext';
-import dayjs, { type Dayjs } from 'dayjs';
+import dayjs from 'dayjs';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -47,6 +44,7 @@ import { TransactionCard } from '../../components/TransactionCard';
 import { TransactionImportModal } from '../../components/modals/TransactionImportModal';
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
+import { InlineError } from '../../components/common/InlineError';
 import { ItemList } from '../../components/common/ItemList';
 import { getCurrencySymbol } from '../../utils/currency';
 import { formatMoney, formatNumber } from '../../utils/format';
@@ -55,9 +53,17 @@ import { usePreferences } from '../../contexts/PreferencesContext';
 import { useConfirm } from '../../hooks/useConfirm';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import type { MenuProps } from 'antd';
-import type { SorterResult } from 'antd/es/table/interface';
 import type { AppOutletContext } from '../../types/outletContext';
 import { commaDecimalParser } from '../../utils/number';
+import { queryKeys } from '../../queryKeys';
+import {
+    DEFAULT_TRANSACTION_SORT,
+    useTransactionFilters,
+    type TableFilters,
+    type TransactionSort,
+    type TransactionSortField,
+} from '../../hooks/useTransactionFilters';
+import { TRANSACTIONS_PAGE_SIZE, useTransactionsList } from '../../hooks/useTransactionsList';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -73,23 +79,42 @@ const TRANSFER_CANDIDATES_PAGE_SIZE = 200;
 const AI_POLL_INTERVAL_MS = 10_000;
 const AI_POLL_TIMEOUT_MS = 10 * 60 * 1000; // 10 minuti
 
-interface TableFilters {
-    type?: 'IN' | 'OUT';
-    categoryId?: string;
-    startDate?: Dayjs | null;
-    endDate?: Dayjs | null;
-    search?: string;
-}
+/**
+ * Carica la pagina successiva quando il fondo della lista entra nel viewport, con un
+ * pulsante come alternativa (e per chi non scorre). Sostituisce la paginazione numerata
+ * su mobile, che costringeva a tornare in cima a ogni pagina.
+ */
+const LoadMore = ({ onLoadMore, loading, label }: { onLoadMore: () => void; loading: boolean; label: string }) => {
+    const sentinelRef = useRef<HTMLDivElement>(null);
+    const onLoadMoreRef = useRef(onLoadMore);
+    useEffect(() => { onLoadMoreRef.current = onLoadMore; });
+
+    useEffect(() => {
+        const el = sentinelRef.current;
+        if (!el || typeof IntersectionObserver === 'undefined') return;
+        // rootMargin: parte un po' prima del fondo, così la pagina successiva è spesso già
+        // arrivata quando l'utente ci scorre sopra.
+        const observer = new IntersectionObserver(entries => {
+            if (entries.some(e => e.isIntersecting)) onLoadMoreRef.current();
+        }, { rootMargin: '200px' });
+        observer.observe(el);
+        return () => observer.disconnect();
+    }, []);
+
+    return (
+        <Flex ref={sentinelRef} justify="center" style={{ marginTop: SPACING.md }}>
+            <Button onClick={onLoadMore} loading={loading}>{label}</Button>
+        </Flex>
+    );
+};
 
 export const TransactionsPage = () => {
     const { t } = useTranslation();
     const { accountId } = useParams<{ accountId?: string }>();
-    const { auth } = useAuth();
     const confirm = useConfirm();
     const {
         accounts,
         fetchAccounts: fetchLayoutAccounts,
-        transactionRefreshKey,
         categories: rawCategories,
         handleOpenTransferModal
     } = useOutletContext<AppOutletContext>();
@@ -99,14 +124,6 @@ export const TransactionsPage = () => {
         [rawCategories]
     );
 
-    const [transactions, setTransactions] = useState<Transaction[]>([]);
-    const [totalTransactions, setTotalTransactions] = useState(0);
-    const [currentPage, setCurrentPage] = useState(1);
-    const pageSize = 20;
-    const [loading, setLoading] = useState(true);
-    // Lo spinner a pagina intera serve solo al primo caricamento: dopo, smontare la pagina
-    // a ogni fetch farebbe perdere il focus al campo di ricerca (e chiudere la tastiera mobile).
-    const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
     const [saving, setSaving] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [editingRecord, setEditingRecord] = useState<Transaction | null>(null);
@@ -135,12 +152,57 @@ export const TransactionsPage = () => {
         : t('nav.transactions')
     );
 
-    // State for sorting and filtering
-    const [sortConfig, setSortConfig] = useState<SorterResult<Transaction>>({
-        field: 'date',
-        order: 'descend',
-    });
-    const [filters, setFilters] = useState<TableFilters>({});
+    // Filtri, ordinamento e pagina vivono nell'URL (vedi useTransactionFilters).
+    const {
+        filters,
+        sort: sortConfig,
+        page: currentPage,
+        apiFilters,
+        hasActiveFilters,
+        setFilter,
+        setSearch,
+        setSort,
+        applyFiltersAndSort,
+        setPage,
+        clearFilters,
+    } = useTransactionFilters();
+
+    const {
+        transactions,
+        total: totalTransactions,
+        hasData,
+        isLoading: loading,
+        isError: loadFailed,
+        refetch: refetchTransactions,
+        hasNextPage,
+        fetchNextPage,
+        isFetchingNextPage,
+    } = useTransactionsList({ accountId, filters: apiFilters, page: currentPage, infinite: isMobile });
+
+    // Il campo di ricerca ha uno stato locale e scrive nell'URL con debounce: senza,
+    // ogni tasto premuto avrebbe fatto una richiesta (12 per una ricerca di 12 caratteri).
+    const [searchInput, setSearchInput] = useState(filters.search ?? '');
+    // Cambiando conto la query string riparte vuota: il campo va riallineato. Aggiustamento
+    // durante il render (non in un effetto) per non mostrare per un frame il testo vecchio.
+    const [searchAccountId, setSearchAccountId] = useState(accountId);
+    if (searchAccountId !== accountId) {
+        setSearchAccountId(accountId);
+        setSearchInput(filters.search ?? '');
+    }
+    const urlSearch = filters.search ?? '';
+    useEffect(() => {
+        if (searchInput === urlSearch) return;
+        const id = setTimeout(() => setSearch(searchInput), SEARCH_DEBOUNCE_MS);
+        return () => clearTimeout(id);
+        // setSearch cambia identità a ogni cambio di URL: dipendere da lui riavvierebbe il
+        // timer anche quando l'utente non sta scrivendo.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchInput, urlSearch]);
+
+    const handleClearFilters = () => {
+        setSearchInput('');
+        clearFilters();
+    };
 
     // State for "Convert to Transfer" modal
     const [isLinkModalOpen, setIsLinkModalOpen] = useState(false);
@@ -155,10 +217,7 @@ export const TransactionsPage = () => {
     const [syncingTransactions, setSyncingTransactions] = useState(false);
     const [isFilterDrawerOpen, setIsFilterDrawerOpen] = useState(false);
     const [draftFilters, setDraftFilters] = useState<TableFilters>({});
-    const [draftSortConfig, setDraftSortConfig] = useState<SorterResult<Transaction>>({
-        field: 'date',
-        order: 'descend',
-    });
+    const [draftSortConfig, setDraftSortConfig] = useState<TransactionSort>(DEFAULT_TRANSACTION_SORT);
 
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
@@ -266,8 +325,7 @@ export const TransactionsPage = () => {
         setIsAiCategorizationModalOpen(false);
         setIsAiCategorizationBackgrounded(false);
         if (job?.status === 'COMPLETED') {
-            setCurrentPage(1);
-            fetchTransactions(1);
+            refreshTransactions();
         }
         setAiCategorizationJob(null);
     };
@@ -288,8 +346,7 @@ export const TransactionsPage = () => {
                     setIsAiCategorizationBackgrounded(prev => {
                         if (prev) {
                             if (res.data.status === 'COMPLETED') {
-                                setCurrentPage(1);
-                                fetchTransactionsRef.current(1);
+                                refreshTransactions();
                                 apiNotification.success({
                                     message: t('transactions.categorizeAi.statusCompleted'),
                                     description: t('transactions.categorizeAi.recap', { categorized: res.data.categorized }),
@@ -365,105 +422,18 @@ export const TransactionsPage = () => {
     };
 
     // Le mutazioni sulle transazioni cambiano anche i dati derivati (totali, trend,
-    // breakdown, budget, saldo). Prima l'unico canale era `transactionRefreshKey`, che è
-    // dichiarato in Layout con `useState(0)` e nessun setter: non poteva mai cambiare, e
-    // le invalidazioni su `queryKeys.transactions()` non erano lette da nessuna query.
-    // Risultato: dopo aver modificato una transazione la dashboard restava su numeri
-    // vecchi fino a 2 minuti o al focus della finestra. Qui invalidiamo per prefisso,
-    // così coprono sia `['dashboardData', …]` sia le query sotto `['reports', …]`.
+    // breakdown, budget, saldo): si invalidano per prefisso, così coprono sia
+    // `['dashboardData', …]` sia le query sotto `['reports', …]`.
     const queryClient = useQueryClient();
     const invalidateDerivedData = useCallback(() => {
         queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
         queryClient.invalidateQueries({ queryKey: ['reports'] });
     }, [queryClient]);
 
-    // Sequenza di richiesta: senza di essa, due fetch concorrenti (tipico della ricerca)
-    // possono risolversi fuori ordine e lo stato finisce con la risposta arrivata per
-    // ultima, non con quella della query corrente.
-    const requestSeqRef = useRef(0);
-
-    const fetchTransactions = (page = currentPage, currentFilters = filters, append = false) => {
-        if (!auth) return;
-        const seq = ++requestSeqRef.current;
-        setLoading(true);
-
-        const sortField = sortConfig.field as string | undefined;
-        const apiFilters: TransactionFilters = {
-            type: currentFilters.type,
-            categoryId: currentFilters.categoryId,
-            startDate: currentFilters.startDate?.format('YYYY-MM-DD'),
-            endDate: currentFilters.endDate?.format('YYYY-MM-DD'),
-            search: currentFilters.search,
-            sortBy: (['date', 'amount', 'description', 'type'].includes(sortField ?? '') ? sortField : 'date') as TransactionFilters['sortBy'],
-            sortDir: sortConfig.order === 'ascend' ? 'ASC' : 'DESC',
-        };
-
-        const call = accountId
-            ? api.getTransactionsByAccountIdPaged(accountId, page - 1, pageSize, apiFilters)
-            : api.getTransactionsPaged(page - 1, pageSize, apiFilters);
-
-        call
-            .then(response => {
-                // Risposta di una richiesta già superata: la scartiamo.
-                if (seq !== requestSeqRef.current) return;
-                if (append) {
-                    setTransactions(prev => [...prev, ...response.data.content]);
-                } else {
-                    setTransactions(response.data.content);
-                }
-                setTotalTransactions(response.data.page.totalElements);
-            })
-            .catch(error => {
-                if (seq !== requestSeqRef.current) return;
-                console.error("Failed to fetch transactions", error);
-                message.error(t('transactions.loadError'));
-            })
-            .finally(() => {
-                if (seq === requestSeqRef.current) {
-                    setLoading(false);
-                    setHasLoadedOnce(true);
-                }
-            });
-    };
-
-    // Stable ref so useCallback closures always call the latest version
-    const fetchTransactionsRef = useRef(fetchTransactions);
-    useEffect(() => { fetchTransactionsRef.current = fetchTransactions; });
-
-    // Debounce del testo di ricerca: `filters.search` viene scritto a ogni onChange, e
-    // senza questo l'effetto di fetch partiva a ogni tasto premuto (12 richieste per una
-    // ricerca di 12 caratteri). Stesso approccio già usato in BalanceTrendSection.
-    const [debouncedSearch, setDebouncedSearch] = useState(filters.search);
-    useEffect(() => {
-        const id = setTimeout(() => setDebouncedSearch(filters.search), SEARCH_DEBOUNCE_MS);
-        return () => clearTimeout(id);
-    }, [filters.search]);
-
-    // I filtri effettivamente inviati al backend: identici a `filters` tranne la ricerca,
-    // che passa dal valore debounced.
-    // Le dipendenze sono i singoli campi, NON l'oggetto `filters`: dato che `search` vive
-    // dentro `filters`, dipendere dall'oggetto dava un'identità nuova a ogni battitura e
-    // l'effetto di fetch ripartiva comunque, scavalcando il debounce. Verificato con
-    // browser headless: 13 richieste per 12 caratteri.
-    const { type: filterType, categoryId: filterCategoryId, startDate: filterStartDate, endDate: filterEndDate } = filters;
-    const effectiveFilters = useMemo(
-        () => ({
-            type: filterType,
-            categoryId: filterCategoryId,
-            startDate: filterStartDate,
-            endDate: filterEndDate,
-            search: debouncedSearch,
-        }),
-        [filterType, filterCategoryId, filterStartDate, filterEndDate, debouncedSearch]
-    );
-
-    // Un solo effetto di caricamento. Prima erano due, con dipendenze diverse ma corpo
-    // identico: entrambi scattavano al mount, quindi ogni ingresso nella pagina faceva
-    // due volte la stessa richiesta paginata.
-    useEffect(() => {
-        setCurrentPage(1);
-        fetchTransactionsRef.current(1, effectiveFilters, /* append */ false);
-    }, [accountId, auth, transactionRefreshKey, effectiveFilters, sortConfig]);
+    // Ricarica tutte le liste di transazioni in cache (ogni conto, filtro e modalità).
+    const refreshTransactions = useCallback(() => {
+        queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
+    }, [queryClient]);
 
     useEffect(() => {
         if (!destinationAccountId || !sourceTransaction) return;
@@ -526,7 +496,7 @@ export const TransactionsPage = () => {
                 try {
                     await api.deleteTransaction(id);
                     message.success(t('trash.movedToTrash'));
-                    fetchTransactionsRef.current();
+                    refreshTransactions();
                     fetchLayoutAccounts();
                     invalidateDerivedData();
                 } catch (error) {
@@ -535,7 +505,7 @@ export const TransactionsPage = () => {
                 }
             }
         });
-    }, [t, confirm, fetchLayoutAccounts, invalidateDerivedData]);
+    }, [t, confirm, fetchLayoutAccounts, invalidateDerivedData, refreshTransactions]);
 
     const handleOpenEditModal = useCallback((record: Transaction) => {
         setEditingRecord(record);
@@ -586,7 +556,7 @@ export const TransactionsPage = () => {
 
             setIsModalOpen(false);
             message.success(t(editingRecord ? 'transactions.updatedSuccess' : 'transactions.createdSuccess'));
-            fetchTransactions();
+            refreshTransactions();
             fetchLayoutAccounts();
             invalidateDerivedData();
         } catch (error) {
@@ -617,7 +587,7 @@ export const TransactionsPage = () => {
             await api.linkTransactionsAsTransfer(request);
             message.success(t('transactions.linkTransferSuccess'));
             handleCancelLinkTransferModal();
-            fetchTransactions();
+            refreshTransactions();
             invalidateDerivedData();
         } catch (error) {
             console.error("Failed to link transactions", error);
@@ -635,7 +605,7 @@ export const TransactionsPage = () => {
             });
             message.success(t('transactions.linkTransferSuccess'));
             handleCancelLinkTransferModal();
-            fetchTransactions();
+            refreshTransactions();
             invalidateDerivedData();
         } catch (error) {
             console.error("Failed to convert single transaction to transfer", error);
@@ -660,15 +630,17 @@ export const TransactionsPage = () => {
             width: 110,
             hidden: isCompactTable,
             render: (text: string) => dayjs(text).format('DD/MM/YYYY'),
-            sorter: (a, b) => dayjs(a.date).unix() - dayjs(b.date).unix(),
+            // sorter: true = ordinamento lato server. Un comparatore client riordinava
+            // solo i 20 elementi della pagina corrente.
+            sorter: true,
             sortOrder: sortConfig.field === 'date' ? sortConfig.order : null,
-            defaultSortOrder: 'descend',
+            sortDirections: ['descend', 'ascend'],
         },
         {
             title: t('transactions.description'),
             dataIndex: 'description',
             key: 'description',
-            sorter: (a, b) => a.description.localeCompare(b.description),
+            sorter: true,
             sortOrder: sortConfig.field === 'description' ? sortConfig.order : null,
             ellipsis: { showTitle: true },
             render: (text: string, record: Transaction) => isCompactTable ? (
@@ -689,8 +661,6 @@ export const TransactionsPage = () => {
             responsive: ['xl'],
             hidden: !!accountId,
             ellipsis: { showTitle: true },
-            sorter: (a, b) => a.accountName.localeCompare(b.accountName),
-            sortOrder: sortConfig.field === 'accountName' ? sortConfig.order : null,
         },
         {
             title: t('transactions.category'),
@@ -699,19 +669,13 @@ export const TransactionsPage = () => {
             width: 150,
             hidden: isCompactTable,
             ellipsis: { showTitle: true },
-            sorter: (a, b) => (a.categoryName || '').localeCompare(b.categoryName || ''),
-            sortOrder: sortConfig.field === 'categoryName' ? sortConfig.order : null,
         },
         {
             title: t('transactions.amount'),
             dataIndex: 'amount',
             key: 'amount',
             width: 150,
-            sorter: (a, b) => {
-                const amountA = a.type === 'OUT' ? -a.amount : a.amount;
-                const amountB = b.type === 'OUT' ? -b.amount : b.amount;
-                return amountA - amountB;
-            },
+            sorter: true,
             sortOrder: sortConfig.field === 'amount' ? sortConfig.order : null,
             render: (amount: number, record: Transaction) => {
                 const currency = accountsById.get(record.accountId)?.currency ?? 'EUR';
@@ -743,10 +707,13 @@ export const TransactionsPage = () => {
             render: (type: 'IN' | 'OUT') => (
                 <Tag color={type === 'IN' ? 'success' : 'error'}>{typeLabel(type)}</Tag>
             ),
+            // Filtro collegato a quello sopra la tabella: prima veniva ignorato.
             filters: [
                 { text: t('transactions.typeIn'), value: 'IN' },
                 { text: t('transactions.typeOut'), value: 'OUT' },
             ],
+            filterMultiple: false,
+            filteredValue: filters.type ? [filters.type] : null,
         },
         {
             title: t('transactions.actions'),
@@ -762,14 +729,27 @@ export const TransactionsPage = () => {
                 </Flex>
             )
         },
-    ], [t, sortConfig, semantic, accountsById, typeLabel, handleDelete, handleOpenEditModal, handleOpenLinkTransferModal, isCoarsePointer, isCompactTable, accountId]);
+    ], [t, sortConfig, filters.type, semantic, accountsById, typeLabel, handleDelete, handleOpenEditModal, handleOpenLinkTransferModal, isCoarsePointer, isCompactTable, accountId]);
 
-    const handleTableChange: TableProps<Transaction>['onChange'] = (_, _tableFilters, sorter) => {
+    const handleTableChange: TableProps<Transaction>['onChange'] = (_, tableFilters, sorter, extra) => {
+        if (extra.action === 'filter') {
+            const type = tableFilters.type?.[0];
+            setFilter('type', type === 'IN' || type === 'OUT' ? type : undefined);
+            return;
+        }
+        if (extra.action !== 'sort') return;
         const nextSorter = Array.isArray(sorter) ? sorter[0] : sorter;
-        const nextField = nextSorter.field as string | undefined;
-        const nextOrder = nextSorter.order;
-        if (nextField === sortConfig.field && nextOrder === sortConfig.order) return;
-        setSortConfig({ field: nextField, order: nextOrder });
+        // Il terzo click su una colonna toglie l'ordinamento: si torna al default (data, desc).
+        if (!nextSorter.order) {
+            setSort(DEFAULT_TRANSACTION_SORT);
+            return;
+        }
+        setSort({ field: nextSorter.columnKey as TransactionSortField, order: nextSorter.order });
+    };
+
+    const handlePageChange = (page: number) => {
+        setPage(page);
+        scrollToTop();
     };
 
     const processedTransactions = useMemo(() => {
@@ -788,9 +768,32 @@ export const TransactionsPage = () => {
         ? t('transactions.titleAccount', { account: currentAccount?.name })
         : t('transactions.titleAll');
 
-    if (loading && !hasLoadedOnce) return <Spin size="large" />;
+    // Stato vuoto onesto: un errore non è "nessuna transazione", e una ricerca senza
+    // risultati non è un conto vuoto (prima entrambi invitavano a creare la prima transazione).
+    const emptyState = hasActiveFilters ? (
+        <EmptyState
+            description={t('transactions.noResults')}
+            actions={[{ label: t('transactions.resetFilters'), onClick: handleClearFilters }]}
+        />
+    ) : (
+        <EmptyState
+            description={t('transactions.emptyDescription')}
+            actions={[{ label: t('transactions.newTransaction'), onClick: handleOpenCreateModal }]}
+        />
+    );
 
     const renderContent = () => {
+        if (loadFailed && !hasData) {
+            return <InlineError message={t('transactions.loadError')} onRetry={refetchTransactions} />;
+        }
+        // Errore su un aggiornamento con dati già a schermo: restano visibili, con l'avviso.
+        const staleWarning = loadFailed && (
+            <InlineError
+                message={t('transactions.refreshError')}
+                onRetry={refetchTransactions}
+                style={{ marginBottom: SPACING.sm }}
+            />
+        );
         if (isMobile) {
             return (
                 <>
@@ -803,18 +806,14 @@ export const TransactionsPage = () => {
                             style={{ marginBottom: SPACING.sm }}
                         />
                     )}
+                    {staleWarning}
                     <ItemList
                         items={processedTransactions}
                         rowKey={item => item.id}
                         loading={loading}
                         aria-label={pageTitle}
                         deferOffscreen
-                        empty={
-                            <EmptyState
-                                description={t('transactions.emptyDescription')}
-                                actions={[{ label: t('transactions.newTransaction'), onClick: handleOpenCreateModal }]}
-                            />
-                        }
+                        empty={emptyState}
                         renderItem={item => (
                             <TransactionCard
                                 transaction={item}
@@ -825,25 +824,28 @@ export const TransactionsPage = () => {
                             />
                         )}
                     />
-                    <Pagination
-                        current={currentPage}
-                        pageSize={pageSize}
-                        total={totalTransactions}
-                        onChange={(page) => {
-                            setCurrentPage(page);
-                            fetchTransactions(page, filters, false);
-                            scrollToTop();
-                        }}
-                        showSizeChanger={false}
-                        showTotal={(total) => t('transactions.totalLabel', { total })}
-                        size="small"
-                        style={{ textAlign: 'center', marginTop: SPACING.md }}
-                    />
+                    {/* Non durante un cambio di filtri: hasNextPage si riferirebbe ancora
+                        ai dati precedenti mostrati come placeholder. */}
+                    {hasNextPage && !loading && (
+                        <LoadMore
+                            onLoadMore={() => { if (!isFetchingNextPage) fetchNextPage(); }}
+                            loading={isFetchingNextPage}
+                            label={t('transactions.loadMore', {
+                                count: Math.min(TRANSACTIONS_PAGE_SIZE, totalTransactions - processedTransactions.length),
+                            })}
+                        />
+                    )}
+                    {processedTransactions.length > 0 && (
+                        <Text type="secondary" style={{ display: 'block', textAlign: 'center', marginTop: SPACING.sm, fontSize: FONT_SIZE.sm }}>
+                            {t('transactions.shownOfTotal', { shown: processedTransactions.length, total: totalTransactions })}
+                        </Text>
+                    )}
                 </>
             );
         }
-        if (accountId) {
-            return (
+        return (
+            <>
+                {staleWarning}
                 <Table
                     columns={columns}
                     dataSource={processedTransactions}
@@ -852,47 +854,18 @@ export const TransactionsPage = () => {
                     onChange={handleTableChange}
                     size={'small'}
                     tableLayout="fixed"
-                    locale={{ emptyText: <EmptyState description={t('transactions.emptyDescription')} /> }}
+                    locale={{ emptyText: loading ? ' ' : emptyState }}
                     pagination={{
                         current: currentPage,
-                        pageSize,
+                        pageSize: TRANSACTIONS_PAGE_SIZE,
                         total: totalTransactions,
                         placement: ['bottomCenter'],
                         showSizeChanger: false,
                         showTotal: (total) => t('transactions.totalLabel', { total }),
-                        onChange: (page) => {
-                            setCurrentPage(page);
-                            fetchTransactions(page);
-                            scrollToTop();
-                        },
+                        onChange: handlePageChange,
                     }}
                 />
-            );
-        }
-        return (
-            <Table
-                columns={columns}
-                dataSource={processedTransactions}
-                rowKey="id"
-                loading={loading}
-                onChange={handleTableChange}
-                size={'small'}
-                tableLayout="fixed"
-                locale={{ emptyText: <EmptyState description={t('transactions.emptyDescription')} /> }}
-                pagination={{
-                    current: currentPage,
-                    pageSize,
-                    total: totalTransactions,
-                    placement: ['bottomCenter'],
-                    showSizeChanger: false,
-                    showTotal: (total) => t('transactions.totalLabel', { total }),
-                    onChange: (page) => {
-                        setCurrentPage(page);
-                        fetchTransactions(page);
-                        scrollToTop();
-                    }
-                }}
-            />
+            </>
         );
     };
 
@@ -988,14 +961,10 @@ export const TransactionsPage = () => {
                         allowClear
                         size="middle"
                         style={{ flex: 1 }}
-                        value={filters.search}
-                        onChange={(e) => {
-                            const val = e.target.value;
-                            setFilters(prev => ({ ...prev, search: val || undefined }));
-                        }}
-                        onPressEnter={() => {
-                            // La ricerca avviene tramite l'effetlo su 'filters'
-                        }}
+                        value={searchInput}
+                        onChange={(e) => setSearchInput(e.target.value)}
+                        // Invio cerca subito, senza aspettare il debounce.
+                        onPressEnter={() => setSearch(searchInput)}
                         prefix={<SearchOutlined style={{ color: 'var(--ant-color-text-description)' }} />}
                     />
                     {isMobile && (
@@ -1004,6 +973,9 @@ export const TransactionsPage = () => {
                                 icon={<FilterOutlined />}
                                 size="middle"
                                 style={{ height: '100%' }}
+                                aria-label={activeFilterCount > 0
+                                    ? `${t('transactions.filters')} (${activeFilterCount})`
+                                    : t('transactions.filters')}
                                 onClick={() => {
                                     setDraftFilters(filters);
                                     setDraftSortConfig(sortConfig);
@@ -1018,7 +990,7 @@ export const TransactionsPage = () => {
                         <Select
                             placeholder={t('transactions.filterType')}
                             value={filters.type}
-                            onChange={(value) => setFilters(prev => ({ ...prev, type: value }))}
+                            onChange={(value) => setFilter('type', value)}
                             style={{ flex: 1, minWidth: 120 }}
                             allowClear
                         >
@@ -1028,7 +1000,7 @@ export const TransactionsPage = () => {
                         <Select
                             placeholder={t('transactions.filterCategory')}
                             value={filters.categoryId}
-                            onChange={(value) => setFilters(prev => ({ ...prev, categoryId: value }))}
+                            onChange={(value) => setFilter('categoryId', value)}
                             style={{ flex: 1, minWidth: 120 }}
                             allowClear
                         >
@@ -1038,32 +1010,30 @@ export const TransactionsPage = () => {
                             placeholder={t('transactions.fromDate')}
                             value={filters.startDate}
                             style={{ flex: 1, minWidth: 120 }}
-                            onChange={(date) => setFilters(prev => ({ ...prev, startDate: date }))}
+                            onChange={(date) => setFilter('startDate', date)}
                            
                         />
                         <DatePicker
                             placeholder={t('transactions.toDate')}
                             value={filters.endDate}
                             style={{ flex: 1, minWidth: 120 }}
-                            onChange={(date) => setFilters(prev => ({ ...prev, endDate: date }))}
+                            onChange={(date) => setFilter('endDate', date)}
                            
                         />
                         <Select
                             placeholder={t('transactions.sortBy')}
-                            value={sortConfig.field as string}
-                            onChange={(value) => setSortConfig(prev => ({ ...prev, field: value }))}
+                            value={sortConfig.field}
+                            onChange={(value) => setSort({ ...sortConfig, field: value })}
                             style={{ flex: 1, minWidth: 120 }}
                         >
                             <Option value="date">{t('transactions.data')}</Option>
                             <Option value="description">{t('transactions.description')}</Option>
                             <Option value="amount">{t('transactions.amount')}</Option>
-                            <Option value="accountName">{t('transactions.account')}</Option>
-                            <Option value="categoryName">{t('transactions.category')}</Option>
                         </Select>
                         <Select
                             placeholder={t('transactions.sortOrder')}
                             value={sortConfig.order}
-                            onChange={(value) => setSortConfig(prev => ({ ...prev, order: value }))}
+                            onChange={(value) => setSort({ ...sortConfig, order: value })}
                             style={{ flex: 1, minWidth: 120 }}
                         >
                             <Option value="ascend">{t('transactions.sortAsc')}</Option>
@@ -1086,7 +1056,7 @@ export const TransactionsPage = () => {
                             block
                             onClick={() => {
                                 setDraftFilters({});
-                                setDraftSortConfig({ field: 'date', order: 'descend' });
+                                setDraftSortConfig(DEFAULT_TRANSACTION_SORT);
                             }}
                         >
                             {t('transactions.clearFilters')}
@@ -1095,8 +1065,7 @@ export const TransactionsPage = () => {
                             type="primary"
                             block
                             onClick={() => {
-                                setFilters(draftFilters);
-                                setSortConfig(draftSortConfig);
+                                applyFiltersAndSort(draftFilters, draftSortConfig);
                                 setIsFilterDrawerOpen(false);
                             }}
                         >
@@ -1139,20 +1108,18 @@ export const TransactionsPage = () => {
                     />
                     <SafeSelect
                         placeholder={t('transactions.sortBy')}
-                        value={draftSortConfig.field as string}
-                        onChange={(value) => setDraftSortConfig(prev => ({ ...prev, field: value as string }))}
+                        value={draftSortConfig.field}
+                        onChange={(value) => setDraftSortConfig(prev => ({ ...prev, field: (value as TransactionSortField | undefined) ?? DEFAULT_TRANSACTION_SORT.field }))}
                         style={{ width: '100%' }}
                     >
                         <Select.Option value="date">{t('transactions.data')}</Select.Option>
                         <Select.Option value="description">{t('transactions.description')}</Select.Option>
                         <Select.Option value="amount">{t('transactions.amount')}</Select.Option>
-                        <Select.Option value="accountName">{t('transactions.account')}</Select.Option>
-                        <Select.Option value="categoryName">{t('transactions.category')}</Select.Option>
                     </SafeSelect>
                     <SafeSelect
                         placeholder={t('transactions.sortOrder')}
                         value={draftSortConfig.order}
-                        onChange={(value) => setDraftSortConfig(prev => ({ ...prev, order: value as 'ascend' | 'descend' | null | undefined }))}
+                        onChange={(value) => setDraftSortConfig(prev => ({ ...prev, order: (value as TransactionSort['order'] | undefined) ?? DEFAULT_TRANSACTION_SORT.order }))}
                         style={{ width: '100%' }}
                     >
                         <Select.Option value="ascend">{t('transactions.sortAsc')}</Select.Option>
@@ -1284,8 +1251,8 @@ export const TransactionsPage = () => {
                     currency={currentAccount?.currency}
                     onClose={() => setIsImportModalOpen(false)}
                     onImported={() => {
-                        setCurrentPage(1);
-                        fetchTransactions(1);
+                        setPage(1);
+                        refreshTransactions();
                         fetchLayoutAccounts(true);
                         invalidateDerivedData();
                     }}

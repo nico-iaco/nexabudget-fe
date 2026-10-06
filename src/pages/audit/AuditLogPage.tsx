@@ -9,6 +9,7 @@ import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
+import { InlineError } from '../../components/common/InlineError';
 import { ItemList } from '../../components/common/ItemList';
 import { FONT_SIZE, SPACING, RADIUS } from '../../theme/tokens';
 
@@ -64,7 +65,10 @@ export const AuditLogPage = () => {
     const [entries, setEntries] = useState<AuditLogEntry[]>([]);
     const [total, setTotal] = useState(0);
     const [page, setPage] = useState(1);
-    const [loading, setLoading] = useState(false);
+    // true da subito: il fetch parte al mount, e con false il primo render mostrava
+    // per un istante "nessuna attività registrata".
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const pageSize = 20;
 
     const fetchLog = async (p: number) => {
@@ -73,8 +77,10 @@ export const AuditLogPage = () => {
             const resp = await api.getAuditLog(p - 1, pageSize);
             setEntries(Array.isArray(resp.data.content) ? resp.data.content : []);
             setTotal(resp.data.page?.totalElements ?? 0);
+            setLoadError(false);
         } catch {
             message.error(t('audit.loadError'));
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -148,16 +154,18 @@ export const AuditLogPage = () => {
     return (
         <>
             <PageHeader title={t('audit.title')} />
-            {!loading && entries.length === 0 && (
-                <EmptyState description={t('audit.emptyState')} />
-            )}
-            {isMobile ? (
+            {/* Un errore non è "nessuna attività": prima mostrava l'empty state. L'empty
+                state vive dentro lista/tabella, non sopra (lì compariva due volte). */}
+            {loadError && !loading ? (
+                <InlineError message={t('audit.loadError')} onRetry={() => fetchLog(page)} />
+            ) : isMobile ? (
                 <ItemList
                     items={entries}
                     rowKey={record => record.id}
                     loading={loading}
                     aria-label={t('audit.title')}
                     deferOffscreen
+                    empty={<EmptyState description={t('audit.emptyState')} />}
                     pagination={paginationProps}
                     renderItem={(record) => (
                         <Card size="small" style={{ marginBottom: SPACING.sm }}>
@@ -206,6 +214,7 @@ export const AuditLogPage = () => {
                     loading={loading}
                     size="small"
                     tableLayout="fixed"
+                    locale={{ emptyText: <EmptyState description={t('audit.emptyState')} /> }}
                     expandable={{
                         expandedRowRender: (record) => (
                             <JsonPreview

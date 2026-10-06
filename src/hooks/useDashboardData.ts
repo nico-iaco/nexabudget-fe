@@ -35,6 +35,9 @@ export interface LineData {
     monthlyNet: number;
 }
 
+/** Sezioni della dashboard caricate da chiamate separate: ognuna può fallire da sola. */
+export type DashboardSection = 'monthlyTrend' | 'categoryBreakdown' | 'monthlyProjection' | 'portfolioValue' | 'budgetSummary';
+
 export interface TrendPoint {
     month: string;
     income: number;
@@ -51,7 +54,7 @@ interface DashboardQueryResult {
     proj: MonthlyProjectionResponse | null;
     crypto: PortfolioValueResponse | null;
     budgets: MonthlySummaryResponse[];
-    partialErrors: string[];
+    partialErrors: DashboardSection[];
 }
 
 const EMPTY_TREND: MonthlyTrendResponse = { currency: 'EUR', items: [] };
@@ -70,8 +73,8 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
             const startDate = startKey ?? now.startOf('year').format('YYYY-MM-DD');
             const endDate = endKey ?? now.endOf('year').format('YYYY-MM-DD');
 
-            const partialErrors: string[] = [];
-            const safe = <T,>(p: Promise<{ data: T }>, fallback: T, label: string): Promise<T> =>
+            const partialErrors: DashboardSection[] = [];
+            const safe = <T,>(p: Promise<{ data: T }>, fallback: T, label: DashboardSection): Promise<T> =>
                 p.then(r => r.data ?? fallback).catch(err => {
                     console.error(`[dashboard] failed to load ${label}`, err);
                     partialErrors.push(label);
@@ -124,12 +127,11 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
     // useQuery di DashboardPage, che chiedeva lo stesso endpoint con gli stessi
     // parametri sotto una chiave diversa — due richieste identiche a ogni caricamento.
     const now = dayjs();
-    const { data: comparisonData } = useQuery<MonthComparisonResponse | null>({
+    // Niente .catch(() => null): un errore qui deve restare un errore (isError), non
+    // diventare "nessun dato". La chiave è condivisa con DashboardPage, che lo mostra.
+    const { data: comparisonData } = useQuery<MonthComparisonResponse>({
         queryKey: queryKeys.monthComparison(now.year(), now.month() + 1),
-        queryFn: () =>
-            api.getMonthComparison(now.year(), now.month() + 1)
-                .then(r => r.data)
-                .catch(() => null),
+        queryFn: () => api.getMonthComparison(now.year(), now.month() + 1).then(r => r.data),
         placeholderData: keepPreviousData,
     });
     const monthComparison = comparisonData ?? null;
@@ -208,6 +210,13 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
         [monthlyTrendItems]
     );
 
+    // Sezioni fallite nell'ultimo caricamento: la pagina mostra un errore al loro posto
+    // invece del valore di fallback (0 € o lista vuota), che sembrerebbe un dato reale.
+    const failedSections = useMemo(
+        () => new Set<DashboardSection>(data?.partialErrors ?? []),
+        [data?.partialErrors]
+    );
+
     const hasData = totalIncome > 0 || totalExpenses > 0 || monthlyTrendItems.length > 0;
 
     // Use server-provided change when available (avoids div-by-zero ambiguity client-side).
@@ -242,6 +251,7 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
         monthComparison,
         budgetSummary,
         hasData,
+        failedSections,
         trendCurrency,
     };
 };
