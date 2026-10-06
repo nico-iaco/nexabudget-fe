@@ -189,7 +189,7 @@ export const AiAnalysisCard: React.FC = () => {
                 </Space>
             }
         >
-            <Space direction="vertical" style={{ width: '100%' }}>
+            <Space orientation="vertical" style={{ width: '100%' }}>
                 <Text type="secondary">
                     {t('dashboard.aiAnalysis.description')}
                 </Text>

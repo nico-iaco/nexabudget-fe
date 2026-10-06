@@ -35,11 +35,11 @@ export const ApiKeySecretModal = ({ open, onClose, plaintextKey }: ApiKeySecretM
                     {t('settings.apiKeys.close')}
                 </Button>
             ]}
-            maskClosable={false}
+            mask={{ closable: false }}
             keyboard={false}
         >
             <Alert
-                message={t('settings.apiKeys.secretWarningTitle')}
+                title={t('settings.apiKeys.secretWarningTitle')}
                 description={t('settings.apiKeys.secretWarningDesc')}
                 type="warning"
                 showIcon

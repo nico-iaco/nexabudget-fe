@@ -124,7 +124,7 @@ export const BudgetAlertsDrawer = ({ open, onClose, budget }: Props) => {
             title={t('budgets.alerts.title', { name: budget?.categoryName ?? '' })}
             open={open}
             onClose={onClose}
-            width={480}
+            size={480}
         >
             <Form
                 form={form}
@@ -134,7 +134,7 @@ export const BudgetAlertsDrawer = ({ open, onClose, budget }: Props) => {
                 style={{ marginBottom: SPACING.md }}
             >
                 <Form.Item name="thresholdPercentage" rules={[{ required: true, message: t('budgets.alerts.thresholdRequired') }]}>
-                    <InputNumber<number> min={1} max={100} addonAfter="%" placeholder="80" style={{ width: 120 }} parser={commaDecimalParser} />
+                    <InputNumber<number> min={1} max={100} suffix="%" placeholder="80" style={{ width: 120 }} parser={commaDecimalParser} />
                 </Form.Item>
                 <Form.Item name="active" valuePropName="checked">
                     <Switch checkedChildren={t('budgets.alerts.active')} unCheckedChildren={t('budgets.alerts.active')} />

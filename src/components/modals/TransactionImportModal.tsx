@@ -30,7 +30,7 @@ import type {
 import type { ColumnsType } from 'antd/es/table';
 import { getSemanticColors } from '../../theme/tokens';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { getCurrencySymbol } from '../../utils/currency';
+import { formatMoney } from '../../utils/format';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -212,7 +212,7 @@ export const TransactionImportModal = ({
             width: 120,
             render: (value: number, record) => (
                 <span style={{ color: record.type === 'IN' ? semantic.positive : semantic.negative }}>
-                    {value.toFixed(2)} {getCurrencySymbol(currency ?? 'EUR')}
+                    {formatMoney(value, currency ?? 'EUR')}
                 </span>
             ),
         },
@@ -345,8 +345,8 @@ export const TransactionImportModal = ({
             open={open}
             onCancel={handleClose}
             width={900}
-            destroyOnClose
-            maskClosable={!previewLoading && !confirmImportLoading}
+            destroyOnHidden
+            mask={{ closable: !previewLoading && !confirmImportLoading }}
             footer={
                 importStep === 0
                     ? [
@@ -430,7 +430,7 @@ export const TransactionImportModal = ({
                         <Alert
                             type="info"
                             showIcon
-                            message={t('transactions.import.fileSelected', { filename: importFile.name })}
+                            title={t('transactions.import.fileSelected', { filename: importFile.name })}
                         />
                     )}
 
@@ -528,7 +528,7 @@ export const TransactionImportModal = ({
                     <Alert
                         type="info"
                         showIcon
-                        message={t('transactions.import.duplicatesInfo')}
+                        title={t('transactions.import.duplicatesInfo')}
                     />
 
                     <Table
@@ -562,7 +562,7 @@ export const TransactionImportModal = ({
                     <Alert
                         type={importResult.errors > 0 ? 'warning' : 'success'}
                         showIcon
-                        message={t('transactions.import.resultTitle')}
+                        title={t('transactions.import.resultTitle')}
                         description={t('transactions.import.resultDescription')}
                     />
                     <Descriptions bordered size="small" column={3}>

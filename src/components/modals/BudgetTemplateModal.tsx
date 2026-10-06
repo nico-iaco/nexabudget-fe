@@ -5,6 +5,8 @@ import { useTranslation } from 'react-i18next';
 import type { BudgetTemplate, BudgetTemplateRequest, Category } from '../../types/api';
 import { SPACING } from '../../theme/tokens';
 import { commaDecimalParser } from '../../utils/number';
+import { getCurrencySymbol } from '../../utils/currency';
+import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
 
 interface Props {
     open: boolean;
@@ -17,6 +19,7 @@ interface Props {
 export const BudgetTemplateModal = ({ open, onCancel, onFinish, editing, categories: rawCategories }: Props) => {
     const { t } = useTranslation();
     const [form] = Form.useForm<BudgetTemplateRequest>();
+    const currency = useDefaultCurrency();
 
     const categories = useMemo(
         () => [...rawCategories].sort((a, b) => a.name.localeCompare(b.name)),
@@ -55,7 +58,7 @@ export const BudgetTemplateModal = ({ open, onCancel, onFinish, editing, categor
                     </SafeSelect>
                 </Form.Item>
                 <Form.Item name="budgetLimit" label={t('budgets.limit')} rules={[{ required: true, message: t('budgets.limitRequired') }]}>
-                    <InputNumber<number> style={{ width: '100%' }} min={0.01} precision={2} addonAfter="€" parser={commaDecimalParser} />
+                    <InputNumber<number> style={{ width: '100%' }} min={0.01} precision={2} suffix={getCurrencySymbol(currency)} parser={commaDecimalParser} />
                 </Form.Item>
                 <Form.Item name="recurrenceType" label={t('budgets.recurrence')} rules={[{ required: true, message: t('budgets.recurrenceRequired') }]}>
                     <SafeSelect>

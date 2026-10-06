@@ -31,7 +31,7 @@ export const RegisterPage = () => {
 
     return (
         <AuthCard title={t('auth.signUp')} subtitle={t('app.name')}>
-            {error && <Alert message={error} type="error" showIcon style={{ marginBottom: SPACING.lg }} />}
+            {error && <Alert title={error} type="error" showIcon style={{ marginBottom: SPACING.lg }} />}
             <Form name="register" onFinish={onFinish} autoComplete="off" size="large">
                 <Form.Item
                     name="username"

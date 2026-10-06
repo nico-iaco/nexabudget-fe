@@ -1,5 +1,5 @@
 import { memo, useEffect, useState } from 'react';
-import { App, Card, Collapse, Flex, List, Table, Tag, Typography, theme } from 'antd';
+import { App, Card, Collapse, Flex, Table, Tag, Typography, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
 import dayjs from 'dayjs';
 import * as api from '../../services/api';
@@ -9,6 +9,7 @@ import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
+import { ItemList } from '../../components/common/ItemList';
 import { FONT_SIZE, SPACING, RADIUS } from '../../theme/tokens';
 
 const { Text } = Typography;
@@ -151,10 +152,13 @@ export const AuditLogPage = () => {
                 <EmptyState description={t('audit.emptyState')} />
             )}
             {isMobile ? (
-                <List
-                    dataSource={entries}
+                <ItemList
+                    items={entries}
+                    rowKey={record => record.id}
                     loading={loading}
-                    pagination={entries.length > 0 ? { ...paginationProps, position: 'bottom', align: 'center' } : false}
+                    aria-label={t('audit.title')}
+                    deferOffscreen
+                    pagination={paginationProps}
                     renderItem={(record) => (
                         <Card size="small" style={{ marginBottom: SPACING.sm }}>
                             <Flex vertical gap={6}>
@@ -213,7 +217,7 @@ export const AuditLogPage = () => {
                         ),
                         rowExpandable: (record) => !!record.newValue,
                     }}
-                    pagination={{ ...paginationProps, position: ['bottomCenter'] }}
+                    pagination={{ ...paginationProps, placement: ['bottomCenter'] }}
                 />
             )}
         </>

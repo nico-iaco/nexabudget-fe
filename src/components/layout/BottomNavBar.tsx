@@ -56,8 +56,8 @@ const BottomNavBarInner = () => {
                 willChange: 'transform',
             }}
         >
-            {bottomBarItems.map(({ key, labelKey }) => {
-                const label = t(labelKey);
+            {bottomBarItems.map(({ key, labelKey, bottomBarLabelKey }) => {
+                const label = t(bottomBarLabelKey ?? labelKey);
                 const icon = BOTTOM_BAR_ICON_MAP[key];
                 const isActive = location.pathname === key ||
                     (key === '/transactions' && location.pathname.startsWith('/accounts/'));

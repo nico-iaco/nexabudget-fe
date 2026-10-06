@@ -1,6 +1,7 @@
 import React, {useEffect, useState} from 'react';
-import {App, Button, Space} from 'antd';
-import {KeyOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
+import {App, Button, Dropdown, Flex, Space} from 'antd';
+import type {MenuProps} from 'antd';
+import {KeyOutlined, MoreOutlined, PlusOutlined, ReloadOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import {deleteManualHolding, getPortfolioValue, syncFromBinance, syncFromCoinbase} from '../../services/api';
 import {useBreakpoints} from '../../hooks/useBreakpoints';
@@ -96,30 +97,46 @@ export const CryptoPage: React.FC = () => {
 
     const { isSmallMobile: isMobile } = useBreakpoints();
 
+    const mobileActions: MenuProps['items'] = [
+        { key: 'syncBinance', icon: <ReloadOutlined />, label: t('crypto.syncBinance'), disabled: syncingBinance, onClick: handleSyncBinance },
+        { key: 'syncCoinbase', icon: <ReloadOutlined />, label: t('crypto.syncCoinbase'), disabled: syncingCoinbase, onClick: handleSyncCoinbase },
+        { type: 'divider' },
+        { key: 'binance', icon: <KeyOutlined />, label: t('crypto.connectBinance'), onClick: () => setShowBinanceModal(true) },
+        { key: 'coinbase', icon: <KeyOutlined />, label: t('crypto.connectCoinbase'), onClick: () => setShowCoinbaseModal(true) },
+    ];
+
     return (
         <>
             <PageHeader
                 title={t('crypto.title')}
-                actions={
-                    <Space wrap style={{ width: isMobile ? '100%' : 'auto', justifyContent: isMobile ? 'stretch' : 'flex-end' }}>
+                actions={isMobile ? (
+                    // Su mobile i cinque bottoni a tutta larghezza occupavano tre righe: resta
+                    // visibile l'aggiunta manuale, sincronizzazioni e collegamenti nel menu.
+                    <Flex gap="small" style={{ width: '100%' }}>
+                        <Button type="primary" icon={<PlusOutlined />} onClick={() => setShowManualModal(true)} style={{ flex: 1 }}>
+                            {t('crypto.addHolding')}
+                        </Button>
+                        <Dropdown menu={{ items: mobileActions }} trigger={['click']} placement="bottomRight">
+                            <Button icon={<MoreOutlined />} aria-label={t('common.actions')} loading={syncingBinance || syncingCoinbase} />
+                        </Dropdown>
+                    </Flex>
+                ) : (
+                    <Space wrap style={{ justifyContent: 'flex-end' }}>
                         <Button
                             icon={<KeyOutlined />}
                             onClick={() => setShowBinanceModal(true)}
-                            block={isMobile}
                         >
                             {t('crypto.connectBinance')}
                         </Button>
                         <Button
                             icon={<KeyOutlined />}
                             onClick={() => setShowCoinbaseModal(true)}
-                            block={isMobile}
                         >
                             {t('crypto.connectCoinbase')}
                         </Button>
                         <Button
                             icon={<PlusOutlined />}
                             onClick={() => setShowManualModal(true)}
-                            block={isMobile}
                         >
                             {t('crypto.addHolding')}
                         </Button>
@@ -128,7 +145,6 @@ export const CryptoPage: React.FC = () => {
                             icon={<ReloadOutlined />}
                             loading={syncingBinance}
                             onClick={handleSyncBinance}
-                            block={isMobile}
                         >
                             {t('crypto.syncBinance')}
                         </Button>
@@ -137,12 +153,11 @@ export const CryptoPage: React.FC = () => {
                             icon={<ReloadOutlined />}
                             loading={syncingCoinbase}
                             onClick={handleSyncCoinbase}
-                            block={isMobile}
                         >
                             {t('crypto.syncCoinbase')}
                         </Button>
                     </Space>
-                }
+                )}
             />
 
             <PortfolioSummary

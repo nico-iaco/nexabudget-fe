@@ -34,7 +34,7 @@ export const LoginPage = () => {
 
     return (
         <AuthCard title={t('auth.loginTitle')} subtitle={t('app.name')}>
-            {error && <Alert message={error} type="error" showIcon style={{ marginBottom: SPACING.lg }} />}
+            {error && <Alert title={error} type="error" showIcon style={{ marginBottom: SPACING.lg }} />}
             <Form name="login" onFinish={onFinish} autoComplete="off" size="large">
                 <Form.Item
                     name="username"

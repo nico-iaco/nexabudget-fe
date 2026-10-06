@@ -1,5 +1,7 @@
 import i18n from 'i18next';
 import {initReactI18next} from 'react-i18next';
+import dayjs from 'dayjs';
+import 'dayjs/locale/it';
 
 const loadInitialLanguage = () => {
     try {
@@ -667,6 +669,7 @@ const resources = {
                 recurrenceQuarterly: 'Trimestrale',
                 recurrenceYearly: 'Annuale',
                 active: 'Attivo',
+                inactive: 'Disattivo',
                 createdAt: 'Creato il',
                 actions: 'Azioni',
                 manageAlerts: 'Gestisci Alert',
@@ -733,6 +736,7 @@ const resources = {
                 inputPlaceholderMobile: 'Chiedimi qualcosa…',
                 send: 'Invia',
                 noSessions: 'Nessuna chat precedente',
+                sessions: 'Chat precedenti',
                 deleteSession: 'Elimina chat',
                 deleteConfirm: 'Sei sicuro di voler eliminare questa chat?',
                 deleteSuccess: 'Chat eliminata',
@@ -1403,6 +1407,7 @@ const resources = {
                 recurrenceQuarterly: 'Quarterly',
                 recurrenceYearly: 'Yearly',
                 active: 'Active',
+                inactive: 'Inactive',
                 createdAt: 'Created on',
                 actions: 'Actions',
                 manageAlerts: 'Manage Alerts',
@@ -1469,6 +1474,7 @@ const resources = {
                 inputPlaceholderMobile: 'Ask me anything…',
                 send: 'Send',
                 noSessions: 'No previous chats',
+                sessions: 'Previous chats',
                 deleteSession: 'Delete chat',
                 deleteConfirm: 'Are you sure you want to delete this chat?',
                 deleteSuccess: 'Chat deleted',
@@ -1486,6 +1492,13 @@ const resources = {
         }
     }
 };
+
+// Day.js segue la lingua dell'app: senza questo mesi e giorni restavano in inglese
+// ("Jan 26" nei grafici, "6 Oct 2026" nel DatePresetPicker) anche con la UI in italiano.
+// Registrato prima di init() così vale anche per la lingua iniziale.
+i18n.on('languageChanged', (lng) => {
+    dayjs.locale(lng === 'en' ? 'en' : 'it');
+});
 
 i18n.use(initReactI18next).init({
     resources,

@@ -36,7 +36,7 @@ export const CategoryFormModal = ({ open, onCancel, onFinish, editingCategory, s
             open={open}
             onCancel={onCancel}
             footer={null}
-            destroyOnClose
+            destroyOnHidden
         >
             <Form
                 form={form}

@@ -159,7 +159,7 @@ export const GoCardlessCallbackPage = () => {
             >
                 <Card style={{maxWidth: 600, width: '100%'}}>
                     <Alert
-                        message={t('gocardlessCallback.errorTitle')}
+                        title={t('gocardlessCallback.errorTitle')}
                         description={error}
                         type="error"
                         showIcon
@@ -185,7 +185,7 @@ export const GoCardlessCallbackPage = () => {
             <Flex justify="center" align="center" style={{minHeight: '100vh', padding: SPACING.lg}}>
                 <Card style={{maxWidth: 600, width: '100%'}}>
                     <Alert
-                        message={t(titleKey)}
+                        title={t(titleKey)}
                         description={t(descKey)}
                         type="warning"
                         showIcon
@@ -221,7 +221,7 @@ export const GoCardlessCallbackPage = () => {
             <Flex justify="center" align="center" style={{minHeight: '100vh', padding: SPACING.lg}}>
                 <Card style={{maxWidth: 600, width: '100%'}}>
                     <Alert
-                        message={t('gocardlessCallback.pendingTitle')}
+                        title={t('gocardlessCallback.pendingTitle')}
                         description={t('gocardlessCallback.pendingDescription')}
                         type="info"
                         showIcon
@@ -251,7 +251,7 @@ export const GoCardlessCallbackPage = () => {
             <Flex justify="center" align="center" style={{minHeight: '100vh', padding: SPACING.lg}}>
                 <Card style={{maxWidth: 600, width: '100%'}}>
                     <Alert
-                        message={t('gocardlessCallback.unknownTitle')}
+                        title={t('gocardlessCallback.unknownTitle')}
                         description={statusReason ?? t('gocardlessCallback.unknownDescription')}
                         type="error"
                         showIcon
@@ -284,7 +284,7 @@ export const GoCardlessCallbackPage = () => {
                     }
                 >
                     <Alert
-                        message={t('gocardlessCallback.selectAccountMessage')}
+                        title={t('gocardlessCallback.selectAccountMessage')}
                         description={t('gocardlessCallback.selectAccountDescription')}
                         type="info"
                         showIcon

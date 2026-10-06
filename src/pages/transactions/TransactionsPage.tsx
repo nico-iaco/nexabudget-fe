@@ -7,11 +7,11 @@ import {
     Button,
     DatePicker,
     Drawer,
+    Dropdown,
     Flex,
     Form,
     Input,
     InputNumber,
-    List,
     message,
     Modal,
     notification,
@@ -26,7 +26,7 @@ import {
     Typography
 } from 'antd';
 import { SafeSelect } from '../../components/common/SafeSelect';
-import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, FilterOutlined, PlusOutlined, RetweetOutlined, RobotOutlined, SearchOutlined, SwapOutlined, UploadOutlined } from '@ant-design/icons';
+import { ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, FilterOutlined, MoreOutlined, PlusOutlined, RetweetOutlined, RobotOutlined, SearchOutlined, SwapOutlined, UploadOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useQueryClient } from '@tanstack/react-query';
 import * as api from '../../services/api';
@@ -46,11 +46,14 @@ import { TransactionCard } from '../../components/TransactionCard';
 import { TransactionImportModal } from '../../components/modals/TransactionImportModal';
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
+import { ItemList } from '../../components/common/ItemList';
 import { getCurrencySymbol } from '../../utils/currency';
+import { formatMoney, formatNumber } from '../../utils/format';
 import { FONT_SIZE, RADIUS, SHADOW, SPACING, getSemanticColors } from '../../theme/tokens';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { useConfirm } from '../../hooks/useConfirm';
 import type { ColumnsType, TableProps } from 'antd/es/table';
+import type { MenuProps } from 'antd';
 import type { SorterResult } from 'antd/es/table/interface';
 import type { AppOutletContext } from '../../types/outletContext';
 import { commaDecimalParser } from '../../utils/number';
@@ -168,11 +171,9 @@ export const TransactionsPage = () => {
         return accountsById.get(accountId) ?? null;
     }, [accountsById, accountId]);
 
-    const formattedCurrentBalance = useMemo(() => {
-        if (!currentAccount) return null;
-        const currency = currentAccount.currency || 'EUR';
-        return new Intl.NumberFormat('it-IT', { style: 'currency', currency }).format(currentAccount.actualBalance);
-    }, [currentAccount]);
+    const formattedCurrentBalance = currentAccount
+        ? formatMoney(currentAccount.actualBalance, currentAccount.currency || 'EUR')
+        : null;
 
     const activeFilterCount = useMemo(() => {
         let count = 0;
@@ -700,18 +701,18 @@ export const TransactionsPage = () => {
             },
             sortOrder: sortConfig.field === 'amount' ? sortConfig.order : null,
             render: (amount: number, record: Transaction) => {
-                const sym = getCurrencySymbol(accountsById.get(record.accountId)?.currency ?? 'EUR');
+                const currency = accountsById.get(record.accountId)?.currency ?? 'EUR';
                 return (<span>
                     <span style={{ color: record.type === 'IN' ? semantic.positive : semantic.negative }}>
                         {record.type === 'IN'
                             ? <ArrowUpOutlined aria-hidden="true" />
                             : <ArrowDownOutlined aria-hidden="true" />}
-                        {' '}{amount.toFixed(2)} {sym}
+                        {' '}{formatMoney(amount, currency)}
                     </span>
                     {record.originalCurrency && record.originalAmount != null && record.exchangeRate != null && (
                         <Text type="secondary" style={{ fontSize: FONT_SIZE.xs, display: 'block' }}>
                             {t('transactions.exchangeRateHint', {
-                                originalAmount: record.originalAmount.toFixed(2),
+                                originalAmount: formatNumber(record.originalAmount, 2, 2),
                                 originalCurrency: record.originalCurrency,
                                 exchangeRate: record.exchangeRate
                             })}
@@ -784,22 +785,23 @@ export const TransactionsPage = () => {
                         <Alert
                             type="info"
                             showIcon
-                            message={currentAccount?.name || t('transactions.accountLabelFallback')}
+                            title={currentAccount?.name || t('transactions.accountLabelFallback')}
                             description={t('transactions.currentBalanceLabel', { balance: formattedCurrentBalance ?? t('transactions.currentBalanceFallback') })}
                             style={{ marginBottom: SPACING.sm }}
                         />
                     )}
-                    <List
+                    <ItemList
+                        items={processedTransactions}
+                        rowKey={item => item.id}
                         loading={loading}
-                        dataSource={processedTransactions}
-                        locale={{
-                            emptyText: (
-                                <EmptyState
-                                    description={t('transactions.emptyDescription')}
-                                    actions={[{ label: t('transactions.newTransaction'), onClick: handleOpenCreateModal }]}
-                                />
-                            ),
-                        }}
+                        aria-label={pageTitle}
+                        deferOffscreen
+                        empty={
+                            <EmptyState
+                                description={t('transactions.emptyDescription')}
+                                actions={[{ label: t('transactions.newTransaction'), onClick: handleOpenCreateModal }]}
+                            />
+                        }
                         renderItem={item => (
                             <TransactionCard
                                 transaction={item}
@@ -842,7 +844,7 @@ export const TransactionsPage = () => {
                         current: currentPage,
                         pageSize,
                         total: totalTransactions,
-                        position: ['bottomCenter'],
+                        placement: ['bottomCenter'],
                         showSizeChanger: false,
                         showTotal: (total) => t('transactions.totalLabel', { total }),
                         onChange: (page) => {
@@ -868,7 +870,7 @@ export const TransactionsPage = () => {
                     current: currentPage,
                     pageSize,
                     total: totalTransactions,
-                    position: ['bottomCenter'],
+                    placement: ['bottomCenter'],
                     showSizeChanger: false,
                     showTotal: (total) => t('transactions.totalLabel', { total }),
                     onChange: (page) => {
@@ -881,20 +883,50 @@ export const TransactionsPage = () => {
         );
     };
 
+    const mobileSecondaryActions: MenuProps['items'] = [
+        ...(accountId && currentAccount?.linkedToExternal ? [{
+            key: 'sync',
+            icon: <RetweetOutlined spin={currentAccount?.synchronizing} />,
+            label: currentAccount?.synchronizing ? t('transactions.syncing') : t('transactions.syncBank'),
+            disabled: syncingTransactions || currentAccount?.synchronizing,
+            onClick: () => setIsBalanceModalOpen(true),
+        }] : []),
+        {
+            key: 'ai',
+            icon: <RobotOutlined />,
+            label: t('transactions.categorizeWithAi'),
+            disabled: aiCategorizationLoading,
+            onClick: handleStartAiCategorization,
+        },
+        { key: 'transfer', icon: <RetweetOutlined />, label: t('transactions.newTransfer'), onClick: handleOpenTransferModal },
+        { key: 'import', icon: <UploadOutlined />, label: t('transactions.import.open'), disabled: !accountId, onClick: () => setIsImportModalOpen(true) },
+    ];
+
     return (
         <>
             {contextHolder}
             <PageHeader
                 title={pageTitle}
-                actions={
-                    <Space wrap size={isMobile ? 'small' : 'middle'} style={{ width: isMobile ? '100%' : 'auto' }}>
+                actions={isMobile ? (
+                    // Su mobile i cinque bottoni andavano su tre righe prima di qualsiasi
+                    // transazione: resta visibile l'azione principale, le altre nel menu.
+                    <Flex gap="small" style={{ width: '100%' }}>
+                        <Button type="primary" icon={<PlusOutlined />} onClick={handleOpenCreateModal} style={{ flex: 1 }}>
+                            {t('transactions.newTransaction')}
+                        </Button>
+                        <Dropdown menu={{ items: mobileSecondaryActions }} trigger={['click']} placement="bottomRight">
+                            <Button icon={<MoreOutlined />} aria-label={t('common.actions')} />
+                        </Dropdown>
+                    </Flex>
+                ) : (
+                    <Space wrap size="middle">
                         {accountId && currentAccount?.linkedToExternal && (
                             <Button
                                 icon={<RetweetOutlined spin={currentAccount?.synchronizing} />}
                                 onClick={() => setIsBalanceModalOpen(true)}
                                 loading={syncingTransactions || currentAccount?.synchronizing}
                                 disabled={currentAccount?.synchronizing}
-                                size={isMobile ? 'middle' : 'large'}
+                                size="large"
                             >
                                 {currentAccount?.synchronizing ? t('transactions.syncing') : t('transactions.syncBank')}
                             </Button>
@@ -903,21 +935,21 @@ export const TransactionsPage = () => {
                             icon={<RobotOutlined />}
                             onClick={handleStartAiCategorization}
                             loading={aiCategorizationLoading}
-                            size={isMobile ? 'middle' : 'large'}
+                            size="large"
                         >
                             {t('transactions.categorizeWithAi')}
                         </Button>
                         <Button
                             icon={<RetweetOutlined />}
                             onClick={handleOpenTransferModal}
-                            size={isMobile ? 'middle' : 'large'}
+                            size="large"
                         >
                             {t('transactions.newTransfer')}
                         </Button>
                         <Button
                             icon={<UploadOutlined />}
                             onClick={() => setIsImportModalOpen(true)}
-                            size={isMobile ? 'middle' : 'large'}
+                            size="large"
                             disabled={!accountId}
                         >
                             {t('transactions.import.open')}
@@ -926,12 +958,12 @@ export const TransactionsPage = () => {
                             type="primary"
                             icon={<PlusOutlined />}
                             onClick={handleOpenCreateModal}
-                            size={isMobile ? 'middle' : 'large'}
+                            size="large"
                         >
                             {t('transactions.newTransaction')}
                         </Button>
                     </Space>
-                }
+                )}
             />
 
 
@@ -1031,7 +1063,7 @@ export const TransactionsPage = () => {
             <Drawer
                 title={t('transactions.filters')}
                 placement="bottom"
-                height="auto"
+                size="auto"
                 open={isFilterDrawerOpen}
                 onClose={() => setIsFilterDrawerOpen(false)}
                 styles={{ body: { paddingBottom: 'env(safe-area-inset-bottom, 16px)' } }}
@@ -1121,7 +1153,7 @@ export const TransactionsPage = () => {
             {renderContent()}
 
             <Modal title={editingRecord ? t('transactions.editTransaction') : t('transactions.newTransaction')} open={isModalOpen}
-                onCancel={handleCancel} footer={null} destroyOnClose>
+                onCancel={handleCancel} footer={null} destroyOnHidden>
                 <Form form={form} layout="vertical" onFinish={onFinish} style={{ marginTop: SPACING.lg }}>
                     <Form.Item name="accountId" label={t('transactions.account')} rules={[{ required: true }]}>
                         <SafeSelect placeholder={t('transactions.selectAccount')} disabled={!!accountId || !!editingRecord}>
@@ -1129,7 +1161,7 @@ export const TransactionsPage = () => {
                         </SafeSelect>
                     </Form.Item>
                     <Form.Item name="amount" label={t('transactions.amount')} rules={[{ required: true }]}>
-                        <InputNumber<number> style={{ width: '100%' }} min={0} addonAfter={formSelectedCurrency} parser={commaDecimalParser} />
+                        <InputNumber<number> style={{ width: '100%' }} min={0} suffix={formSelectedCurrency} parser={commaDecimalParser} />
                     </Form.Item>
                     <Form.Item name="type" label={t('transactions.type')} rules={[{ required: true }]}>
                         <SafeSelect placeholder={t('transactions.selectType')}>
@@ -1177,13 +1209,13 @@ export const TransactionsPage = () => {
                 style={{ maxWidth: '95vw' }}
             >
                 {sourceTransaction && (
-                    <Space direction="vertical" style={{ width: '100%' }}>
+                    <Space orientation="vertical" style={{ width: '100%' }}>
                         <Text strong>{t('transactions.linkTransferSource')}</Text>
                         <p>
                             {dayjs(sourceTransaction.date).format('DD/MM/YYYY')} - {sourceTransaction.description} ({sourceTransaction.accountName})
                             -
                             <Text
-                                type={sourceTransaction.type === 'IN' ? 'success' : 'danger'}> {sourceTransaction.amount.toFixed(2)} {getCurrencySymbol(accountsById.get(sourceTransaction.accountId)?.currency ?? 'EUR')}</Text>
+                                type={sourceTransaction.type === 'IN' ? 'success' : 'danger'}> {formatMoney(sourceTransaction.amount, accountsById.get(sourceTransaction.accountId)?.currency ?? 'EUR')}</Text>
                         </p>
 
                         <Form layout="vertical">
@@ -1208,24 +1240,23 @@ export const TransactionsPage = () => {
                                         value={selectedDestTransactionId}
                                         style={{ width: '100%' }}
                                     >
-                                        <List
-                                            header={<div>{t('transactions.linkTransferSelectTransaction')}</div>}
+                                        <ItemList
+                                            header={t('transactions.linkTransferSelectTransaction')}
                                             bordered
-                                            dataSource={destinationTransactions}
+                                            items={destinationTransactions}
+                                            rowKey={item => item.id}
                                             renderItem={item => (
-                                                <List.Item>
-                                                    <Radio value={item.id}>
-                                                        {dayjs(item.date).format('DD/MM/YYYY')} - {item.description} -
-                                                        <Text
-                                                            type={item.type === 'IN' ? 'success' : 'danger'}> {item.amount.toFixed(2)} {getCurrencySymbol(accountsById.get(destinationAccountId ?? '')?.currency ?? 'EUR')}</Text>
-                                                    </Radio>
-                                                </List.Item>
+                                                <Radio value={item.id}>
+                                                    {dayjs(item.date).format('DD/MM/YYYY')} - {item.description} -
+                                                    <Text
+                                                        type={item.type === 'IN' ? 'success' : 'danger'}> {formatMoney(item.amount, accountsById.get(destinationAccountId ?? '')?.currency ?? 'EUR')}</Text>
+                                                </Radio>
                                             )}
                                         />
                                     </Radio.Group>
                                 ) : (
                                     <Alert
-                                        message={t('transactions.linkTransferNoCompatible')}
+                                        title={t('transactions.linkTransferNoCompatible')}
                                         type="info" showIcon />
                                 )
                             )
@@ -1275,7 +1306,7 @@ export const TransactionsPage = () => {
             >
                 <Form layout="vertical">
                     <Alert
-                        message={t('transactions.balanceCurrent')}
+                        title={t('transactions.balanceCurrent')}
                         description={t('transactions.balanceCurrentInfo')}
                         type="info"
                         showIcon
@@ -1287,7 +1318,7 @@ export const TransactionsPage = () => {
                             value={currentBalance}
                             onChange={(value) => setCurrentBalance(value)}
                             placeholder={t('transactions.balanceCurrentPlaceholder')}
-                            addonAfter={getCurrencySymbol(currentAccount?.currency ?? 'EUR')}
+                            suffix={getCurrencySymbol(currentAccount?.currency ?? 'EUR')}
                             precision={2}
                             autoFocus
                             parser={commaDecimalParser}
@@ -1321,10 +1352,10 @@ export const TransactionsPage = () => {
                         ]
                 }
                 closable={true}
-                maskClosable={false}
+                mask={{ closable: false }}
             >
                 {aiCategorizationJob ? (
-                    <Space direction="vertical" style={{ width: '100%' }} size="middle">
+                    <Space orientation="vertical" style={{ width: '100%' }} size="middle">
                         {(aiCategorizationJob.status === 'PENDING' || aiCategorizationJob.status === 'IN_PROGRESS') && (
                             <>
                                 <Flex justify="space-between" align="center">
@@ -1356,7 +1387,7 @@ export const TransactionsPage = () => {
                                 <Alert
                                     type="success"
                                     showIcon
-                                    message={t('transactions.categorizeAi.statusCompleted')}
+                                    title={t('transactions.categorizeAi.statusCompleted')}
                                     description={t('transactions.categorizeAi.recap', {
                                         categorized: aiCategorizationJob.categorized,
                                     })}
@@ -1367,7 +1398,7 @@ export const TransactionsPage = () => {
                             <Alert
                                 type="error"
                                 showIcon
-                                message={t('transactions.categorizeAi.statusFailed')}
+                                title={t('transactions.categorizeAi.statusFailed')}
                                 description={t('transactions.categorizeAi.errorMessage')}
                             />
                         )}

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import {
-    App, Button, Card, Col, Flex, Popconfirm, Progress, Row, Skeleton, Switch, Tag, Typography, theme
+    App, Button, Card, Col, Flex, Popconfirm, Progress, Row, Skeleton, Tag, Typography, theme
 } from 'antd';
 import { BellOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -18,6 +18,8 @@ import { Fab } from '../../components/common/Fab';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { FONT_SIZE, SPACING, getSemanticColors } from '../../theme/tokens';
 import type { AppOutletContext } from '../../types/outletContext';
+import { formatMoney, formatPercent } from '../../utils/format';
+import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
 
 const { Text } = Typography;
 
@@ -30,6 +32,7 @@ export const BudgetsPage = () => {
     const { preferences } = usePreferences();
     const { token } = theme.useToken();
     const semantic = getSemanticColors(preferences.theme === 'dark');
+    const currency = useDefaultCurrency();
 
     const progressColor = (pct: number): string => {
         if (pct >= 100) return semantic.negative;
@@ -115,10 +118,10 @@ export const BudgetsPage = () => {
             <div>
                 <Flex justify="space-between" style={{ marginBottom: 2 }}>
                     <Text style={{ fontSize: FONT_SIZE.sm }}>
-                        {s.spent.toFixed(2)} / {s.limit.toFixed(2)} €
+                        {formatMoney(s.spent, currency)} / {formatMoney(s.limit, currency)}
                     </Text>
                     <Text style={{ fontSize: FONT_SIZE.sm, color: progressColor(s.percentageUsed), fontWeight: 700 }}>
-                        {s.percentageUsed.toFixed(0)}%
+                        {formatPercent(s.percentageUsed, 0)}
                     </Text>
                 </Flex>
                 <Progress
@@ -129,7 +132,7 @@ export const BudgetsPage = () => {
                     aria-label={`${t('budgets.spent')}: ${s.percentageUsed.toFixed(0)}%`}
                 />
                 <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
-                    {t('budgets.remaining')}: {s.remaining.toFixed(2)} €
+                    {t('budgets.remaining')}: {formatMoney(s.remaining, currency)}
                 </Text>
             </div>
         );
@@ -141,12 +144,16 @@ export const BudgetsPage = () => {
                 <Flex vertical gap={2} style={{ flex: 1, minWidth: 0 }}>
                     <Text strong style={{ fontSize: FONT_SIZE.base }}>{record.categoryName}</Text>
                     <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
-                        {record.budgetLimit.toFixed(2)} €
+                        {formatMoney(record.budgetLimit, currency)}
                     </Text>
                 </Flex>
                 <Flex align="center" gap={SPACING.xs}>
                     <Tag style={{ margin: 0, borderRadius: 6 }}>{recurrenceLabel(record.recurrenceType)}</Tag>
-                    <Switch checked={record.active} size="small" disabled />
+                    {/* Era uno Switch disabilitato: sembrava cliccabile ma non lo era. Lo stato si
+                        cambia dal modale di modifica. */}
+                    <Tag color={record.active ? 'success' : 'default'} style={{ margin: 0, borderRadius: 6 }}>
+                        {record.active ? t('budgets.active') : t('budgets.inactive')}
+                    </Tag>
                 </Flex>
             </Flex>
 

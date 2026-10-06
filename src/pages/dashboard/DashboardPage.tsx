@@ -44,6 +44,8 @@ import { StatCard } from '../../components/common/StatCard';
 import { OnboardingChecklist } from '../../components/onboarding/OnboardingChecklist';
 import type { AppOutletContext } from '../../types/outletContext';
 import { DatePresetPicker } from '../../components/common/DatePresetPicker';
+import { formatMoney, formatPercent } from '../../utils/format';
+import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -111,16 +113,50 @@ export const DashboardPage = () => {
     // e gli importi andavano a capo a metà (valore e simbolo su righe diverse).
     const statCols = showCrypto ? { xs: 24, sm: 12, xl: 6 } : { xs: 24, sm: 8 };
 
+    const currency = useDefaultCurrency();
+    const moneyFormatter = (v: string | number) => formatMoney(Number(v), currency);
+
     const breakdownColumns: ColumnsType<CategoryBreakdownItem> = [
         { title: t('reports.categoryName'), dataIndex: 'categoryName', key: 'categoryName', ellipsis: { showTitle: true } },
         {
             title: t('reports.net'), dataIndex: 'net', key: 'net', width: 110, align: 'right',
-            render: (v: number) => `${v.toFixed(2)} €`,
+            render: (v: number) => formatMoney(v, currency),
             defaultSortOrder: 'ascend',
             sorter: (a, b) => b.net - a.net,
         },
-        { title: t('reports.percentage'), dataIndex: 'percentage', key: 'percentage', width: 70, align: 'right', render: (v: number) => `${v.toFixed(1)}%` },
+        { title: t('reports.percentage'), dataIndex: 'percentage', key: 'percentage', width: 100, align: 'right', render: (v: number) => formatPercent(v) },
     ];
+
+    // Ripartizione per categoria. Con il modulo grafici mobile (scelto al caricamento,
+    // vedi `_isMobileAtLoad`) GenericPieChart è già un elenco a barre con importo e
+    // percentuale: la tabella sotto ripeteva gli stessi dati, quindi lì si mostrano solo
+    // le barre. La torta desktop invece non riporta gli importi e resta affiancata alla tabella.
+    const renderBreakdown = (chartData: { type: string; value: number }[], tableData: CategoryBreakdownItem[]) => (
+        _isMobileAtLoad ? (
+            <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} />}>
+                <GenericPieChart data={chartData} />
+            </Suspense>
+        ) : (
+            <Row gutter={[16, 16]}>
+                <Col xs={24} md={10} lg={24} xxl={10}>
+                    <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} />}>
+                        <GenericPieChart data={chartData} />
+                    </Suspense>
+                </Col>
+                <Col xs={24} md={14} lg={24} xxl={14}>
+                    <Table
+                        tableLayout="fixed"
+                        columns={breakdownColumns}
+                        dataSource={tableData}
+                        rowKey={(record) => record.categoryId ?? 'uncategorized'}
+                        size="small"
+                        pagination={false}
+                        locale={{ emptyText: <EmptyState description={t('charts.noData')} /> }}
+                    />
+                </Col>
+            </Row>
+        )
+    );
 
     const budgetProgressColor = (pct: number): string => {
         if (pct >= 100) return semantic.negative;
@@ -134,7 +170,7 @@ export const DashboardPage = () => {
                 <Flex justify="space-between" align="center">
                     <Text strong style={{ fontSize: FONT_SIZE.md }}>{item.categoryName}</Text>
                     <Text type="secondary" style={{ fontSize: FONT_SIZE.sm }}>
-                        {item.spent.toFixed(2)} / {item.limit.toFixed(2)} €
+                        {formatMoney(item.spent, currency)} / {formatMoney(item.limit, currency)}
                     </Text>
                 </Flex>
                 <Progress
@@ -146,7 +182,7 @@ export const DashboardPage = () => {
                 />
                 <Flex justify="space-between">
                     <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
-                        {t('dashboard.budgetSummary.remaining')}: {item.remaining.toFixed(2)} €
+                        {t('dashboard.budgetSummary.remaining')}: {formatMoney(item.remaining, currency)}
                     </Text>
                 </Flex>
             </div>
@@ -262,10 +298,9 @@ export const DashboardPage = () => {
                             <StatCard
                                 title={t('dashboard.netBalance')}
                                 value={netBalance}
-                                precision={2}
+                                currency={currency}
                                 gradient={balanceGradient}
                                 prefix={netBalance >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                                suffix="€"
                                 footer={
                                     <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
                                         <Sparkline values={netSparkline} color="rgba(255,255,255,0.55)" />
@@ -277,10 +312,9 @@ export const DashboardPage = () => {
                             <StatCard
                                 title={t('dashboard.totalIncome')}
                                 value={totalIncome}
-                                precision={2}
+                                currency={currency}
                                 color={semantic.positive}
                                 prefix={<ArrowUpOutlined />}
-                                suffix="€"
                                 footer={
                                     <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
                                         <Sparkline values={incomeSparkline} color={semantic.positive} />
@@ -292,16 +326,15 @@ export const DashboardPage = () => {
                             <StatCard
                                 title={t('dashboard.totalExpenses')}
                                 value={totalExpenses}
-                                precision={2}
+                                currency={currency}
                                 color={semantic.negative}
                                 prefix={<ArrowDownOutlined />}
-                                suffix="€"
                                 footer={
                                     <>
                                         {expenseComparison && (
                                             <div style={{ marginTop: 4, fontSize: FONT_SIZE.sm }}>
                                                 <Text type={expenseComparison.percentageChange >= 0 ? 'danger' : 'success'}>
-                                                    {expenseComparison.percentageChange.toFixed(2)}%
+                                                    {formatPercent(expenseComparison.percentageChange, 2, true)}
                                                 </Text>
                                                 <Text type="secondary"> {t('dashboard.vsPeriod', { period: t('dashboard.previousMonth') })}</Text>
                                             </div>
@@ -318,9 +351,8 @@ export const DashboardPage = () => {
                                 <StatCard
                                     title={t('dashboard.cryptoPortfolio')}
                                     value={portfolioValue.totalValue}
-                                    precision={2}
+                                    currency={portfolioValue.currency}
                                     color={isDark ? PRIMARY_DARK_HEX : PRIMARY_LIGHT_HEX}
-                                    prefix={portfolioValue.currency === 'EUR' ? '€' : '$'}
                                 />
                             </Col>
                         )}
@@ -345,50 +377,12 @@ export const DashboardPage = () => {
                                             {
                                                 key: 'OUT',
                                                 label: t('reports.typeOut'),
-                                                children: (
-                                                    <Row gutter={[16, 16]}>
-                                                        <Col xs={24} md={10} lg={24} xl={10}>
-                                                            <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} />}>
-                                                                <GenericPieChart data={expensesByCategory} />
-                                                            </Suspense>
-                                                        </Col>
-                                                        <Col xs={24} md={14} lg={24} xl={14}>
-                                                            <Table
-                                                                tableLayout="fixed"
-                                                                columns={breakdownColumns}
-                                                                dataSource={expenseBreakdown}
-                                                                rowKey={(record) => record.categoryId ?? 'uncategorized'}
-                                                                size="small"
-                                                                pagination={false}
-                                                                locale={{ emptyText: <EmptyState description={t('charts.noData')} /> }}
-                                                            />
-                                                        </Col>
-                                                    </Row>
-                                                ),
+                                                children: renderBreakdown(expensesByCategory, expenseBreakdown),
                                             },
                                             {
                                                 key: 'IN',
                                                 label: t('reports.typeIn'),
-                                                children: (
-                                                    <Row gutter={[16, 16]}>
-                                                        <Col xs={24} md={10} lg={24} xl={10}>
-                                                            <Suspense fallback={<Skeleton active paragraph={{ rows: 6 }} />}>
-                                                                <GenericPieChart data={incomeByCategory} />
-                                                            </Suspense>
-                                                        </Col>
-                                                        <Col xs={24} md={14} lg={24} xl={14}>
-                                                            <Table
-                                                                tableLayout="fixed"
-                                                                columns={breakdownColumns}
-                                                                dataSource={incomeBreakdown}
-                                                                rowKey={(record) => record.categoryId ?? 'uncategorized'}
-                                                                size="small"
-                                                                pagination={false}
-                                                                locale={{ emptyText: <EmptyState description={t('charts.noData')} /> }}
-                                                            />
-                                                        </Col>
-                                                    </Row>
-                                                ),
+                                                children: renderBreakdown(incomeByCategory, incomeBreakdown),
                                             },
                                         ]}
                                     />
@@ -449,20 +443,21 @@ export const DashboardPage = () => {
 
                                 {projection && (
                                     <Card title={t('dashboard.projection')}>
+                                        {/* Nella colonna destra (9/24) fra lg e xl tre importi affiancati non ci stanno:
+                                            il simbolo € andava a capo. Due per riga finché non c'è spazio. */}
                                         <Row gutter={[16, 8]} align="middle">
-                                            <Col xs={12} sm={8}>
-                                                <Statistic title={t('reports.projectedIncome')} value={projection.projectedMonthlyIncome} precision={2} valueStyle={{ color: semantic.positive, fontSize: '16px' }} suffix="€" />
+                                            <Col xs={12} sm={8} lg={12} xxl={8}>
+                                                <Statistic title={t('reports.projectedIncome')} value={projection.projectedMonthlyIncome} formatter={moneyFormatter} styles={{ content: { color: semantic.positive, fontSize: '16px' } }} />
                                             </Col>
-                                            <Col xs={12} sm={8}>
-                                                <Statistic title={t('reports.projectedExpense')} value={projection.projectedMonthlyExpense} precision={2} valueStyle={{ color: semantic.negative, fontSize: '16px' }} suffix="€" />
+                                            <Col xs={12} sm={8} lg={12} xxl={8}>
+                                                <Statistic title={t('reports.projectedExpense')} value={projection.projectedMonthlyExpense} formatter={moneyFormatter} styles={{ content: { color: semantic.negative, fontSize: '16px' } }} />
                                             </Col>
-                                            <Col xs={12} sm={8}>
+                                            <Col xs={12} sm={8} lg={12} xxl={8}>
                                                 <Statistic
                                                     title={t('reports.projectedSavings')}
                                                     value={projection.projectedMonthlySavings}
-                                                    precision={2}
-                                                    valueStyle={{ color: projection.projectedMonthlySavings >= 0 ? semantic.positive : semantic.negative, fontSize: '16px' }}
-                                                    suffix="€"
+                                                    formatter={moneyFormatter}
+                                                    styles={{ content: { color: projection.projectedMonthlySavings >= 0 ? semantic.positive : semantic.negative, fontSize: '16px' } }}
                                                 />
                                             </Col>
                                             <Col xs={24}>

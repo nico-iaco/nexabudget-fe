@@ -45,7 +45,7 @@ export const AccountModal = ({ open, onCancel, onFinish, editingAccount, loading
             open={open}
             onCancel={onCancel}
             footer={null}
-            destroyOnClose
+            destroyOnHidden
         >
             <Form
                 form={form}
@@ -82,7 +82,7 @@ export const AccountModal = ({ open, onCancel, onFinish, editingAccount, loading
                     <InputNumber<number>
                         style={{ width: '100%' }}
                         min={0}
-                        addonAfter={getCurrencySymbol(currencyValue ?? 'EUR')}
+                        suffix={getCurrencySymbol(currencyValue ?? 'EUR')}
                         disabled={!!editingAccount}
                         parser={commaDecimalParser}
                     />

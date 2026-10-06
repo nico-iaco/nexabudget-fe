@@ -6,6 +6,7 @@ import type {Account} from '../../types/api';
 import { SafeSelect } from '../common/SafeSelect';
 import { SPACING } from '../../theme/tokens';
 import { commaDecimalParser } from '../../utils/number';
+import { getCurrencySymbol } from '../../utils/currency';
 
 const { Option } = SafeSelect;
 
@@ -50,7 +51,7 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts, loading = fa
             open={open}
             onCancel={onCancel}
             footer={null}
-            destroyOnClose
+            destroyOnHidden
         >
             <Form
                 form={form}
@@ -89,7 +90,7 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts, loading = fa
                 </Form.Item>
                 {isMultiCurrency && (
                     <Alert
-                        message={t('transfers.multiCurrencyHint')}
+                        title={t('transfers.multiCurrencyHint')}
                         type="info"
                         showIcon
                         style={{ marginBottom: SPACING.md }}
@@ -100,7 +101,7 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts, loading = fa
                     label={t('transfers.amount')}
                     rules={[{ required: true, message: t('transfers.amountRequired') }]}
                 >
-                    <InputNumber<number> style={{ width: '100%' }} min={0.01} addonAfter={sourceAccount?.currency ?? '€'} parser={commaDecimalParser} />
+                    <InputNumber<number> style={{ width: '100%' }} min={0.01} suffix={getCurrencySymbol(sourceAccount?.currency ?? 'EUR')} parser={commaDecimalParser} />
                 </Form.Item>
                 <Form.Item
                     name="transferDate"

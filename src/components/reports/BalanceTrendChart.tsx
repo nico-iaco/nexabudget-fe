@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Flex, theme, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
 import { FONT_SIZE, RADIUS, SHADOW, getSemanticColors } from '../../theme/tokens';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { EmptyState } from '../common/EmptyState';
+import { formatMoney, formatNumber } from '../../utils/format';
 
 const { Text } = Typography;
 
@@ -18,18 +19,17 @@ export interface BalanceTrendChartPoint {
 interface Props {
     points: BalanceTrendChartPoint[];
     currency: string;
-    locale: string;
     height?: number;
 }
 
 const formatTickShort = (v: number): string => {
     const abs = Math.abs(v);
-    if (abs >= 1_000_000) return `${(v / 1_000_000).toFixed(abs >= 10_000_000 ? 0 : 1)}M`;
-    if (abs >= 1_000) return `${(v / 1_000).toFixed(abs >= 10_000 ? 0 : 1)}k`;
-    return v.toFixed(0);
+    if (abs >= 1_000_000) return `${formatNumber(v / 1_000_000, abs >= 10_000_000 ? 0 : 1)}M`;
+    if (abs >= 1_000) return `${formatNumber(v / 1_000, abs >= 10_000 ? 0 : 1)}k`;
+    return formatNumber(v, 0);
 };
 
-export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Props) => {
+export const BalanceTrendChart = ({ points, currency, height = 300 }: Props) => {
     const { t } = useTranslation();
     const { token } = theme.useToken();
     const { preferences } = usePreferences();
@@ -52,14 +52,9 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
         return () => ro.disconnect();
     }, []);
 
-    const currencyFmt = useMemo(
-        () => new Intl.NumberFormat(locale, { style: 'currency', currency }),
-        [locale, currency],
-    );
-    const signedCurrencyFmt = useMemo(
-        () => new Intl.NumberFormat(locale, { style: 'currency', currency, signDisplay: 'exceptZero' }),
-        [locale, currency],
-    );
+    // Formattazione condivisa (utils/format): separatori coerenti col resto dell'app.
+    const formatAmount = (v: number) => formatMoney(v, currency);
+    const formatSignedAmount = (v: number) => formatMoney(v, currency, { signed: true });
 
     if (!points || points.length === 0) return <EmptyState description={t('charts.noData')} />;
 
@@ -242,7 +237,7 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
                         <div style={{ fontWeight: 600, marginBottom: 6 }}>{hoverPoint.label}</div>
                         <Flex justify="space-between" gap={12}>
                             <span>{t('reports.balanceTrend.closingBalance')}</span>
-                            <span style={{ fontWeight: 500 }}>{currencyFmt.format(hoverPoint.closingBalance)}</span>
+                            <span style={{ fontWeight: 500 }}>{formatAmount(hoverPoint.closingBalance)}</span>
                         </Flex>
                         <Flex justify="space-between" gap={12}>
                             <span>{t('reports.balanceTrend.monthlyNet')}</span>
@@ -256,7 +251,7 @@ export const BalanceTrendChart = ({ points, currency, locale, height = 300 }: Pr
                                             : semantic.negative,
                                 }}
                             >
-                                {signedCurrencyFmt.format(hoverPoint.monthlyNet)}
+                                {formatSignedAmount(hoverPoint.monthlyNet)}
                             </span>
                         </Flex>
                     </div>

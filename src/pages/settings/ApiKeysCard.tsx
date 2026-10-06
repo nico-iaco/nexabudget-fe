@@ -121,7 +121,7 @@ export const ApiKeysCard = () => {
             dataIndex: 'name',
             key: 'name',
             render: (text: string, record: ApiKeyResponse) => isSmallMobile ? (
-                <Space direction="vertical" size={4}>
+                <Space orientation="vertical" size={4}>
                     <Text strong>{text}</Text>
                     {renderScopes(record.scopes)}
                 </Space>
@@ -141,7 +141,7 @@ export const ApiKeysCard = () => {
             width: 150,
             hidden: isSmallMobile,
             render: (date: string, record: ApiKeyResponse) => (
-                <Space direction="vertical" size={0}>
+                <Space orientation="vertical" size={0}>
                     {date ? dayjs(date).format('DD/MM/YYYY HH:mm') : <Text type="secondary">{t('settings.apiKeys.noExpiration')}</Text>}
                     <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
                         {t('settings.apiKeys.lastUsedAt')}: {record.lastUsedAt ? dayjs(record.lastUsedAt).format('DD/MM/YYYY HH:mm') : t('settings.apiKeys.never')}

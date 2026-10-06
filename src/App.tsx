@@ -1,6 +1,9 @@
 // src/App.tsx
 import { createBrowserRouter, Navigate, Outlet, RouterProvider, useLocation } from 'react-router-dom';
 import { App as AntApp, ConfigProvider, Spin, theme as antTheme } from 'antd';
+import itIT from 'antd/es/locale/it_IT';
+import enUS from 'antd/es/locale/en_US';
+import type { Locale } from 'antd/es/locale';
 import { useAuth } from './contexts/AuthContext';
 import { Layout } from './components/Layout';
 import { Suspense, lazy, type ReactNode } from 'react';
@@ -142,6 +145,35 @@ const router = createBrowserRouter([
 // quindi ricostruiti a ogni render di App insieme ai token annidati e agli override per
 // componente. Il cambio tema è l'interazione più costosa dell'app e l'identità nuova del
 // theme object propagava a tutti i consumer di theme.useToken().
+// La locale italiana di AntD non traduce i placeholder dei picker mese/anno/settimana
+// (restavano "Select month" ecc.): li completiamo qui. Il formato dei campi data passa
+// da ISO ("2026-10-06") a quello usato in tutte le tabelle ("06/10/2026").
+type PickerLocale = NonNullable<Locale['DatePicker']>;
+
+const IT_PICKER_LANG: Partial<PickerLocale['lang']> = {
+    fieldDateFormat: 'DD/MM/YYYY',
+    fieldMonthFormat: 'MM/YYYY',
+    yearPlaceholder: 'Seleziona anno',
+    quarterPlaceholder: 'Seleziona trimestre',
+    monthPlaceholder: 'Seleziona mese',
+    weekPlaceholder: 'Seleziona settimana',
+    rangeYearPlaceholder: ["Anno d'inizio", 'Anno di fine'],
+    rangeQuarterPlaceholder: ["Trimestre d'inizio", 'Trimestre di fine'],
+    rangeMonthPlaceholder: ["Mese d'inizio", 'Mese di fine'],
+    rangeWeekPlaceholder: ["Settimana d'inizio", 'Settimana di fine'],
+};
+
+const withItPickerLang = <T extends { lang?: object }>(picker: T | undefined): T | undefined =>
+    picker && { ...picker, lang: { ...picker.lang, ...IT_PICKER_LANG } };
+
+// Va applicato sia a `DatePicker` sia a `Calendar`: in AntD 6 il RangePicker legge la
+// locale dalla chiave `Calendar`, il DatePicker singolo da `DatePicker`.
+const LOCALE_IT: Locale = {
+    ...itIT,
+    DatePicker: withItPickerLang(itIT.DatePicker),
+    Calendar: withItPickerLang(itIT.Calendar),
+};
+
 const COMPONENT_TOKENS = {
     Card: {
         borderRadiusLG: RADIUS.card,
@@ -195,6 +227,7 @@ function App() {
     return (
         <ConfigProvider
             theme={isDark ? THEME_DARK : THEME_LIGHT}
+            locale={preferences.language === 'en' ? enUS : LOCALE_IT}
             getPopupContainer={getPopupContainer}
         >
             <AntApp>

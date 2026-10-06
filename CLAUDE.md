@@ -90,7 +90,8 @@ Fonts (Inter body / Manrope headings) load from Google Fonts in `index.html`; `s
 
 ### Component conventions
 
-- `src/components/common/` holds the generic primitives: `StatCard`, `EmptyState`, `PageHeader`, `AsyncBoundary`, `ErrorBoundary`, `RouteErrorFallback`, `SafeSelect`, `DatePresetPicker`, `Fab`, `AppLogo`, `AuthCard`. Put new generic primitives here.
+- `src/components/common/` holds the generic primitives: `StatCard`, `EmptyState`, `PageHeader`, `AsyncBoundary`, `ErrorBoundary`, `RouteErrorFallback`, `SafeSelect`, `DatePresetPicker`, `Fab`, `AppLogo`, `AuthCard`, `ItemList`. Put new generic primitives here.
+- **Don't use AntD `List`** (deprecated in AntD 6, removed in 7): use `ItemList` (`<ul>/<li>`, `renderItem`, optional `loading`/`empty`/`bordered`+`header`/`pagination`) and compose row content with `Flex`/`Typography`. Omit `loading` on lists that never load — the Spin wrapper inherits a 200px `min-height` from `mobile.css`. `deferOffscreen` enables `content-visibility` for long card lists only, never on focusable rows (paint containment clips the focus ring).
 - All shared modals live in `src/components/modals/`. Feature-specific ones stay colocated under `src/pages/**` (e.g. `BudgetAlertsDrawer`).
 - Feature component folders: `dashboard/`, `reports/`, `layout/`, `banking/`, `onboarding/`.
 - **`StatCard` is the single stat-card implementation** (Dashboard, `BalanceTrendSection`, `PortfolioSummary` all use it) — don't hand-roll a fourth Card+Statistic variant.
@@ -98,6 +99,8 @@ Fonts (Inter body / Manrope headings) load from Google Fonts in `index.html`; `s
 - Empty states remain inconsistent: `EmptyState` (with CTA actions) is preferred, but several charts and tables still render a bare AntD `<Empty>`. Use `EmptyState` for new code.
 - Prefer `theme.useToken()` (`token.colorText`, `token.colorBgContainer`) over `isDark ? '#fff' : '#000'` branching; most components already do. AntD charts take `theme: isDark ? 'dark' : undefined`.
 - File naming: PascalCase with `*Page`/`*Modal`/`*Card`/`*Drawer`/`*Chart` suffixes.
+- **Amounts, numbers and percentages go through `src/utils/format.ts`** (`formatMoney(value, currency, { signed? })`, `formatNumber`, `formatPercent`): locale follows the app language, Intl formatters are cached, grouping is always on. Never `toFixed(2) + ' €'` or a bare `Statistic precision` (AntD's Statistic uses US separators) — pass `currency` to `StatCard`, or `formatter` to `Statistic`. Aggregates from dashboard/report/budget endpoints are in the user's base currency: `useDefaultCurrency()`.
+- AntD locale: `App.tsx` passes `LOCALE_IT`, which patches `it_IT` (missing month/year placeholders, `DD/MM/YYYY` field format) on **both** `DatePicker` and `Calendar` — the RangePicker reads `Calendar`. Import locales from `antd/es/locale/*`: the CJS `antd/locale/*` path reaches ConfigProvider with the wrong shape under Vite and silently falls back to English. Day.js follows `i18n` via a `languageChanged` listener in `src/i18n/index.ts`.
 - Any `InputNumber` that should accept a comma as decimal separator uses the shared `commaDecimalParser` from `src/utils/number.ts` and **must** pin the generic (`<InputNumber<number> …>`): without it TypeScript infers the value type from the `min`/`max` literal (`min={0}` → `T = 0`) and the parser no longer type-checks.
 - Components are declared at module scope, never inside another component's render (that changes their identity every render and remounts the subtree) — pass what they need as props, as `ComparisonRow` in `DashboardChartsMobile.tsx` does.
 - Values computed once per mount (e.g. iOS detection in `SafeSelect`/`DatePresetPicker`) use a lazy `useState(fn)` initializer, not `useRef(fn()).current`: refs may not be read during render.

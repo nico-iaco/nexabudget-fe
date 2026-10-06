@@ -5,12 +5,12 @@ import {ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, SwapOu
 import dayjs from 'dayjs';
 import {useTranslation} from 'react-i18next';
 import type {Transaction} from '../types/api';
-import { getCurrencySymbol } from '../utils/currency';
+import { formatMoney, formatNumber } from '../utils/format';
 import { FONT_SIZE, SPACING, getSemanticColors } from '../theme/tokens';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { haptic } from '../utils/haptic';
 
-const { Text } = Typography;
+const { Text, Paragraph } = Typography;
 
 interface TransactionCardProps {
     transaction: Transaction;
@@ -27,7 +27,6 @@ const TransactionCardInner = ({ transaction, currency = 'EUR', onEdit, onDelete,
     const isIncome = transaction.type === 'IN';
     const amountColor = isIncome ? semantic.positive : semantic.negative;
     const typeLabel = isIncome ? t('transactions.typeIn') : t('transactions.typeOut');
-    const currencySymbol = getCurrencySymbol(currency);
 
     return (
         <Card
@@ -36,7 +35,15 @@ const TransactionCardInner = ({ transaction, currency = 'EUR', onEdit, onDelete,
         >
             <Flex justify="space-between" align="start" gap="middle">
                 <Flex vertical style={{ flex: 1, minWidth: 0 }}>
-                    <Text strong style={{ fontSize: `${FONT_SIZE.lg}px` }}>{transaction.description}</Text>
+                    {/* Le descrizioni bancarie arrivano a 100+ caratteri: oltre due righe la card
+                        diventava altissima. Testo completo nel tooltip e nel modale di modifica. */}
+                    <Paragraph
+                        strong
+                        ellipsis={{ rows: 2, tooltip: transaction.description }}
+                        style={{ fontSize: `${FONT_SIZE.lg}px`, marginBottom: 0 }}
+                    >
+                        {transaction.description}
+                    </Paragraph>
                     <Text type="secondary" style={{ fontSize: `${FONT_SIZE.md}px` }}>{transaction.accountName}</Text>
                     {transaction.categoryName && (
                         <Text type="secondary" italic style={{ fontSize: `${FONT_SIZE.sm}px` }}>
@@ -50,12 +57,12 @@ const TransactionCardInner = ({ transaction, currency = 'EUR', onEdit, onDelete,
                 <Flex vertical align="end" style={{ flexShrink: 0 }}>
                     <Text strong style={{ color: amountColor, fontSize: `${FONT_SIZE.xl}px`, whiteSpace: 'nowrap' }}>
                         {isIncome ? <ArrowUpOutlined aria-hidden="true" /> : <ArrowDownOutlined aria-hidden="true" />}
-                        {' '}{transaction.amount.toFixed(2)} {currencySymbol}
+                        {' '}{formatMoney(transaction.amount, currency)}
                     </Text>
                     {transaction.originalCurrency && transaction.originalAmount != null && transaction.exchangeRate != null && (
                         <Text type="secondary" style={{ fontSize: `${FONT_SIZE.xs}px`, whiteSpace: 'nowrap' }}>
                             {t('transactions.exchangeRateHint', {
-                                originalAmount: transaction.originalAmount.toFixed(2),
+                                originalAmount: formatNumber(transaction.originalAmount, 2, 2),
                                 originalCurrency: transaction.originalCurrency,
                                 exchangeRate: transaction.exchangeRate
                             })}

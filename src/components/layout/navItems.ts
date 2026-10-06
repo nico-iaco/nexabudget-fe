@@ -8,11 +8,13 @@ export interface NavItem {
     labelKey: string;  // chiave i18n (nav.*)
     /** Solo le voci con showInBottomBar: true vengono mostrate nella bottom-bar mobile */
     showInBottomBar?: boolean;
+    /** Etichetta breve per la bottom-bar, dove ogni voce ha ~75px (default: labelKey) */
+    bottomBarLabelKey?: string;
 }
 
 export const NAV_ITEMS: NavItem[] = [
     { key: '/dashboard',   labelKey: 'nav.dashboard',        showInBottomBar: true },
-    { key: '/transactions', labelKey: 'nav.allTransactions',  showInBottomBar: true },
+    { key: '/transactions', labelKey: 'nav.allTransactions',  showInBottomBar: true, bottomBarLabelKey: 'nav.transactions' },
     { key: '/budgets',     labelKey: 'nav.budgets',           showInBottomBar: true },
     { key: '/crypto',      labelKey: 'nav.crypto',            showInBottomBar: false },
     { key: '/trash',       labelKey: 'nav.trash',             showInBottomBar: false },

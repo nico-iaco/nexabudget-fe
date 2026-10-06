@@ -1,6 +1,6 @@
 // src/pages/chat/ChatPage.tsx
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { App, Button, Drawer, Flex, List, Popconfirm, Spin, Tag, Typography, theme } from 'antd';
+import { App, Button, Drawer, Flex, Popconfirm, Spin, Tag, Typography, theme } from 'antd';
 import { DeleteOutlined, MenuOutlined, PlusOutlined, RobotOutlined, SendOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
@@ -14,6 +14,7 @@ import type { ChatSession } from '../../types/api';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { FONT_HEADING, FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
+import { ItemList } from '../../components/common/ItemList';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -344,11 +345,17 @@ export const ChatPage = () => {
                         {t('chat.noSessions')}
                     </Text>
                 ) : (
-                    <List
-                        size="small"
-                        dataSource={sessions}
+                    <ItemList
+                        items={sessions}
+                        rowKey={session => session.id}
+                        aria-label={t('chat.sessions')}
                         renderItem={session => (
-                            <List.Item
+                            <Flex
+                                role="button"
+                                tabIndex={0}
+                                aria-current={activeSessionId === session.id ? 'true' : undefined}
+                                align="center"
+                                gap={SPACING.xs}
                                 style={{
                                     padding: isMobile ? `${SPACING.sm}px 10px` : `${SPACING.xs}px 10px`,
                                     cursor: 'pointer',
@@ -357,60 +364,58 @@ export const ChatPage = () => {
                                         : 'transparent',
                                     borderRadius: RADIUS.md,
                                     margin: '2px 6px',
-                                    borderBottom: 'none',
                                     transition: 'background 0.15s',
                                     minHeight: 52, // touch target ≥ 44px
                                 }}
                                 onClick={() => handleSelectSession(session.id)}
-                                actions={[
-                                    <Popconfirm
-                                        key="delete"
-                                        title={t('chat.deleteConfirm')}
-                                        onConfirm={e => {
-                                            e?.stopPropagation();
-                                            handleDeleteSession(session.id);
-                                        }}
-                                        onCancel={e => e?.stopPropagation()}
-                                        okText={t('common.yes')}
-                                        cancelText={t('common.no')}
-                                        placement="right"
-                                    >
-                                        <Button
-                                            type="text"
-                                            size="small"
-                                            danger
-                                            icon={<DeleteOutlined />}
-                                            onClick={e => e.stopPropagation()}
-                                            aria-label={t('chat.deleteSession')}
-                                            style={{ minWidth: 32, minHeight: 32 }}
-                                        />
-                                    </Popconfirm>,
-                                ]}
+                                onKeyDown={e => {
+                                    if (e.target !== e.currentTarget) return;
+                                    if (e.key === 'Enter' || e.key === ' ') {
+                                        e.preventDefault();
+                                        handleSelectSession(session.id);
+                                    }
+                                }}
                             >
-                                <List.Item.Meta
-                                    title={
-                                        <Text
-                                            style={{
-                                                fontSize: FONT_SIZE.md,
-                                                fontWeight: activeSessionId === session.id ? 600 : 400,
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                                display: 'block',
-                                                maxWidth: 160,
-                                                color: token.colorText,
-                                            }}
-                                        >
-                                            {session.title}
-                                        </Text>
-                                    }
-                                    description={
-                                        <Text style={{ fontSize: FONT_SIZE.xs, color: token.colorTextTertiary }}>
-                                            {dayjs(session.updatedAt).format('DD/MM/YY HH:mm')}
-                                        </Text>
-                                    }
-                                />
-                            </List.Item>
+                                <Flex vertical style={{ flex: 1, minWidth: 0 }}>
+                                    <Text
+                                        style={{
+                                            fontSize: FONT_SIZE.md,
+                                            fontWeight: activeSessionId === session.id ? 600 : 400,
+                                            overflow: 'hidden',
+                                            textOverflow: 'ellipsis',
+                                            whiteSpace: 'nowrap',
+                                            display: 'block',
+                                            color: token.colorText,
+                                        }}
+                                    >
+                                        {session.title}
+                                    </Text>
+                                    <Text style={{ fontSize: FONT_SIZE.xs, color: token.colorTextTertiary }}>
+                                        {dayjs(session.updatedAt).format('DD/MM/YY HH:mm')}
+                                    </Text>
+                                </Flex>
+                                <Popconfirm
+                                    title={t('chat.deleteConfirm')}
+                                    onConfirm={e => {
+                                        e?.stopPropagation();
+                                        handleDeleteSession(session.id);
+                                    }}
+                                    onCancel={e => e?.stopPropagation()}
+                                    okText={t('common.yes')}
+                                    cancelText={t('common.no')}
+                                    placement="right"
+                                >
+                                    <Button
+                                        type="text"
+                                        size="small"
+                                        danger
+                                        icon={<DeleteOutlined />}
+                                        onClick={e => e.stopPropagation()}
+                                        aria-label={t('chat.deleteSession')}
+                                        style={{ minWidth: 32, minHeight: 32, flexShrink: 0 }}
+                                    />
+                                </Popconfirm>
+                            </Flex>
                         )}
                     />
                 )}
@@ -452,7 +457,7 @@ export const ChatPage = () => {
                     placement="left"
                     open={sidebarOpen}
                     onClose={() => setSidebarOpen(false)}
-                    width="85%"
+                    size="85%"
                     styles={{ body: { padding: 0, display: 'flex', flexDirection: 'column' } }}
                 >
                     {sidebarContent}
@@ -640,6 +645,7 @@ export const ChatPage = () => {
                             type="primary"
                             icon={<SendOutlined />}
                             onClick={() => handleSend()}
+                            aria-label={t('chat.send')}
                             disabled={!inputText.trim() || sending}
                             loading={sending}
                             style={{ height: 44, width: isMobile ? 44 : undefined, flexShrink: 0 }}

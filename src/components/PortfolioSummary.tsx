@@ -1,5 +1,5 @@
 import React, {useMemo} from 'react';
-import {Button, Card, Col, Collapse, List, Popconfirm, Row, Table, Tag, Typography, Flex, theme} from 'antd';
+import {Button, Card, Col, Collapse, Popconfirm, Row, Table, Tag, Typography, Flex, theme} from 'antd';
 import {DeleteOutlined, EditOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import type {CryptoAsset, PortfolioValueResponse} from '../types/api.ts';
@@ -7,6 +7,8 @@ import {FONT_SIZE, SPACING, GRADIENT_BALANCE, GRADIENT_BALANCE_DARK} from '../th
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {usePreferences} from '../contexts/PreferencesContext';
 import {StatCard} from './common/StatCard';
+import { formatMoney, formatNumber } from '../utils/format';
+import { ItemList } from './common/ItemList';
 
 const { Text } = Typography;
 
@@ -26,8 +28,7 @@ interface GroupedAsset {
 }
 
 export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loading, onEditAsset, onDeleteAsset }) => {
-    const { t, i18n } = useTranslation();
-    const locale = i18n.language === 'it' ? 'it-IT' : 'en-US';
+    const { t } = useTranslation();
     const isMobile = useMediaQuery('(max-width: 768px)');
     const { preferences } = usePreferences();
     const { token } = theme.useToken();
@@ -57,14 +58,10 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
 
     const colors = ['magenta', 'red', 'volcano', 'orange', 'gold', 'lime', 'green', 'cyan', 'blue', 'geekblue', 'purple'];
 
-    // Un solo formatter riusato: prima veniva costruito un `new Intl.NumberFormat` per
-    // cella e per render — nel ramo mobile uno per asset più uno per ogni sotto-asset.
-    // È fra le costruzioni più costose della piattaforma.
-    const currencyFormatter = useMemo(
-        () => new Intl.NumberFormat(locale, { style: 'currency', currency: data?.currency || 'USD' }),
-        [locale, data?.currency]
-    );
-    const formatMoney = currencyFormatter.format;
+    // utils/format tiene in cache i formatter Intl (costosi da costruire), quindi
+    // chiamarlo per cella non ricostruisce nulla.
+    const currency = data?.currency || 'USD';
+    const formatAmount = (v: number) => formatMoney(v, currency);
 
     const columns = [
         {
@@ -79,21 +76,21 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
             title: t('portfolio.amount'),
             dataIndex: 'amount',
             key: 'amount',
-            render: (amount: number) => amount.toLocaleString(locale, { maximumFractionDigits: 8 }),
+            render: (amount: number) => formatNumber(amount, 8),
         },
         {
             title: t('portfolio.price'),
             dataIndex: 'price',
             key: 'price',
             render: (price: number) =>
-                formatMoney(price),
+                formatAmount(price),
         },
         {
             title: t('portfolio.value'),
             dataIndex: 'value',
             key: 'value',
             render: (value: number) =>
-                formatMoney(value),
+                formatAmount(value),
         },
     ];
 
@@ -104,14 +101,14 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                 title: t('portfolio.amount'),
                 dataIndex: 'amount',
                 key: 'amount',
-                render: (amount: number) => amount.toLocaleString(locale, { maximumFractionDigits: 8 }),
+                render: (amount: number) => formatNumber(amount, 8),
             },
             {
                 title: t('portfolio.value'),
                 dataIndex: 'value',
                 key: 'value',
                 render: (value: number) =>
-                    formatMoney(value),
+                    formatAmount(value),
             },
             {
                 title: t('portfolio.actions'),
@@ -152,22 +149,23 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
             <Row gutter={[16, 16]} style={{ marginBottom: SPACING.lg }}>
                 <Col xs={24} sm={12} md={8}>
                     <StatCard
-                        bordered={false}
+                        variant="borderless"
                         gradient={heroGradient}
                         title={t('portfolio.totalValue')}
                         value={data?.totalValue}
-                        precision={2}
-                        prefix={data?.currency === 'EUR' ? '€' : '$'}
+                        currency={data?.currency || 'USD'}
                         loading={loading}
                     />
                 </Col>
             </Row>
 
-            <Card title={t('portfolio.yourAssets')} bordered={false}>
+            <Card title={t('portfolio.yourAssets')} variant="borderless">
                 {isMobile ? (
-                    <List
-                        dataSource={groupedAssets}
+                    <ItemList
+                        items={groupedAssets}
+                        rowKey={record => record.symbol}
                         loading={loading}
+                        aria-label={t('portfolio.yourAssets')}
                         renderItem={(record, index) => (
                             <Card size="small" style={{ marginBottom: SPACING.sm }}>
                                 <Collapse
@@ -179,51 +177,48 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                                                 <Flex justify="space-between" align="center" style={{ width: '100%' }}>
                                                     <Tag color={colors[index % colors.length]}>{record.symbol}</Tag>
                                                     <div style={{ textAlign: 'right' }}>
-                                                        <div><Text strong>{formatMoney(record.value)}</Text></div>
-                                                        <div><Text type="secondary" style={{ fontSize: `${FONT_SIZE.sm}px` }}>{record.amount.toLocaleString(locale, { maximumFractionDigits: 8 })}</Text></div>
+                                                        <div><Text strong>{formatAmount(record.value)}</Text></div>
+                                                        <div><Text type="secondary" style={{ fontSize: `${FONT_SIZE.sm}px` }}>{formatNumber(record.amount, 8)}</Text></div>
                                                     </div>
                                                 </Flex>
                                             ),
                                             children: (
-                                                <List
-                                                    dataSource={record.assets}
-                                                    rowKey="id"
+                                                <ItemList
+                                                    items={record.assets}
+                                                    rowKey={asset => asset.id}
                                                     renderItem={(asset) => (
-                                                        <List.Item
+                                                        <Flex
+                                                            justify="space-between"
+                                                            align="center"
+                                                            gap={SPACING.sm}
                                                             style={{ padding: `${SPACING.xs}px 0`, borderBottom: `1px solid ${token.colorBorderSecondary}` }}
-                                                            actions={
-                                                                asset.source === 'MANUAL'
-                                                                    ? [
-                                                                        <Button
-                                                                            type="text"
-                                                                            icon={<EditOutlined />}
-                                                                            size="small"
-                                                                            onClick={() => onEditAsset?.(asset)}
-                                                                            aria-label={t('common.edit')}
-                                                                        />,
-                                                                        <Popconfirm
-                                                                            title={t('portfolio.deleteHolding')}
-                                                                            description={t('portfolio.deleteHoldingConfirm')}
-                                                                            onConfirm={() => onDeleteAsset?.(asset)}
-                                                                            okText={t('common.yes')}
-                                                                            cancelText={t('common.no')}
-                                                                        >
-                                                                            <Button type="text" danger icon={<DeleteOutlined />} size="small" aria-label={t('common.delete')} />
-                                                                        </Popconfirm>,
-                                                                    ]
-                                                                    : []
-                                                            }
                                                         >
-                                                            <List.Item.Meta
-                                                                title={<Text strong>{asset.source}</Text>}
-                                                                description={
-                                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                        <span>{t('portfolio.amount')}: {asset.amount.toLocaleString(locale, { maximumFractionDigits: 8 })}</span>
-                                                                        <span>{t('portfolio.value')}: {formatMoney(asset.value)}</span>
-                                                                    </div>
-                                                                }
-                                                            />
-                                                        </List.Item>
+                                                            <Flex vertical style={{ minWidth: 0 }}>
+                                                                <Text strong>{asset.source}</Text>
+                                                                <Text type="secondary">{t('portfolio.amount')}: {formatNumber(asset.amount, 8)}</Text>
+                                                                <Text type="secondary">{t('portfolio.value')}: {formatAmount(asset.value)}</Text>
+                                                            </Flex>
+                                                            {asset.source === 'MANUAL' && (
+                                                                <Flex gap={SPACING.xs} style={{ flexShrink: 0 }}>
+                                                                    <Button
+                                                                        type="text"
+                                                                        icon={<EditOutlined />}
+                                                                        size="small"
+                                                                        onClick={() => onEditAsset?.(asset)}
+                                                                        aria-label={t('common.edit')}
+                                                                    />
+                                                                    <Popconfirm
+                                                                        title={t('portfolio.deleteHolding')}
+                                                                        description={t('portfolio.deleteHoldingConfirm')}
+                                                                        onConfirm={() => onDeleteAsset?.(asset)}
+                                                                        okText={t('common.yes')}
+                                                                        cancelText={t('common.no')}
+                                                                    >
+                                                                        <Button type="text" danger icon={<DeleteOutlined />} size="small" aria-label={t('common.delete')} />
+                                                                    </Popconfirm>
+                                                                </Flex>
+                                                            )}
+                                                        </Flex>
                                                     )}
                                                 />
                                             )

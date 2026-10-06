@@ -144,7 +144,7 @@ export const EnableBankingCallbackPage = () => {
             <Flex justify="center" align="center" style={{minHeight: '100vh', padding: SPACING.lg}}>
                 <Card style={{maxWidth: 600, width: '100%'}}>
                     <Alert
-                        message={t('enableBankingCallback.errorTitle')}
+                        title={t('enableBankingCallback.errorTitle')}
                         description={error}
                         type="error"
                         showIcon
@@ -179,7 +179,7 @@ export const EnableBankingCallbackPage = () => {
                 }
             >
                 <Alert
-                    message={t('enableBankingCallback.selectAccountMessage')}
+                    title={t('enableBankingCallback.selectAccountMessage')}
                     description={t('enableBankingCallback.selectAccountDescription')}
                     type="info"
                     showIcon

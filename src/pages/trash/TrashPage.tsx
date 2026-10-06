@@ -11,6 +11,10 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { FONT_SIZE, getSemanticColors } from '../../theme/tokens';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
+import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
+import { formatMoney } from '../../utils/format';
+import { useOutletContext } from 'react-router-dom';
+import type { AppOutletContext } from '../../types/outletContext';
 
 const { Text } = Typography;
 
@@ -21,6 +25,11 @@ export const TrashPage = () => {
     const { preferences } = usePreferences();
     const semantic = getSemanticColors(preferences.theme === 'dark');
     const { isSmallMobile } = useBreakpoints();
+    // Valuta del conto della transazione: prima l'importo era sempre seguito da "€".
+    // Il conto può essere stato eliminato a sua volta: in quel caso la valuta di base.
+    const { accounts } = useOutletContext<AppOutletContext>();
+    const defaultCurrency = useDefaultCurrency();
+    const currencyOf = (accountId: string) => accounts.find(a => a.id === accountId)?.currency ?? defaultCurrency;
 
     const [deletedTransactions, setDeletedTransactions] = useState<Transaction[]>([]);
     const [deletedAccounts, setDeletedAccounts] = useState<DeletedAccount[]>([]);
@@ -137,7 +146,7 @@ export const TrashPage = () => {
             width: isSmallMobile ? 100 : 130,
             render: (amount: number, record: Transaction) => (
                 <span style={{ color: record.type === 'IN' ? semantic.positive : semantic.negative }}>
-                    {record.type === 'IN' ? '+' : '-'} {amount.toFixed(2)} €
+                    {formatMoney(record.type === 'IN' ? amount : -amount, currencyOf(record.accountId), { signed: true })}
                 </span>
             ),
         },

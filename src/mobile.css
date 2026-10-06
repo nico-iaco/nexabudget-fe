@@ -101,11 +101,6 @@
         font-size: 12px !important;
     }
 
-    /* Improve list items */
-    .ant-list-item {
-        padding: 12px 16px !important;
-    }
-
     /* Make modals better on mobile */
     .ant-modal {
         top: 20px !important;
@@ -118,17 +113,9 @@
         border-radius: 8px !important;
     }
 
-    .ant-modal-header {
-        padding: 16px 20px !important;
-    }
-
-    .ant-modal-body {
-        padding: 20px !important;
-    }
-
-    .ant-modal-footer {
-        padding: 10px 16px !important;
-    }
+    /* Niente padding su header/body/footer: in AntD 6 lo ha già il contenitore
+       (.ant-modal-container, 20px 24px) e i due si sommavano — titolo e campi rientrati
+       di ~50px su uno schermo da 390. */
 
     /* Optimize select and input heights */
     .ant-select-single:not(.ant-select-customize-input) .ant-select-selector {
@@ -265,8 +252,8 @@
     }
 
     /* Fix scrolling on lists and modals for touch devices */
-    .ant-list,
-    .ant-list-item,
+    .nb-item-list,
+    .nb-list-item,
     .ant-modal-body {
         touch-action: pan-y;
     }
@@ -346,6 +333,22 @@
         min-width: 44px;
     }
 
+    /* AntD fissa la larghezza dei bottoni solo-icona con una regola più specifica di
+       `.ant-btn`: il min-width sopra non vinceva e i bottoni diventavano pillole 26x44
+       (azioni delle card transazione e budget). */
+    .ant-btn.ant-btn-icon-only {
+        min-width: 44px !important;
+    }
+
+    /* Paginazione: le voci di default sono 24-32px, troppo piccole da toccare */
+    .ant-pagination .ant-pagination-item,
+    .ant-pagination .ant-pagination-prev,
+    .ant-pagination .ant-pagination-next {
+        min-width: 40px !important;
+        height: 40px !important;
+        line-height: 38px !important;
+    }
+
     .ant-checkbox-wrapper {
         min-height: 44px;
         display: flex;
@@ -377,15 +380,16 @@
 
 
 /* Fix scrolling on lists and modals for touch devices */
-.ant-list,
-.ant-list-item,
+.nb-item-list,
+.nb-list-item,
 .ant-modal-body {
     touch-action: pan-y;
 }
 
-/* Improve rendering performance for off-screen transaction cards on mobile */
+/* Improve rendering performance for off-screen transaction cards on mobile
+   (ItemList, components/common/ItemList.tsx) */
 @media (max-width: 768px) {
-    .ant-list-item {
+    .nb-item-list--defer > .nb-list-item {
         content-visibility: auto;
         contain-intrinsic-size: 0 120px;
     }

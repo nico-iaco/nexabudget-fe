@@ -25,6 +25,7 @@ import { SPACING, FONT_SIZE, getSemanticColors } from '../../theme/tokens';
 import { DatePresetPicker } from '../common/DatePresetPicker';
 import { EmptyState } from '../common/EmptyState';
 import { StatCard } from '../common/StatCard';
+import { formatMoney, formatPercent } from '../../utils/format';
 
 const BalanceTrendChart = lazy(() =>
     import('./BalanceTrendChart').then(m => ({ default: m.BalanceTrendChart })),
@@ -107,14 +108,9 @@ export const BalanceTrendSection = () => {
 
     const currency = data?.currency ?? 'EUR';
 
-    const currencyFmt = useMemo(
-        () => new Intl.NumberFormat(locale, { style: 'currency', currency }),
-        [locale, currency],
-    );
-    const signedCurrencyFmt = useMemo(
-        () => new Intl.NumberFormat(locale, { style: 'currency', currency, signDisplay: 'exceptZero' }),
-        [locale, currency],
-    );
+    // Formattazione condivisa (utils/format): separatori coerenti col resto dell'app.
+    const formatAmount = (v: number) => formatMoney(v, currency);
+    const formatSignedAmount = (v: number) => formatMoney(v, currency, { signed: true });
 
     const monthLabel = useMemo(() => {
         const fmt = new Intl.DateTimeFormat(locale, { month: 'short', year: 'numeric' });
@@ -157,7 +153,7 @@ export const BalanceTrendSection = () => {
             align: 'right',
             render: (v: number) => (
                 <Text style={{ color: v < 0 ? semantic.negative : undefined }}>
-                    {signedCurrencyFmt.format(v)}
+                    {formatSignedAmount(v)}
                 </Text>
             ),
         },
@@ -166,7 +162,7 @@ export const BalanceTrendSection = () => {
             dataIndex: 'closingBalance',
             key: 'closingBalance',
             align: 'right',
-            render: (v: number) => currencyFmt.format(v),
+            render: (v: number) => formatAmount(v),
         },
     ];
 
@@ -228,7 +224,7 @@ export const BalanceTrendSection = () => {
                                 value={opening}
                                 precision={2}
                                 color={token.colorPrimary}
-                                formatter={(val) => currencyFmt.format(Number(val))}
+                                formatter={(val) => formatAmount(Number(val))}
                             />
                         </Col>
                         <Col xs={24} sm={8}>
@@ -238,7 +234,7 @@ export const BalanceTrendSection = () => {
                                 value={closing}
                                 precision={2}
                                 color={closing >= 0 ? semantic.positive : semantic.negative}
-                                formatter={(val) => currencyFmt.format(Number(val))}
+                                formatter={(val) => formatAmount(Number(val))}
                             />
                         </Col>
                         <Col xs={24} sm={8}>
@@ -249,10 +245,10 @@ export const BalanceTrendSection = () => {
                                 precision={2}
                                 color={changeColor}
                                 prefix={changePositive ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
-                                formatter={(val) => signedCurrencyFmt.format(Number(val))}
+                                formatter={(val) => formatSignedAmount(Number(val))}
                                 footer={pctChange !== null && (
                                     <Text style={{ color: changeColor, fontSize: FONT_SIZE.sm }}>
-                                        {pctChange >= 0 ? '+' : ''}{pctChange.toFixed(2)}%
+                                        {formatPercent(pctChange, 2, true)}
                                     </Text>
                                 )}
                             />
@@ -268,7 +264,6 @@ export const BalanceTrendSection = () => {
                                     <BalanceTrendChart
                                         points={chartPoints}
                                         currency={currency}
-                                        locale={locale}
                                     />
                                 </Suspense>
 

@@ -5,6 +5,8 @@ import type { TrendPoint } from '../../hooks/useDashboardData';
 import { FONT_SIZE, RADIUS, SHADOW, getSemanticColors } from '../../theme/tokens';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { EmptyState } from '../common/EmptyState';
+import { formatMoney, formatNumber } from '../../utils/format';
+import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
 
 const { Text } = Typography;
 
@@ -15,20 +17,17 @@ interface Props {
 
 const formatTick = (v: number): string => {
     const abs = Math.abs(v);
-    if (abs >= 1000) return `${(v / 1000).toFixed(abs >= 10000 ? 0 : 1)}k`;
-    return v.toFixed(0);
+    if (abs >= 1000) return `${formatNumber(v / 1000, abs >= 10000 ? 0 : 1)}k`;
+    return formatNumber(v, 0);
 };
 
-const formatEur = (v: number): string =>
-    `${v.toFixed(2)} €`;
-
-const TooltipRow = ({ label, value, color }: { label: string; value: number; color: string }) => (
+const TooltipRow = ({ label, value, color, currency }: { label: string; value: number; color: string; currency: string }) => (
     <Flex justify="space-between" gap={16} style={{ lineHeight: '18px' }}>
         <Flex align="center" gap={6}>
             <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: RADIUS.xs, backgroundColor: color }} />
             <span>{label}</span>
         </Flex>
-        <span style={{ fontWeight: 500 }}>{formatEur(value)}</span>
+        <span style={{ fontWeight: 500 }}>{formatMoney(value, currency)}</span>
     </Flex>
 );
 
@@ -37,6 +36,7 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
     const { token } = theme.useToken();
     const { preferences } = usePreferences();
     const semantic = getSemanticColors(preferences.theme === 'dark');
+    const currency = useDefaultCurrency();
 
     const containerRef = useRef<HTMLDivElement>(null);
     const [containerW, setContainerW] = useState(0);
@@ -267,9 +267,9 @@ export const TrendDualChart = ({ points, height = 280 }: Props) => {
                         }}
                     >
                         <div style={{ fontWeight: 600, marginBottom: 4 }}>{hoverPoint.month}</div>
-                        <TooltipRow label={incomeLabel} value={hoverPoint.income} color={semantic.positive} />
-                        <TooltipRow label={expenseLabel} value={hoverPoint.expense} color={semantic.negative} />
-                        <TooltipRow label={netLabel} value={hoverPoint.net} color={token.colorPrimary} />
+                        <TooltipRow label={incomeLabel} value={hoverPoint.income} color={semantic.positive} currency={currency} />
+                        <TooltipRow label={expenseLabel} value={hoverPoint.expense} color={semantic.negative} currency={currency} />
+                        <TooltipRow label={netLabel} value={hoverPoint.net} color={token.colorPrimary} currency={currency} />
                     </div>
                 )}
             </div>

@@ -39,13 +39,13 @@ export const CategoryMergeModal = ({ open, source, categories, onCancel, onConfi
             open={open}
             onCancel={onCancel}
             footer={null}
-            destroyOnClose
+            destroyOnHidden
         >
-            <Space direction="vertical" size="middle" style={{ width: '100%', marginTop: SPACING.md }}>
+            <Space orientation="vertical" size="middle" style={{ width: '100%', marginTop: SPACING.md }}>
                 <Alert
                     type="warning"
                     showIcon
-                    message={t('settings.categories.mergeWarning', { source: source?.name ?? '' })}
+                    title={t('settings.categories.mergeWarning', { source: source?.name ?? '' })}
                 />
                 <Form layout="vertical" onFinish={handleConfirm}>
                     <Form.Item

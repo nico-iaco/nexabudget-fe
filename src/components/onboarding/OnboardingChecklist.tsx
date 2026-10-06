@@ -112,10 +112,10 @@ export const OnboardingChecklist = ({
                 }))}
             />
             {currentStepData && !currentStepData.done && (
-                <Space direction="vertical" size="small" style={{ width: '100%' }}>
+                <Space orientation="vertical" size="small" style={{ width: '100%' }}>
                     <Text>{currentStepData.description}</Text>
                     {currentStepData.disabled && currentStepData.disabledHint && (
-                        <Alert type="info" message={currentStepData.disabledHint} showIcon style={{ padding: '4px 12px' }} />
+                        <Alert type="info" title={currentStepData.disabledHint} showIcon style={{ padding: '4px 12px' }} />
                     )}
                     <Button
                         type="primary"

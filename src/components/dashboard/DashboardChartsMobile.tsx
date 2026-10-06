@@ -4,13 +4,12 @@ import type { BarData } from '../../hooks/useDashboardData';
 import { SERIES_INCOME, FONT_SIZE, RADIUS, getSemanticColors } from '../../theme/tokens';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { EmptyState } from '../common/EmptyState';
+import { formatMoney, formatPercent } from '../../utils/format';
+import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
 
 export { TrendDualChart } from './TrendDualChart';
 
 const { Text } = Typography;
-
-const formatCurrency = (v: number): string =>
-    `${v.toLocaleString(undefined, { maximumFractionDigits: 0 })} €`;
 
 interface PieChartProps {
     data: { type: string; value: number }[];
@@ -20,6 +19,7 @@ interface PieChartProps {
 export const GenericPieChart = ({ data, centerLabel }: PieChartProps) => {
     const { t } = useTranslation();
     const { token } = theme.useToken();
+    const currency = useDefaultCurrency();
     if (!data || data.length === 0) return <EmptyState description={t('charts.noData')} />;
 
     const total = data.reduce((sum, d) => sum + d.value, 0);
@@ -30,7 +30,7 @@ export const GenericPieChart = ({ data, centerLabel }: PieChartProps) => {
                 <Text type="secondary" style={{ fontSize: FONT_SIZE.sm }}>
                     {centerLabel ?? t('reports.total')}
                 </Text>
-                <Text strong style={{ fontSize: FONT_SIZE.xxl }}>{formatCurrency(total)}</Text>
+                <Text strong style={{ fontSize: FONT_SIZE.xxl }}>{formatMoney(total, currency)}</Text>
             </Flex>
             {sorted.map((item) => {
                 const pct = total > 0 ? Math.round((item.value / total) * 100) : 0;
@@ -39,7 +39,7 @@ export const GenericPieChart = ({ data, centerLabel }: PieChartProps) => {
                         <Flex justify="space-between" style={{ marginBottom: 2 }}>
                             <Text style={{ fontSize: FONT_SIZE.md }}>{item.type}</Text>
                             <Text style={{ fontSize: FONT_SIZE.md }} type="secondary">
-                                {item.value.toFixed(2)} ({pct}%)
+                                {formatMoney(item.value, currency)} ({formatPercent(pct, 0)})
                             </Text>
                         </Flex>
                         <Progress
@@ -62,6 +62,7 @@ interface BarChartProps {
 
 export const TrendBarChart = ({ data }: BarChartProps) => {
     const { t } = useTranslation();
+    const currency = useDefaultCurrency();
     const { preferences } = usePreferences();
     const semantic = getSemanticColors(preferences.theme === 'dark');
     if (!data || data.length === 0) return <EmptyState description={t('charts.noData')} />;
@@ -105,7 +106,7 @@ export const TrendBarChart = ({ data }: BarChartProps) => {
                                     {monthData.map(d => (
                                         <div
                                             key={d.type}
-                                            title={`${labelFor(d.type)}: ${d.value.toFixed(2)} €`}
+                                            title={`${labelFor(d.type)}: ${formatMoney(d.value, currency)}`}
                                             style={{
                                                 flex: 1,
                                                 height: `${Math.max((d.value / maxValue) * 100, 2)}%`,
@@ -147,12 +148,14 @@ interface ComparisonRowProps {
  * Definita a livello di modulo (non dentro ComparisonBars) così l'identità del
  * componente resta stabile fra i render e React non rimonta il sottoalbero.
  */
-const ComparisonRow = ({ label, current, previous, max, color, trackColor }: ComparisonRowProps) => (
+const ComparisonRow = ({ label, current, previous, max, color, trackColor }: ComparisonRowProps) => {
+    const currency = useDefaultCurrency();
+    return (
     <div>
         <Flex justify="space-between" style={{ marginBottom: 2 }}>
             <Text style={{ fontSize: FONT_SIZE.sm }}>{label}</Text>
             <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
-                {formatCurrency(current)} <Text type="secondary" style={{ fontSize: FONT_SIZE.xxs }}>({formatCurrency(previous)})</Text>
+                {formatMoney(current, currency)} <Text type="secondary" style={{ fontSize: FONT_SIZE.xxs }}>({formatMoney(previous, currency)})</Text>
             </Text>
         </Flex>
         <div style={{ position: 'relative', height: 14 }}>
@@ -160,7 +163,8 @@ const ComparisonRow = ({ label, current, previous, max, color, trackColor }: Com
             <div style={{ position: 'absolute', left: 0, top: 8, height: 6, width: `${(current / max) * 100}%`, backgroundColor: color, borderRadius: RADIUS.xs }} />
         </div>
     </div>
-);
+    );
+};
 
 interface ComparisonBarsProps {
     currentIncome: number;

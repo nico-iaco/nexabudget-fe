@@ -1,10 +1,11 @@
 // src/components/banking/BankAccountPicker.tsx
 // UI condivisa di selezione conto bancario + inserimento saldo corrente,
 // usata sia dalla callback GoCardless che da quella Enable Banking.
-import {Alert, Flex, Form, InputNumber, List, theme, Typography} from 'antd';
+import {Alert, Flex, Form, InputNumber, theme, Typography} from 'antd';
 import {BankOutlined} from '@ant-design/icons';
 import {FONT_SIZE, RADIUS, SPACING} from '../../theme/tokens';
 import {getCurrencySymbol} from '../../utils/currency';
+import {ItemList} from '../common/ItemList';
 
 const { Text } = Typography;
 
@@ -50,11 +51,22 @@ export const BankAccountPicker = ({
 
     return (
         <>
-            <List
-                dataSource={items}
+            <ItemList
+                items={items}
+                rowKey={(item) => item.id}
+                gap={SPACING.sm}
                 renderItem={(item) => (
-                    <List.Item
+                    <div
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={selectedId === item.id}
                         onClick={() => onSelect(item.id)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                onSelect(item.id);
+                            }
+                        }}
                         style={{
                             cursor: 'pointer',
                             padding: SPACING.md,
@@ -62,7 +74,6 @@ export const BankAccountPicker = ({
                                 ? `2px solid ${token.colorPrimary}`
                                 : `1px solid ${token.colorBorder}`,
                             borderRadius: RADIUS.lg,
-                            marginBottom: SPACING.sm,
                             backgroundColor: selectedId === item.id
                                 ? token.controlItemBgActive
                                 : token.colorBgContainer,
@@ -94,14 +105,14 @@ export const BankAccountPicker = ({
                             </Flex>
                             <BankOutlined style={{fontSize: FONT_SIZE.display, color: token.colorPrimary}}/>
                         </Flex>
-                    </List.Item>
+                    </div>
                 )}
             />
 
             {selectedId && (
                 <>
                     <Alert
-                        message={balanceWarningTitle}
+                        title={balanceWarningTitle}
                         description={balanceWarningDescription}
                         type="warning"
                         showIcon
@@ -116,7 +127,7 @@ export const BankAccountPicker = ({
                             value={currentBalance}
                             onChange={(value) => onBalanceChange(value)}
                             placeholder={currentBalancePlaceholder}
-                            addonAfter={getCurrencySymbol(currency)}
+                            suffix={getCurrencySymbol(currency)}
                             precision={2}
                             parser={(value) => value?.replace(',', '.') as unknown as number}
                         />

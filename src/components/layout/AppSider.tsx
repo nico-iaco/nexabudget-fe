@@ -28,7 +28,7 @@ import { useNavigate } from 'react-router-dom';
 import { useCallback, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Account } from '../../types/api';
-import { getCurrencySymbol } from '../../utils/currency';
+import { formatMoney } from '../../utils/format';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import {
@@ -210,7 +210,7 @@ export const AppSider = ({
                                 fontSize: '0.85em',
                                 color: acc.requiresReauth ? token.colorError : siderTextSecondary
                             }}>
-                                {acc.requiresReauth ? t('accounts.requiresReauthBadge') : `${acc.actualBalance.toFixed(2)} ${getCurrencySymbol(acc.currency)}`}
+                                {acc.requiresReauth ? t('accounts.requiresReauthBadge') : formatMoney(acc.actualBalance, acc.currency)}
                             </Text>
                         </Flex>
                         <Dropdown
@@ -333,9 +333,8 @@ export const AppSider = ({
                                 </Text>
                             }
                             value={totalBalance}
-                            precision={2}
-                            valueStyle={{ color: '#fff', fontFamily: FONT_HEADING, fontWeight: 800, fontSize: FONT_SIZE.xxl }}
-                            suffix={getCurrencySymbol(auth?.defaultCurrency || 'EUR')}
+                            formatter={(v) => formatMoney(Number(v), auth?.defaultCurrency || 'EUR')}
+                            styles={{ content: { color: '#fff', fontFamily: FONT_HEADING, fontWeight: 800, fontSize: FONT_SIZE.xxl } }}
                         />
                     </div>
                 </div>

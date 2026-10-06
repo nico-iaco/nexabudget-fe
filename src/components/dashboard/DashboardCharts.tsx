@@ -14,6 +14,8 @@ import { usePreferences } from '../../contexts/PreferencesContext';
 import { FONT_SIZE, RADIUS, getSemanticColors } from '../../theme/tokens';
 import { EmptyState } from '../common/EmptyState';
 import type { GlobalToken } from 'antd/es/theme/interface';
+import { formatMoney, formatPercent } from '../../utils/format';
+import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
 
 export { TrendDualChart } from './TrendDualChart';
 
@@ -40,9 +42,6 @@ const TooltipGlobalStyles = memo(({ token }: { token: GlobalToken }) => (
 ));
 TooltipGlobalStyles.displayName = 'TooltipGlobalStyles';
 
-const formatCurrency = (v: number): string =>
-    `${v.toLocaleString(undefined, { maximumFractionDigits: 0 })} €`;
-
 interface PieChartProps {
     data: { type: string; value: number }[];
     centerLabel?: string;
@@ -53,18 +52,22 @@ const GenericPieChartInner = ({ data, centerLabel }: PieChartProps) => {
     const { preferences } = usePreferences();
     const isDark = preferences.theme === 'dark';
     const { token } = theme.useToken();
+    const currency = useDefaultCurrency();
     if (!data || data.length === 0) return <EmptyState description={t('charts.noData')} />;
 
     const total = data.reduce((sum, d) => sum + d.value, 0);
     const enriched = data.map(d => ({
         ...d,
-        _amount: `${d.value.toFixed(2)} € (${total > 0 ? ((d.value / total) * 100).toFixed(1) : '0.0'}%)`,
+        _amount: `${formatMoney(d.value, currency)} (${formatPercent(total > 0 ? (d.value / total) * 100 : 0)})`,
     }));
 
     const config = {
         data: enriched,
         angleField: 'value',
         colorField: 'type',
+        // Altezza fissa: impilata sopra la tabella (sotto xxl) la torta prendeva tutta la
+        // larghezza della card e arrivava a ~400px di altezza.
+        height: 280,
         radius: 0.9,
         innerRadius: 0.62,
         label: false,
@@ -82,7 +85,7 @@ const GenericPieChartInner = ({ data, centerLabel }: PieChartProps) => {
             },
             content: {
                 style: { fontSize: `${FONT_SIZE.xxl}px`, fontWeight: 600, color: token.colorText },
-                content: formatCurrency(total),
+                content: formatMoney(total, currency),
             },
         },
     };
@@ -142,9 +145,6 @@ interface ComparisonBarsProps {
     previousExpense: number;
 }
 
-const fmtEur = (v: number) =>
-    `${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} €`;
-
 interface ComparisonRowProps {
     label: string;
     current: number;
@@ -166,6 +166,7 @@ const ComparisonRow = ({ label, current, previous, color, deltaIsBad, prevLabel,
     const deltaPositive = delta >= 0;
     const deltaColor = (deltaIsBad ? deltaPositive : !deltaPositive) ? semantic.negative : semantic.positive;
     const DeltaIcon = deltaPositive ? ArrowUpOutlined : ArrowDownOutlined;
+    const currency = useDefaultCurrency();
 
     return (
         <div>
@@ -173,9 +174,9 @@ const ComparisonRow = ({ label, current, previous, color, deltaIsBad, prevLabel,
                 <Text strong>{label}</Text>
                 <Text style={{ color: deltaColor, fontSize: FONT_SIZE.md }}>
                     <DeltaIcon style={{ fontSize: FONT_SIZE.xs, marginRight: 4 }} />
-                    {deltaPositive ? '+' : ''}{fmtEur(delta)}
+                    {formatMoney(delta, currency, { signed: true })}
                     <Text type="secondary" style={{ fontSize: FONT_SIZE.xs, marginLeft: 6 }}>
-                        ({deltaPositive ? '+' : ''}{pct.toFixed(1)}%)
+                        ({formatPercent(pct, 1, true)})
                     </Text>
                 </Text>
             </Flex>
@@ -183,7 +184,7 @@ const ComparisonRow = ({ label, current, previous, color, deltaIsBad, prevLabel,
                 <div>
                     <Flex justify="space-between" style={{ marginBottom: 2 }}>
                         <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>{prevLabel}</Text>
-                        <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>{fmtEur(previous)}</Text>
+                        <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>{formatMoney(previous, currency)}</Text>
                     </Flex>
                     <div style={{ height: 8, backgroundColor: token.colorFillSecondary, borderRadius: RADIUS.sm, overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${(previous / max) * 100}%`, backgroundColor: token.colorTextQuaternary, borderRadius: RADIUS.sm }} />
@@ -192,7 +193,7 @@ const ComparisonRow = ({ label, current, previous, color, deltaIsBad, prevLabel,
                 <div>
                     <Flex justify="space-between" style={{ marginBottom: 2 }}>
                         <Text style={{ fontSize: FONT_SIZE.xs }}>{currLabel}</Text>
-                        <Text style={{ fontSize: FONT_SIZE.xs, fontWeight: 600 }}>{fmtEur(current)}</Text>
+                        <Text style={{ fontSize: FONT_SIZE.xs, fontWeight: 600 }}>{formatMoney(current, currency)}</Text>
                     </Flex>
                     <div style={{ height: 8, backgroundColor: token.colorFillSecondary, borderRadius: RADIUS.sm, overflow: 'hidden' }}>
                         <div style={{ height: '100%', width: `${(current / max) * 100}%`, backgroundColor: color, borderRadius: RADIUS.sm }} />
