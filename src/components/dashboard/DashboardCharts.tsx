@@ -1,142 +1,143 @@
-// Importati da `@ant-design/plots`, non da `@ant-design/charts`: quest'ultimo è un barrel
-// (`export * from '@ant-design/graphs'; export * from '@ant-design/plots';`) e
-// `@ant-design/graphs` fa `import * as G6 from '@antv/g6'` più un modulo di preset a effetti
-// collaterali, senza campo `sideEffects` — quindi l'intero motore di grafi G6, con
-// @antv/algorithm, dagre, graphlib e d3-force-3d, era non-eliminabile e finiva in un chunk
-// da 1,26 MB per tre soli tipi di grafico. `@ant-design/plots` dichiara `sideEffects: false`.
-import { Column, Line, Pie } from '@ant-design/plots';
-import { memo } from 'react';
+// Grafici della dashboard desktop. Tutti SVG/DOM fatti a mano: la torta era l'ultimo
+// grafico su G2 (`@ant-design/plots`), e da sola trascinava un chunk da 1,26 MB
+// (375 kB gzip: G2, g-lite, lodash, d3-geo…) scaricato all'apertura della dashboard.
+import { memo, useState } from 'react';
 import { Flex, theme, Typography } from 'antd';
 import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
-import type { BarData, LineData } from '../../hooks/useDashboardData';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { FONT_SIZE, RADIUS, getSemanticColors } from '../../theme/tokens';
+import { CHART_CATEGORICAL, FONT_SIZE, RADIUS, getSemanticColors } from '../../theme/tokens';
 import { EmptyState } from '../common/EmptyState';
-import type { GlobalToken } from 'antd/es/theme/interface';
 import { formatMoney, formatPercent } from '../../utils/format';
 import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
 
 export { TrendDualChart } from './TrendDualChart';
-
-// memo: reso dentro ciascuno dei tre grafici, quindi a ogni loro render venivano
-// ricreati fino a tre <style> duplicati, e ogni inserzione invalida la CSSOM forzando
-// un ricalcolo di stile su tutto il documento.
-const TooltipGlobalStyles = memo(({ token }: { token: GlobalToken }) => (
-    <style>{`
-        .g2-tooltip {
-            background-color: ${token.colorBgElevated} !important;
-            color: ${token.colorText} !important;
-            box-shadow: ${token.boxShadowSecondary} !important;
-        }
-        .g2-tooltip * {
-            color: ${token.colorText} !important;
-        }
-        .g2-tooltip-title {
-            color: ${token.colorText} !important;
-        }
-        .g2-tooltip-list-item-label {
-             color: ${token.colorTextSecondary} !important;
-        }
-    `}</style>
-));
-TooltipGlobalStyles.displayName = 'TooltipGlobalStyles';
 
 interface PieChartProps {
     data: { type: string; value: number }[];
     centerLabel?: string;
 }
 
+const DONUT_SIZE = 220;
+const DONUT_STROKE = 30;
+const DONUT_RADIUS = (DONUT_SIZE - DONUT_STROKE) / 2 - 4; // margine per lo spessore in hover
+const DONUT_CIRCUMFERENCE = 2 * Math.PI * DONUT_RADIUS;
+// Stacco fra due fette, in px lungo la circonferenza
+const SEGMENT_GAP = 2;
+
+/**
+ * Ciambella con legenda a destra e totale al centro. Ogni fetta è un cerchio con
+ * `stroke-dasharray`: niente calcolo di archi, e il caso "una sola categoria al 100%"
+ * (che con i path ad arco degenera) è un cerchio pieno senza casi speciali.
+ */
 const GenericPieChartInner = ({ data, centerLabel }: PieChartProps) => {
     const { t } = useTranslation();
-    const { preferences } = usePreferences();
-    const isDark = preferences.theme === 'dark';
     const { token } = theme.useToken();
     const currency = useDefaultCurrency();
-    if (!data || data.length === 0) return <EmptyState description={t('charts.noData')} />;
+    const [active, setActive] = useState<number | null>(null);
 
-    const total = data.reduce((sum, d) => sum + d.value, 0);
-    const enriched = data.map(d => ({
-        ...d,
-        _amount: `${formatMoney(d.value, currency)} (${formatPercent(total > 0 ? (d.value / total) * 100 : 0)})`,
-    }));
+    const slices = (data ?? []).filter(d => d.value > 0);
+    if (slices.length === 0) return <EmptyState description={t('charts.noData')} />;
 
-    const config = {
-        data: enriched,
-        angleField: 'value',
-        colorField: 'type',
-        // Altezza fissa: impilata sopra la tabella (sotto xxl) la torta prendeva tutta la
-        // larghezza della card e arrivava a ~400px di altezza.
-        height: 280,
-        radius: 0.9,
-        innerRadius: 0.62,
-        label: false,
-        theme: isDark ? 'dark' : undefined,
-        legend: { position: 'right' as const },
-        interactions: [{ type: 'element-active' }],
-        tooltip: {
-            title: { field: 'type' },
-            items: [{ field: '_amount', name: t('reports.total') }],
-        },
-        statistic: {
-            title: {
-                style: { fontSize: `${FONT_SIZE.sm}px`, color: token.colorTextSecondary },
-                content: centerLabel ?? t('reports.total'),
-            },
-            content: {
-                style: { fontSize: `${FONT_SIZE.xxl}px`, fontWeight: 600, color: token.colorText },
-                content: formatMoney(total, currency),
-            },
-        },
-    };
+    const total = slices.reduce((sum, d) => sum + d.value, 0);
+    const gap = slices.length > 1 ? SEGMENT_GAP : 0;
+    // Ciclo nel corpo del render (non dentro una callback di map): il React Compiler
+    // vieta di riassegnare una variabile da una closure.
+    const arcs: (PieChartProps['data'][number] & { color: string; pct: number; dash: number; offset: number })[] = [];
+    let offset = 0;
+    for (const [i, d] of slices.entries()) {
+        const length = (d.value / total) * DONUT_CIRCUMFERENCE;
+        arcs.push({
+            ...d,
+            color: CHART_CATEGORICAL[i % CHART_CATEGORICAL.length],
+            pct: (d.value / total) * 100,
+            dash: Math.max(length - gap, 0.5),
+            offset,
+        });
+        offset += length;
+    }
+    const activeArc = active != null ? arcs[active] : null;
+    const label = centerLabel ?? t('reports.total');
+    const center = DONUT_SIZE / 2;
 
     return (
-        <>
-            <TooltipGlobalStyles token={token} />
-            <Pie {...config} />
-        </>
+        <Flex wrap gap={24} align="center" justify="center" style={{ minHeight: DONUT_SIZE }}>
+            <div style={{ position: 'relative', width: DONUT_SIZE, height: DONUT_SIZE, flexShrink: 0 }}>
+                <svg
+                    width={DONUT_SIZE}
+                    height={DONUT_SIZE}
+                    viewBox={`0 0 ${DONUT_SIZE} ${DONUT_SIZE}`}
+                    role="img"
+                    aria-label={`${label}: ${formatMoney(total, currency)}. ${arcs.map(a => `${a.type} ${formatPercent(a.pct)}`).join(', ')}`}
+                    onMouseLeave={() => setActive(null)}
+                >
+                    {/* rotate(-90): la prima fetta parte da ore 12, in senso orario */}
+                    <g transform={`rotate(-90 ${center} ${center})`}>
+                        {arcs.map((a, i) => (
+                            <circle
+                                key={a.type}
+                                cx={center}
+                                cy={center}
+                                r={DONUT_RADIUS}
+                                fill="none"
+                                stroke={a.color}
+                                strokeWidth={active === i ? DONUT_STROKE + 8 : DONUT_STROKE}
+                                strokeDasharray={`${a.dash} ${DONUT_CIRCUMFERENCE}`}
+                                strokeDashoffset={-a.offset}
+                                opacity={active == null || active === i ? 1 : 0.45}
+                                style={{ transition: 'stroke-width 0.15s, opacity 0.15s', cursor: 'pointer' }}
+                                onMouseEnter={() => setActive(i)}
+                            />
+                        ))}
+                    </g>
+                </svg>
+                {/* Centro: categoria in hover, altrimenti il totale */}
+                <Flex
+                    vertical
+                    align="center"
+                    justify="center"
+                    style={{ position: 'absolute', inset: DONUT_STROKE + 10, pointerEvents: 'none', textAlign: 'center' }}
+                >
+                    <Typography.Text type="secondary" ellipsis style={{ fontSize: FONT_SIZE.sm, maxWidth: '100%' }}>
+                        {activeArc ? activeArc.type : label}
+                    </Typography.Text>
+                    <Typography.Text strong style={{ fontSize: FONT_SIZE.xxl, lineHeight: 1.3 }}>
+                        {formatMoney(activeArc ? activeArc.value : total, currency)}
+                    </Typography.Text>
+                    {activeArc && (
+                        <Typography.Text type="secondary" style={{ fontSize: FONT_SIZE.sm }}>
+                            {formatPercent(activeArc.pct)}
+                        </Typography.Text>
+                    )}
+                </Flex>
+            </div>
+
+            <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'flex', flexDirection: 'column', gap: 6, minWidth: 0, maxWidth: '100%' }}>
+                {arcs.map((a, i) => (
+                    <li
+                        key={a.type}
+                        onMouseEnter={() => setActive(i)}
+                        onMouseLeave={() => setActive(null)}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            fontSize: FONT_SIZE.sm,
+                            color: token.colorText,
+                            opacity: active == null || active === i ? 1 : 0.55,
+                            cursor: 'default',
+                            minWidth: 0,
+                        }}
+                    >
+                        <span aria-hidden style={{ width: 10, height: 10, borderRadius: RADIUS.xs, backgroundColor: a.color, flexShrink: 0 }} />
+                        <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{a.type}</span>
+                        <span style={{ color: token.colorTextSecondary, flexShrink: 0 }}>{formatPercent(a.pct)}</span>
+                    </li>
+                ))}
+            </ul>
+        </Flex>
     );
 };
-
-interface BarChartProps {
-    data: BarData[];
-}
-
-const TrendBarChartInner = ({ data }: BarChartProps) => {
-    const { t } = useTranslation();
-    const { preferences } = usePreferences();
-    const isDark = preferences.theme === 'dark';
-    const { token } = theme.useToken();
-    if (!data || data.length === 0) return <EmptyState description={t('charts.noData')} />;
-
-    const config = {
-        data,
-        xField: 'month',
-        yField: 'value',
-        colorField: 'type',
-        isGroup: true,
-        seriesField: 'type',
-        theme: isDark ? 'dark' : undefined,
-        columnStyle: { radius: [RADIUS.xs, RADIUS.xs, 0, 0] },
-        legend: { position: 'top-left' as const },
-        xAxis: { label: { style: { fill: token.colorText } } },
-        yAxis: { label: { style: { fill: token.colorText } } },
-        // Traduce le chiavi stabili IN/OUT nelle label localizzate per legenda e tooltip
-        meta: {
-            type: {
-                formatter: (v: string) => v === 'IN' ? t('charts.income') : t('charts.expense'),
-            },
-        },
-    };
-
-    return (
-        <>
-            <TooltipGlobalStyles token={token} />
-            <Column {...config} />
-        </>
-    );
-};
-
 
 interface ComparisonBarsProps {
     currentIncome: number;
@@ -264,57 +265,5 @@ export const Sparkline = ({ values, color, height = 32 }: SparklineProps) => {
     );
 };
 
-interface LineChartProps {
-    data: LineData[];
-}
-
-const NetBalanceLineChartInner = ({ data }: LineChartProps) => {
-    const { t } = useTranslation();
-    const { preferences } = usePreferences();
-    const isDark = preferences.theme === 'dark';
-    const { token } = theme.useToken();
-    if (!data || data.length === 0) return <EmptyState description={t('charts.noData')} />;
-
-    const config = {
-        data,
-        xField: 'label',
-        yField: 'value',
-        point: {
-            size: 4,
-            shape: 'square',
-        },
-
-        lineStyle: {
-            lineWidth: 2,
-        },
-        theme: isDark ? 'dark' : undefined,
-        xAxis: {
-            label: {
-                style: {
-                    fill: token.colorText,
-                },
-            },
-        },
-        yAxis: {
-            label: {
-                style: {
-                    fill: token.colorText,
-                },
-            },
-        },
-    };
-
-    return (
-        <>
-            <TooltipGlobalStyles token={token} />
-            <Line {...config} />
-        </>
-    );
-};
-
-// memo sui tre grafici che passano da G2: senza, qualunque render di DashboardPage
-// (cambio di trendMonths, settle di una query, cambio di breakpoint) faceva ricostruire
-// gli oggetti config e ri-disegnare la canvas con animazione.
+// memo: DashboardPage ri-renderizza a ogni settle di query e cambio di trendMonths.
 export const GenericPieChart = memo(GenericPieChartInner);
-export const TrendBarChart = memo(TrendBarChartInner);
-export const NetBalanceLineChart = memo(NetBalanceLineChartInner);

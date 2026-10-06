@@ -35,7 +35,7 @@ NexaBudget is a modern and intuitive personal finance management application des
   - Monthly income & expense totals
   - Month-end projection
   - Month-over-month comparison with selectable month
-  - Income and expense breakdown by category (pie chart + table)
+  - Income and expense breakdown by category (donut chart + table; progress bars on mobile)
   - Monthly trend bar chart (6 / 12 / 24 months)
   - Net-worth balance trend section
   - Guided onboarding checklist for new users
@@ -98,7 +98,7 @@ NexaBudget can be installed as a Progressive Web App (PWA) on your device:
 - **Server State**: TanStack Query (React Query) 5
 - **Client State**: React Context API (Auth, Preferences)
 - **Date & Time**: Day.js
-- **Charts**: @ant-design/charts
+- **Charts**: hand-written SVG components (no chart library)
 - **Markdown**: react-markdown + remark-gfm (AI answers and reports)
 - **PWA**: vite-plugin-pwa with Workbox
 - **i18n**: i18next (Italian & English)

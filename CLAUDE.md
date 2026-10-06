@@ -21,7 +21,7 @@ The backend is reached through the Vite dev proxy: both `/api` **and** `/mcp` ar
 
 ## Stack
 
-React 19 · TypeScript 6.0 · Vite 8 · Ant Design 6.6 · React Router 7 · `@tanstack/react-query` 5 · Axios · i18next · Day.js · `@ant-design/charts`.
+React 19 · TypeScript 6.0 · Vite 8 · Ant Design 6.6 · React Router 7 · `@tanstack/react-query` 5 · Axios · i18next · Day.js. No chart library: every chart is hand-written SVG.
 
 `tsconfig.app.json` is strict and adds `noUnusedLocals`, `noUnusedParameters`, `verbatimModuleSyntax`, and `erasableSyntaxOnly` — unused imports/params and non-`type`-prefixed type imports are build errors, not warnings.
 
@@ -97,7 +97,8 @@ Fonts (Inter body / Manrope headings) load from Google Fonts in `index.html`; `s
 - **`StatCard` is the single stat-card implementation** (Dashboard, `BalanceTrendSection`, `PortfolioSummary` all use it) — don't hand-roll a fourth Card+Statistic variant.
 - **`AsyncBoundary` is currently unused** despite documenting the convention in its own header. It standardizes loading (Skeleton) / error (EmptyState + Retry) / empty for `useQuery`-driven views — prefer it for new such views rather than inline `Spin` + bare `<Empty>`.
 - Empty states remain inconsistent: `EmptyState` (with CTA actions) is preferred, but several charts and tables still render a bare AntD `<Empty>`. Use `EmptyState` for new code.
-- Prefer `theme.useToken()` (`token.colorText`, `token.colorBgContainer`) over `isDark ? '#fff' : '#000'` branching; most components already do. AntD charts take `theme: isDark ? 'dark' : undefined`.
+- Prefer `theme.useToken()` (`token.colorText`, `token.colorBgContainer`) over `isDark ? '#fff' : '#000'` branching; most components already do.
+- **Charts are hand-written SVG/DOM** (`components/dashboard/*`, `components/reports/BalanceTrendChart.tsx`) — don't add a chart library back: `@ant-design/plots` (G2) cost a 1.26 MB chunk for a single donut. Categorical colours come from `CHART_CATEGORICAL` in `theme/tokens.ts`.
 - File naming: PascalCase with `*Page`/`*Modal`/`*Card`/`*Drawer`/`*Chart` suffixes.
 - **Amounts, numbers and percentages go through `src/utils/format.ts`** (`formatMoney(value, currency, { signed? })`, `formatNumber`, `formatPercent`): locale follows the app language, Intl formatters are cached, grouping is always on. Never `toFixed(2) + ' €'` or a bare `Statistic precision` (AntD's Statistic uses US separators) — pass `currency` to `StatCard`, or `formatter` to `Statistic`. Aggregates from dashboard/report/budget endpoints are in the user's base currency: `useDefaultCurrency()`.
 - AntD locale: `App.tsx` passes `LOCALE_IT`, which patches `it_IT` with the `DD/MM/YYYY` / `MM/YYYY` field formats on **both** `DatePicker` and `Calendar` — the RangePicker reads `Calendar` (still true in 6.6.5). Import locales from `antd/es/locale/*`: the CJS `antd/locale/*` path reaches ConfigProvider with the wrong shape under Vite and silently falls back to English. Day.js follows `i18n` via a `languageChanged` listener in `src/i18n/index.ts`.

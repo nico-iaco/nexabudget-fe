@@ -61,6 +61,14 @@ export const SURFACE_DARK_BORDER = 'oklch(26% 0.012 260)';
 export const SERIES_INCOME = 'IN';
 export const SERIES_EXPENSE = 'OUT';
 
+// Palette categoriale per i grafici a categorie (ripartizione per categoria). È la
+// palette di default di G2 v5, che la torta usava prima di essere riscritta in SVG:
+// mantenerla evita che i colori cambino per chi usa già l'app.
+export const CHART_CATEGORICAL = [
+    '#1783FF', '#00C9C9', '#F0884D', '#D580FF', '#7863FF',
+    '#60C42D', '#BD8F24', '#FF80CA', '#2491B3', '#17C76F',
+] as const;
+
 // Spacing scale (px). Use these instead of hardcoded values for consistent rhythm.
 export const SPACING = {
     xs: 8,

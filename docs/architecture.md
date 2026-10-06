@@ -14,7 +14,7 @@ NexaBudget Frontend is designed as a modern Single Page Application (SPA) levera
 * **TanStack Query (React Query) 5**: Server-state cache for all remote data — deduplication, background refetching, and invalidation.
 * **Axios**: HTTP client, wrapped in a single configured instance with auth interceptors (see [API Client Layer](api_client.md)).
 * **Day.js**: Lightweight alternative to Moment.js for date parsing, validation, manipulation, and formatting.
-* **`@ant-design/charts`**: Chart rendering for dashboards and reports.
+* **Charts**: hand-written SVG/DOM components in `src/components/dashboard/` and `src/components/reports/` — no chart library. The last G2 chart (`@ant-design/plots`) was replaced because it pulled a 1.26 MB chunk for a single donut.
 * **i18next**: Internationalization framework supporting complete bilingual localization (English & Italian).
 
 ---

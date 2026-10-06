@@ -176,10 +176,10 @@ export default defineConfig(({ mode }) => {
                 // DashboardPage sceglie a runtime fra due moduli grafici mutuamente
                 // esclusivi (`_isMobileAtLoad ? import(mobile) : import(desktop)`), ma il
                 // bundler emette un unico elenco di modulepreload per il chunk, che li
-                // contiene entrambi: su mobile il bundle desktop con G2 (1,26 MB) veniva
-                // scaricato pur non venendo mai eseguito. Verificato con browser headless
-                // a viewport 390px. Toglierli dal preload non impedisce il caricamento del
-                // ramo che serve davvero: quello passa dall'import() normale.
+                // contiene entrambi: su mobile veniva scaricato anche il modulo desktop, mai
+                // eseguito (quando conteneva G2 erano 1,26 MB; oggi sono pochi kB, ma resta
+                // inutile). Toglierli dal preload non impedisce il caricamento del ramo che
+                // serve davvero: quello passa dall'import() normale.
                 resolveDependencies: (_url, deps) =>
                     deps.filter(d => !/\/(DashboardCharts|DashboardChartsMobile)-[^/]*\.js$/.test(d)),
             },
@@ -201,7 +201,7 @@ export default defineConfig(({ mode }) => {
                             if (id.includes('/i18next') || id.includes('/react-i18next')) {
                                 return 'vendor-i18n';
                             }
-                            // NON raggruppare antd o @antv in un vendor chunk unico.
+                            // NON raggruppare antd in un vendor chunk unico.
                             // Provato e misurato: accorpandoli il percorso critico eager passa
                             // da 1359 kB a 2868 kB, perché forzare moduli non correlati nello
                             // stesso chunk crea dipendenze circolari fra chunk e basta un solo

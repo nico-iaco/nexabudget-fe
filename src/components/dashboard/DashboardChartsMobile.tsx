@@ -1,7 +1,6 @@
 import { Flex, Progress, theme, Typography } from 'antd';
 import { useTranslation } from 'react-i18next';
-import type { BarData } from '../../hooks/useDashboardData';
-import { SERIES_INCOME, FONT_SIZE, RADIUS, getSemanticColors } from '../../theme/tokens';
+import { FONT_SIZE, RADIUS, getSemanticColors } from '../../theme/tokens';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { EmptyState } from '../common/EmptyState';
 import { formatMoney, formatPercent } from '../../utils/format';
@@ -55,81 +54,6 @@ export const GenericPieChart = ({ data, centerLabel }: PieChartProps) => {
         </Flex>
     );
 };
-
-interface BarChartProps {
-    data: BarData[];
-}
-
-export const TrendBarChart = ({ data }: BarChartProps) => {
-    const { t } = useTranslation();
-    const currency = useDefaultCurrency();
-    const { preferences } = usePreferences();
-    const semantic = getSemanticColors(preferences.theme === 'dark');
-    if (!data || data.length === 0) return <EmptyState description={t('charts.noData')} />;
-
-    const months = [...new Set(data.map(d => d.month))];
-    const maxValue = Math.max(...data.map(d => d.value), 1);
-
-    // Colore basato sulla chiave stabile SERIES_INCOME/EXPENSE — non sulla stringa tradotta
-    const colorFor = (type: string) =>
-        type === SERIES_INCOME ? semantic.positive : semantic.negative;
-
-    // Etichetta leggibile dall'utente nella lingua corrente
-    const labelFor = (type: string) =>
-        type === SERIES_INCOME ? t('charts.income') : t('charts.expense');
-
-    const types = [...new Set(data.map(d => d.type))];
-
-    return (
-        <div>
-            {/* Legend */}
-            <Flex gap={12} style={{ marginBottom: 8 }}>
-                {types.map(type => (
-                    <Flex key={type} align="center" gap={4}>
-                        <div style={{ width: 10, height: 10, borderRadius: RADIUS.xs, backgroundColor: colorFor(type) }} />
-                        <Text style={{ fontSize: FONT_SIZE.xs }}>{labelFor(type)}</Text>
-                    </Flex>
-                ))}
-            </Flex>
-
-            {/* Bars */}
-            <div style={{ overflowX: 'auto', WebkitOverflowScrolling: 'touch' }}>
-                <div style={{ display: 'flex', gap: 6, minWidth: months.length * 52, alignItems: 'flex-end', height: 140, paddingBottom: 20, position: 'relative' }}>
-                    {months.map(month => {
-                        const monthData = data.filter(d => d.month === month);
-                        return (
-                            <div
-                                key={month}
-                                style={{ flex: 1, minWidth: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', height: '100%', justifyContent: 'flex-end' }}
-                            >
-                                <Flex gap={2} align="flex-end" style={{ width: '100%', height: 'calc(100% - 18px)' }}>
-                                    {monthData.map(d => (
-                                        <div
-                                            key={d.type}
-                                            title={`${labelFor(d.type)}: ${formatMoney(d.value, currency)}`}
-                                            style={{
-                                                flex: 1,
-                                                height: `${Math.max((d.value / maxValue) * 100, 2)}%`,
-                                                backgroundColor: colorFor(d.type),
-                                                borderRadius: '2px 2px 0 0',
-                                                opacity: 0.85,
-                                                minHeight: 2,
-                                            }}
-                                        />
-                                    ))}
-                                </Flex>
-                                <Text style={{ fontSize: 9, marginTop: 3, textAlign: 'center', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>
-                                    {month}
-                                </Text>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-        </div>
-    );
-};
-
 
 interface ComparisonRowProps {
     label: string;
