@@ -357,6 +357,7 @@ export const Layout = () => {
                     <BankLinkModal
                         open={bankLinkState.isOpen}
                         onCancel={bankLinkActions.cancel}
+                        onBack={bankLinkState.currentStep > (bankLinkState.providerLocked ? 1 : 0) ? bankLinkActions.back : undefined}
                         account={bankLinkState.linkingAccount}
                         currentStep={bankLinkState.currentStep}
                         selectedProvider={bankLinkState.selectedProvider}

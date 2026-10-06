@@ -16,6 +16,8 @@ interface BankLinkState {
     banks: BankInstitutionDto[];
     loadingBanks: boolean;
     selectedBank: string | null;
+    /** Rinnovo di un collegamento attivo: il provider è fissato e lo step 0 non è raggiungibile. */
+    providerLocked: boolean;
 }
 
 const INITIAL_STATE: BankLinkState = {
@@ -27,6 +29,7 @@ const INITIAL_STATE: BankLinkState = {
     banks: [],
     loadingBanks: false,
     selectedBank: null,
+    providerLocked: false,
 };
 
 /**
@@ -40,9 +43,11 @@ export const useBankLink = () => {
 
     // useCallback: `open` viene esposto nell'outlet context di Layout, che va memoizzato.
     const open = useCallback((account: Account) => {
-        // Se l'account è già collegato a un provider (es. rinnovo collegamento scaduto),
-        // pre-seleziona quel provider e salta lo step di scelta.
-        const presetProvider: BankProvider | null = account.provider
+        // Solo il rinnovo di un collegamento attivo (es. consenso scaduto) pre-seleziona il
+        // provider e salta lo step di scelta. `provider` da solo non basta: il backend lo
+        // conserva anche su conti scollegati o con un collegamento mai completato, e per
+        // quelli lo step 0 spariva impedendo di scegliere un provider diverso.
+        const presetProvider: BankProvider | null = account.linkedToExternal && account.provider
             ? api.providerSlug(account.provider)
             : null;
         setState({
@@ -54,12 +59,30 @@ export const useBankLink = () => {
             banks: [],
             loadingBanks: false,
             selectedBank: null,
+            providerLocked: presetProvider !== null,
         });
     }, []);
 
     const cancel = useCallback(() => {
         setState(INITIAL_STATE);
     }, []);
+
+    // Torna allo step precedente azzerando le scelte successive (paese → banche → banca).
+    const back = () => {
+        setState(s => {
+            const minStep = s.providerLocked ? 1 : 0;
+            if (s.currentStep <= minStep) return s;
+            const currentStep = s.currentStep - 1;
+            return {
+                ...s,
+                currentStep,
+                selectedProvider: currentStep === 0 ? null : s.selectedProvider,
+                selectedCountry: currentStep <= 1 ? null : s.selectedCountry,
+                banks: currentStep <= 1 ? [] : s.banks,
+                selectedBank: null,
+            };
+        });
+    };
 
     const handleProviderSelect = (provider: BankProvider) => {
         setState(s => ({ ...s, selectedProvider: provider, currentStep: 1 }));
@@ -104,6 +127,7 @@ export const useBankLink = () => {
         actions: {
             open,
             cancel,
+            back,
             handleProviderSelect,
             handleCountrySelect,
             handleBankSelect,

@@ -9,6 +9,8 @@ const { Option } = Select;
 interface BankLinkModalProps {
     open: boolean;
     onCancel: () => void;
+    /** Assente quando non si può tornare indietro (primo step raggiungibile). */
+    onBack?: () => void;
     account: Account | null;
     currentStep: number;
     selectedProvider: BankProvider | null;
@@ -25,6 +27,7 @@ interface BankLinkModalProps {
 export const BankLinkModal = ({
     open,
     onCancel,
+    onBack,
     account,
     currentStep,
     selectedProvider,
@@ -44,7 +47,8 @@ export const BankLinkModal = ({
             open={open}
             onCancel={onCancel}
             footer={[
-                <Button key="back" onClick={onCancel}>{t('common.cancel')}</Button>,
+                <Button key="cancel" onClick={onCancel}>{t('common.cancel')}</Button>,
+                ...(onBack ? [<Button key="back" onClick={onBack}>{t('common.back')}</Button>] : []),
                 <Button
                     key="submit"
                     type="primary"
