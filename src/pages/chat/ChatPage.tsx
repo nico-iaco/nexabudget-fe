@@ -1,7 +1,7 @@
 // src/pages/chat/ChatPage.tsx
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { App, Button, Drawer, Flex, Popconfirm, Spin, Tag, Typography, theme } from 'antd';
-import { DeleteOutlined, MenuOutlined, PlusOutlined, RobotOutlined, SendOutlined } from '@ant-design/icons';
+import { DeleteOutlined, MenuOutlined, PlusOutlined, ReloadOutlined, RobotOutlined, SendOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
 import { useTranslation } from 'react-i18next';
@@ -15,6 +15,7 @@ import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { FONT_HEADING, FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 import { ItemList } from '../../components/common/ItemList';
+import { apiErrorText, getApiErrorStatus } from '../../utils/apiError';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -26,6 +27,13 @@ interface DisplayMessage {
     createdAt: string;
     toolsUsed?: string[];
     isLoading?: boolean;
+    /**
+     * Scambio non salvato dal backend (modello AI non raggiungibile su una chat nuova):
+     * resta a video finché l'utente non invia di nuovo, ma non fa parte dello storico.
+     */
+    ephemeral?: boolean;
+    /** Testo da reinviare con "Riprova" (solo sulla risposta di ripiego). */
+    retryText?: string;
 }
 
 // I plugin remark vanno in una costante di modulo: come array literal inline
@@ -37,6 +45,9 @@ interface ChatMessageBubbleProps {
     isMobile: boolean;
     token: GlobalToken;
     toolsUsedLabel: string;
+    notSavedLabel: string;
+    retryLabel: string;
+    onRetry: (text: string) => void;
 }
 
 /**
@@ -47,7 +58,7 @@ interface ChatMessageBubbleProps {
  * digitazione crescente al crescere della conversazione.
  * Le prop sono tutte stabili fra una battitura e l'altra.
  */
-const ChatMessageBubble = memo(({ msg, isMobile, token, toolsUsedLabel }: ChatMessageBubbleProps) => (
+const ChatMessageBubble = memo(({ msg, isMobile, token, toolsUsedLabel, notSavedLabel, retryLabel, onRetry }: ChatMessageBubbleProps) => (
     <Flex justify={msg.role === 'USER' ? 'flex-end' : 'flex-start'}>
         <Flex
             vertical
@@ -73,6 +84,9 @@ const ChatMessageBubble = memo(({ msg, isMobile, token, toolsUsedLabel }: ChatMe
                         ? '16px 16px 4px 16px'
                         : '16px 16px 16px 4px',
                     boxShadow: token.boxShadowSecondary,
+                    // Scambio non salvato: attenuato, per distinguerlo dallo storico.
+                    opacity: msg.ephemeral ? 0.75 : 1,
+                    border: msg.ephemeral ? `1px dashed ${token.colorWarningBorder}` : undefined,
                     lineHeight: 1.55,
                     fontSize: isMobile ? FONT_SIZE.lg : FONT_SIZE.base,
                     wordBreak: 'break-word',
@@ -95,6 +109,17 @@ const ChatMessageBubble = memo(({ msg, isMobile, token, toolsUsedLabel }: ChatMe
                     <span style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</span>
                 )}
             </div>
+
+            {msg.retryText !== undefined && (
+                <Flex align="center" gap={8} wrap="wrap" style={{ marginTop: 4, paddingLeft: 4 }}>
+                    <Text style={{ fontSize: FONT_SIZE.xs, color: token.colorWarningText }}>
+                        {notSavedLabel}
+                    </Text>
+                    <Button size="small" icon={<ReloadOutlined />} onClick={() => onRetry(msg.retryText ?? '')}>
+                        {retryLabel}
+                    </Button>
+                </Flex>
+            )}
 
             {msg.toolsUsed && msg.toolsUsed.length > 0 && (
                 <Flex gap={4} wrap="wrap" style={{ marginTop: 4, paddingLeft: 4 }}>
@@ -143,6 +168,8 @@ export const ChatPage = () => {
     // Estratta qui: passata come stringa già risolta, la bolla memoizzata non ha
     // bisogno di `t` fra le prop (che cambierebbe identità al cambio lingua).
     const toolsUsedLabel = t('chat.toolsUsed');
+    const notSavedLabel = t('chat.notSavedHint');
+    const retryLabel = t('common.retry');
     const { isMobile, isSmallMobile } = useBreakpoints();
 
     usePageTitle(t('chat.title'));
@@ -251,7 +278,8 @@ export const ChatPage = () => {
             isLoading: true,
         };
 
-        setMessages(prev => [...prev, userMsg, loadingMsg]);
+        // Un nuovo invio sostituisce l'eventuale scambio non salvato rimasto a video.
+        setMessages(prev => [...prev.filter(m => !m.ephemeral), userMsg, loadingMsg]);
         if (!textOverride) setInputText('');
         setSending(true);
 
@@ -259,27 +287,43 @@ export const ChatPage = () => {
             const res = await api.sendChatMessage({ sessionId: activeSessionId, message: text });
             const { sessionId, reply, toolsUsed } = res.data;
 
-            if (!activeSessionId) {
+            // sessionId null: il modello AI non ha risposto su una chat nuova e il backend
+            // non ha salvato nulla. Si resta nella "nuova chat": la risposta di ripiego è
+            // temporanea, con "Riprova", e il testo torna modificabile nell'input.
+            // (Su una sessione esistente il ripiego è indistinguibile: nessun flag esplicito.)
+            const notSaved = sessionId === null;
+
+            if (!activeSessionId && sessionId !== null) {
                 setActiveSessionId(sessionId);
                 fetchSessions();
             }
 
             setMessages(prev =>
-                prev.map(m =>
-                    m.id === `${tempBase}-loading`
-                        ? {
-                            id: `${sessionId}-${Date.now()}`,
-                            role: 'ASSISTANT' as const,
-                            content: reply,
-                            createdAt: new Date().toISOString(),
-                            toolsUsed: toolsUsed.length > 0 ? toolsUsed : undefined,
-                        }
-                        : m
-                )
+                prev.map(m => {
+                    if (notSaved && m.id === `${tempBase}-user`) return { ...m, ephemeral: true };
+                    if (m.id !== `${tempBase}-loading`) return m;
+                    return {
+                        id: `${sessionId ?? tempBase}-${Date.now()}`,
+                        role: 'ASSISTANT' as const,
+                        content: reply,
+                        createdAt: new Date().toISOString(),
+                        toolsUsed: toolsUsed && toolsUsed.length > 0 ? toolsUsed : undefined,
+                        ...(notSaved ? { ephemeral: true, retryText: text } : {}),
+                    };
+                })
             );
-        } catch {
-            message.error(t('chat.sendError'));
+            if (notSaved) setInputText(prev => (prev.trim() ? prev : text));
+        } catch (error) {
             setMessages(prev => prev.filter(m => m.id !== `${tempBase}-loading` && m.id !== `${tempBase}-user`));
+            if (getApiErrorStatus(error) === 404 && activeSessionId) {
+                // La sessione è stata eliminata nel frattempo (es. da un altro dispositivo).
+                message.warning(t('chat.sessionGone'));
+                setSessions(prev => prev.filter(s => s.id !== activeSessionId));
+                setActiveSessionId(null);
+                setMessages([]);
+            } else {
+                message.error(apiErrorText(error, t('chat.sendError')));
+            }
             // Il testo era già stato svuotato dall'input: lo rimettiamo lì, così un errore
             // non fa perdere una domanda lunga e basta un invio per riprovare.
             setInputText(prev => (prev.trim() ? prev : text));
@@ -287,6 +331,16 @@ export const ChatPage = () => {
             setSending(false);
         }
     };
+
+    // "Riprova" sulla risposta non salvata. Identità stabile (via ref) perché finisce nelle
+    // prop della bolla memoizzata; il ref si aggiorna in effetto, non in render.
+    const handleSendRef = useRef(handleSend);
+    useEffect(() => { handleSendRef.current = handleSend; });
+    const handleRetry = useCallback((text: string) => {
+        // Il testo era stato rimesso nell'input: lo si svuota, l'invio usa `text`.
+        setInputText(prev => (prev.trim() === text.trim() ? '' : prev));
+        void handleSendRef.current(text);
+    }, []);
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         // Su mobile Enter va a capo (comportamento naturale); solo su desktop invia senza Shift
@@ -612,6 +666,9 @@ export const ChatPage = () => {
                                     isMobile={isMobile}
                                     token={token}
                                     toolsUsedLabel={toolsUsedLabel}
+                                    notSavedLabel={notSavedLabel}
+                                    retryLabel={retryLabel}
+                                    onRetry={handleRetry}
                                 />
                             ))}
                             <div ref={messagesEndRef} />

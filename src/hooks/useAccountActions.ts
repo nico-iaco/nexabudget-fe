@@ -11,6 +11,7 @@ import * as api from '../services/api';
 import { queryKeys } from '../queryKeys';
 import type { Account, AccountRequest } from '../types/api';
 import type { TransferFormValues } from '../components/modals/TransferModal';
+import { apiErrorText } from '../utils/apiError';
 
 /**
  * Gestisce tutte le azioni CRUD sugli account e il trasferimento tra conti.
@@ -50,7 +51,7 @@ export const useAccountActions = () => {
             invalidateAccounts();
         },
         onError: (error) => {
-            message.error(t('accounts.saveError'));
+            message.error(apiErrorText(error, t('accounts.saveError')));
             console.error(error);
         },
     });
@@ -64,7 +65,7 @@ export const useAccountActions = () => {
             navigate('/transactions');
         },
         onError: (error) => {
-            message.error(t('accounts.deleteError'));
+            message.error(apiErrorText(error, t('accounts.deleteError')));
             console.error(error);
         },
     });
@@ -87,7 +88,7 @@ export const useAccountActions = () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
         },
         onError: (error) => {
-            message.error(t('transfers.createError'));
+            message.error(apiErrorText(error, t('transfers.createError')));
             console.error(error);
         },
     });

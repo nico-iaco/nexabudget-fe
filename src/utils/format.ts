@@ -55,6 +55,23 @@ export const formatMoney = (value: number, currency = 'EUR', { signed = false, d
         ...(signed ? { signDisplay: 'exceptZero' } : {}),
     }).format(value);
 
+/**
+ * Prezzo unitario (es. di un token): 2 decimali da 1 in su; sotto l'unità quanti ne
+ * servono per circa 4 cifre significative, fino a 8 (la precisione del backend). Così un
+ * token da 0,00001234 € non appare come "0,00 €". I totali restano su `formatMoney`.
+ */
+export const formatUnitPrice = (value: number, currency = 'EUR'): string => {
+    const abs = Math.abs(value);
+    if (abs === 0 || abs >= 1 || !Number.isFinite(abs)) return formatMoney(value, currency);
+    const decimals = Math.min(8, Math.max(2, 3 - Math.floor(Math.log10(abs))));
+    return getFormatter({
+        style: 'currency',
+        currency,
+        minimumFractionDigits: 2,
+        maximumFractionDigits: decimals,
+    }).format(value);
+};
+
 /** Numero con separatori localizzati e fino a `maxDecimals` decimali (es. quantità crypto). */
 export const formatNumber = (value: number, maxDecimals = 2, minDecimals = 0): string =>
     getFormatter({ minimumFractionDigits: minDecimals, maximumFractionDigits: maxDecimals }).format(value);

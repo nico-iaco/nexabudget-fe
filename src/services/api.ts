@@ -94,10 +94,16 @@ export const clearCachedApiResponses = () => {
     }
 };
 
+// 403 che NON indicano una sessione scaduta: il login/registrazione falliti e i job di
+// analisi AI, che rispondono 403 quando il job non è dell'utente o è scaduto (la UI lo
+// tratta come "report non più disponibile"). Per questi niente logout forzato.
+const NO_LOGOUT_ON_403 = ['/auth/login', '/auth/register', '/reports/ai-analysis/'];
+
 apiClient.interceptors.response.use(
     (response) => response,
     (error) => {
-        if (error.response?.status === 403 && !(error.request?.responseURL.includes('/auth/login') || error.request?.responseURL.includes('/auth/register'))) {
+        const url: string = error.request?.responseURL ?? error.config?.url ?? '';
+        if (error.response?.status === 403 && !NO_LOGOUT_ON_403.some(path => url.includes(path))) {
             // Rimuovi il token e reindirizza al login
             localStorage.removeItem('authToken');
             localStorage.removeItem('auth');
@@ -205,7 +211,13 @@ export const restoreAccount = (id: string): Promise<AxiosResponse<void>> => apiC
 // Reports
 export const getMonthlyTrend = (months = 12): Promise<AxiosResponse<MonthlyTrendResponse>> => apiClient.get(`/reports/monthly-trend?months=${months}`);
 export const getCategoryBreakdown = (startDate: string, endDate: string): Promise<AxiosResponse<CategoryBreakdownResponse>> => apiClient.get(`/reports/category-breakdown?startDate=${startDate}&endDate=${endDate}`);
-export const getMonthComparison = (year: number, month: number): Promise<AxiosResponse<MonthComparisonResponse>> => apiClient.get(`/reports/month-comparison?year=${year}&month=${month}`);
+export const getMonthComparison = (year: number, month: number): Promise<AxiosResponse<MonthComparisonResponse>> => {
+    // Il backend risponde 400 per un mese fuori da 1–12: si scarta prima della richiesta.
+    if (!Number.isInteger(month) || month < 1 || month > 12 || !Number.isInteger(year)) {
+        return Promise.reject(new RangeError(`month-comparison: mese non valido (${year}-${month})`));
+    }
+    return apiClient.get(`/reports/month-comparison?year=${year}&month=${month}`);
+};
 export const getMonthlyProjection = (): Promise<AxiosResponse<MonthlyProjectionResponse>> => apiClient.get('/reports/monthly-projection');
 export const getBalanceTrend = (params: { startDate: string; endDate: string }): Promise<AxiosResponse<BalanceTrendResponse>> =>
     apiClient.get(`/reports/balance-trend?startDate=${params.startDate}&endDate=${params.endDate}`);

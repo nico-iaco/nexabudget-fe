@@ -11,6 +11,7 @@ import {CategoriesCard} from './CategoriesCard';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { PageHeader } from '../../components/common/PageHeader';
 import { SPACING } from '../../theme/tokens';
+import { apiErrorText } from '../../utils/apiError';
 
 const { Text } = Typography;
 
@@ -29,8 +30,8 @@ export const SettingsPage = () => {
             const { data } = await updateUserProfile({ defaultCurrency: newCurrency });
             updateUser(data);
             message.success(t('settings.profileUpdateSuccess'));
-        } catch {
-            message.error(t('settings.profileUpdateError'));
+        } catch (error) {
+            message.error(apiErrorText(error, t('settings.profileUpdateError')));
         } finally {
             setUpdatingParams(false);
         }

@@ -3,6 +3,7 @@ import {App, Button, Form, Input, InputNumber, Modal} from 'antd';
 import {useTranslation} from 'react-i18next';
 import {addManualHolding, updateManualHolding} from '../../services/api';
 import type {CryptoAsset, ManualHoldingsRequest, UpdateCryptoAsset} from '../../types/api';
+import {apiErrorText, applyApiFieldErrors} from '../../utils/apiError';
 
 interface ManualHoldingModalProps {
     open: boolean;
@@ -36,7 +37,9 @@ export const ManualHoldingModal: React.FC<ManualHoldingModalProps> = ({ open, on
                 await updateManualHolding(editingAsset.id, updateData);
                 message.success(t('manualHolding.updatedSuccess'));
             } else {
-                await addManualHolding(values);
+                // Il backend non distingue maiuscole e minuscole: si invia in maiuscolo, come
+                // viene già mostrato nel campo.
+                await addManualHolding({ ...values, symbol: values.symbol.trim().toUpperCase() });
                 message.success(t('manualHolding.addedSuccess'));
             }
             form.resetFields();
@@ -44,7 +47,8 @@ export const ManualHoldingModal: React.FC<ManualHoldingModalProps> = ({ open, on
             onClose();
         } catch (error) {
             console.error('Failed to save holding:', error);
-            message.error(t('manualHolding.saveError'));
+            applyApiFieldErrors(form, error);
+            message.error(apiErrorText(error, t('manualHolding.saveError')));
         } finally {
             setLoading(false);
         }

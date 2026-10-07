@@ -424,9 +424,15 @@ export interface AiAnalysisRequest {
     userLanguage?: string;
 }
 
+/**
+ * Risposta di POST /reports/ai-analysis: 202 + PENDING per un job nuovo, 200 + COMPLETED se
+ * il report per lo stesso periodo e lingua è già in cache. In quel caso il contenuto è già
+ * disponibile: se `content` manca nella risposta, la UI lo legge una volta da GET /{jobId}.
+ */
 export interface AiAnalysisJobResponse {
     jobId: string;
     status: 'PENDING' | 'COMPLETED' | 'FAILED';
+    content?: string;
 }
 
 export interface AiAnalysisStatusResponse {
@@ -506,7 +512,11 @@ export interface ChatRequest {
 }
 
 export interface ChatResponse {
-    sessionId: string;
+    /**
+     * null quando il modello AI non risponde su una chat nuova: il backend non ha salvato
+     * nulla (né sessione né messaggi) e `reply` è un testo di ripiego.
+     */
+    sessionId: string | null;
     reply: string;
     toolsUsed: string[];
 }

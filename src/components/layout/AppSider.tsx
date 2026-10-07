@@ -158,13 +158,16 @@ export const AppSider = ({
             const dropdownItems = [
                 // "Disconnetti banca" non viene offerto: il backend non espone ancora un
                 // endpoint di scollegamento, e una voce di menu inerte è peggio di nessuna.
-                ...(isCheckingAccount && !isConnectedToBank ? [{
+                ...(isCheckingAccount && !isConnectedToBank && !acc.requiresReauth ? [{
                     key: 'bankLink',
                     icon: <LinkOutlined />,
                     label: t('accounts.connectBank'),
                     onClick: () => onOpenBankLink(acc),
                 }] : []),
-                ...(isConnectedToBank && acc.requiresReauth ? [{
+                // Senza vincolo su linkedToExternal: dopo un cambio di provider lasciato a
+                // metà il vecchio collegamento è azzerato ma requiresReauth resta true, e il
+                // conto deve comunque offrire di completare o rifare il collegamento.
+                ...(acc.requiresReauth ? [{
                     key: 'renewConnection',
                     icon: <ReloadOutlined />,
                     label: t('accounts.renewConnection'),

@@ -63,7 +63,10 @@ export const useBankLink = () => {
             loadingBanks: false,
             selectedBank: null,
             linking: false,
-            providerLocked: presetProvider !== null,
+            // Con requiresReauth il provider resta preselezionato ma si può tornare allo
+            // step 0: il backend azzera il vecchio collegamento se si sceglie un provider
+            // diverso, quindi "rifare" il collegamento altrove è un percorso valido.
+            providerLocked: presetProvider !== null && !account.requiresReauth,
         });
     }, []);
 

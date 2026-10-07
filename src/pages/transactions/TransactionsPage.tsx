@@ -68,6 +68,7 @@ import {
 import { TRANSACTIONS_PAGE_SIZE, useTransactionsList } from '../../hooks/useTransactionsList';
 import { getRangePresets } from '../../utils/datePresets';
 import { DatePresetPicker } from '../../components/common/DatePresetPicker';
+import { apiErrorText, applyApiFieldErrors } from '../../utils/apiError';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -120,7 +121,8 @@ export const TransactionsPage = () => {
         accounts,
         fetchAccounts: fetchLayoutAccounts,
         categories: rawCategories,
-        handleOpenTransferModal
+        handleOpenTransferModal,
+        onOpenBankLink,
     } = useOutletContext<AppOutletContext>();
 
     const categories = useMemo(
@@ -464,6 +466,15 @@ export const TransactionsPage = () => {
         invalidateDerivedData();
     }, [refreshTransactions, fetchLayoutAccounts, invalidateDerivedData]);
 
+    // Conti con valute diverse: il backend ora mantiene entrambi gli importi reali quando
+    // collega due transazioni, quindi l'importo del candidato non deve coincidere.
+    const linkIsMultiCurrency = useMemo(() => {
+        if (!sourceTransaction || !destinationAccountId) return false;
+        const sourceCurrency = accountsById.get(sourceTransaction.accountId)?.currency;
+        const destCurrency = accountsById.get(destinationAccountId)?.currency;
+        return !!sourceCurrency && !!destCurrency && sourceCurrency !== destCurrency;
+    }, [sourceTransaction, destinationAccountId, accountsById]);
+
     useEffect(() => {
         if (!destinationAccountId || !sourceTransaction) return;
 
@@ -495,9 +506,9 @@ export const TransactionsPage = () => {
 
                 const filtered = response.data.content.filter(t => {
                     const tDate = dayjs(t.date);
-                    // Must be opposite type, same amount, and within date range
+                    // Tipo opposto, stesso importo (solo a parità di valuta) e nella finestra
                     return t.type !== sourceTransaction.type &&
-                        t.amount === sourceTransaction.amount &&
+                        (linkIsMultiCurrency || t.amount === sourceTransaction.amount) &&
                         !t.transferId &&
                         tDate.isAfter(startDate) && tDate.isBefore(endDate);
                 });
@@ -511,7 +522,7 @@ export const TransactionsPage = () => {
         };
 
         fetchDestinationTransactions();
-    }, [destinationAccountId, sourceTransaction]);
+    }, [destinationAccountId, sourceTransaction, linkIsMultiCurrency]);
 
 
     // Eliminazione senza conferma preventiva ma con "Annulla": è un soft delete (finisce nel
@@ -533,8 +544,9 @@ export const TransactionsPage = () => {
             apiNotification.destroy(key);
             const restored = await Promise.allSettled(deleted.map(id => api.restoreTransaction(id)));
             afterTransactionsChange();
-            if (restored.some(r => r.status === 'rejected')) {
-                message.error(t('trash.restoreError'));
+            const failure = restored.find((r): r is PromiseRejectedResult => r.status === 'rejected');
+            if (failure) {
+                message.error(apiErrorText(failure.reason, t('trash.restoreError')));
             } else {
                 message.success(t('trash.restoreSuccess'));
             }
@@ -644,7 +656,8 @@ export const TransactionsPage = () => {
             invalidateDerivedData();
         } catch (error) {
             console.error("Failed to save transaction", error);
-            message.error(t('transactions.saveError'));
+            applyApiFieldErrors(form, error);
+            message.error(apiErrorText(error, t('transactions.saveError')));
         } finally {
             setSaving(false);
         }
@@ -670,11 +683,10 @@ export const TransactionsPage = () => {
             await api.linkTransactionsAsTransfer(request);
             message.success(t('transactions.linkTransferSuccess'));
             handleCancelLinkTransferModal();
-            refreshTransactions();
-            invalidateDerivedData();
+            afterTransactionsChange();
         } catch (error) {
             console.error("Failed to link transactions", error);
-            message.error(t('transactions.linkTransferError'));
+            message.error(apiErrorText(error, t('transactions.linkTransferError')));
         }
     };
 
@@ -688,11 +700,11 @@ export const TransactionsPage = () => {
             });
             message.success(t('transactions.linkTransferSuccess'));
             handleCancelLinkTransferModal();
-            refreshTransactions();
-            invalidateDerivedData();
+            // La conversione crea la gamba sul conto di destinazione: ne cambia il saldo.
+            afterTransactionsChange();
         } catch (error) {
             console.error("Failed to convert single transaction to transfer", error);
-            message.error(t('transactions.linkTransferError'));
+            message.error(apiErrorText(error, t('transactions.linkTransferError')));
         }
     };
 
@@ -1081,6 +1093,22 @@ export const TransactionsPage = () => {
                 )}
             />
 
+            {/* requiresReauth: consenso scaduto, oppure cambio di provider lasciato a metà
+                (il vecchio collegamento è già stato azzerato). In entrambi i casi il sync non
+                può funzionare finché il wizard non viene completato. */}
+            {currentAccount?.requiresReauth && (
+                <Alert
+                    type="warning"
+                    showIcon
+                    style={{ marginBottom: SPACING.md }}
+                    title={t('accounts.requiresReauthBanner')}
+                    action={
+                        <Button size="small" type="primary" onClick={() => onOpenBankLink(currentAccount)}>
+                            {t('accounts.renewConnection')}
+                        </Button>
+                    }
+                />
+            )}
 
             <Flex vertical gap="middle" style={{ marginBottom: SPACING.md }}>
                 <Flex gap="small" align="stretch">
@@ -1356,6 +1384,10 @@ export const TransactionsPage = () => {
                             </Form.Item>
                         </Form>
 
+                        {linkIsMultiCurrency && (
+                            <Alert type="info" showIcon title={t('transactions.linkTransferMultiCurrencyHint')} />
+                        )}
+
                         {loadingDestTransactions ? <Spin /> : (
                             destinationAccountId && (
                                 destinationTransactions.length > 0 ? (
@@ -1380,7 +1412,9 @@ export const TransactionsPage = () => {
                                     </Radio.Group>
                                 ) : (
                                     <Alert
-                                        title={t('transactions.linkTransferNoCompatible')}
+                                        title={linkIsMultiCurrency
+                                            ? t('transactions.linkTransferNoCompatibleMultiCurrency')
+                                            : t('transactions.linkTransferNoCompatible')}
                                         type="info" showIcon />
                                 )
                             )

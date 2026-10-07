@@ -3,11 +3,13 @@ import { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { Category, CategoryRequest } from '../../types/api';
 import { SPACING } from '../../theme/tokens';
+import { applyApiFieldErrors } from '../../utils/apiError';
 
 interface CategoryFormModalProps {
     open: boolean;
     onCancel: () => void;
-    onFinish: (values: CategoryRequest) => void;
+    /** Se rifiuta (400/409 rilanciati dal chiamante), l'errore del backend va sul campo nome. */
+    onFinish: (values: CategoryRequest) => Promise<void>;
     editingCategory: Category | null;
     submitting?: boolean;
 }
@@ -26,8 +28,15 @@ export const CategoryFormModal = ({ open, onCancel, onFinish, editingCategory, s
         }
     }, [open, editingCategory, form]);
 
-    const handleFinish = (values: CategoryRequest) => {
-        onFinish({ name: values.name.trim() });
+    const handleFinish = async (values: CategoryRequest) => {
+        try {
+            await onFinish({ name: values.name.trim() });
+        } catch (error) {
+            // 409 "nome già esistente": il messaggio del backend sul campo, non in un toast.
+            if (!applyApiFieldErrors(form, error, 'name')) {
+                form.setFields([{ name: 'name', errors: [t('settings.categories.duplicateError')] }]);
+            }
+        }
     };
 
     return (

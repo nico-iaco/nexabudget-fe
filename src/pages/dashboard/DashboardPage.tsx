@@ -3,9 +3,9 @@ import { useState, lazy, Suspense } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
     Button, Card, Col, DatePicker, Flex, Progress, Row,
-    Select, Skeleton, Statistic, Table, Tabs, Typography
+    Select, Skeleton, Statistic, Table, Tabs, Tooltip, Typography
 } from 'antd';
-import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
+import { ArrowDownOutlined, ArrowUpOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
@@ -53,6 +53,20 @@ import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
 
+/**
+ * Titolo con icona info sulla base di calcolo dei report: netto per categoria (un rimborso
+ * riduce la spesa della sua categoria). Totali, ripartizione, trend, confronto e
+ * proiezione usano tutti questa base, quindi i loro numeri sono confrontabili.
+ */
+const NetBasisTitle = ({ title, hint }: { title: string; hint: string }) => (
+    <Flex align="center" gap={6} component="span">
+        {title}
+        <Tooltip title={hint}>
+            <InfoCircleOutlined aria-label={hint} style={{ fontSize: FONT_SIZE.sm, opacity: 0.65 }} />
+        </Tooltip>
+    </Flex>
+);
+
 // Preset condivisi (utils/datePresets): stessi intervalli di report e transazioni.
 const PRESETS = (t: (k: string) => string) =>
     getRangePresets(t, ['last7Days', 'thisMonth', 'previousMonth', 'last6Months', 'last12Months']);
@@ -68,6 +82,7 @@ export const DashboardPage = () => {
     const balanceGradient = isDark ? GRADIENT_BALANCE_DARK : GRADIENT_BALANCE;
 
     usePageTitle(t('dashboard.title'));
+    const netBasisHint = t('reports.netBasisHint');
 
     const [trendMonths, setTrendMonths] = useState(12);
 
@@ -340,7 +355,7 @@ export const DashboardPage = () => {
                                 </Col>
                                 <Col {...statCols}>
                                     <StatCard
-                                        title={t('dashboard.totalIncome')}
+                                        title={<NetBasisTitle title={t('dashboard.totalIncome')} hint={netBasisHint} />}
                                         value={totalIncome}
                                         currency={currency}
                                         color={semantic.positive}
@@ -354,7 +369,7 @@ export const DashboardPage = () => {
                                 </Col>
                                 <Col {...statCols}>
                                     <StatCard
-                                        title={t('dashboard.totalExpenses')}
+                                        title={<NetBasisTitle title={t('dashboard.totalExpenses')} hint={netBasisHint} />}
                                         value={totalExpenses}
                                         currency={currency}
                                         color={semantic.negative}
@@ -396,7 +411,7 @@ export const DashboardPage = () => {
                     <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
                         <Col xs={{ span: 24, order: 2 }} lg={{ span: 15, order: 1 }}>
                             <Flex vertical gap={16}>
-                                <Card title={t('reports.categoryBreakdown')}>
+                                <Card title={<NetBasisTitle title={t('reports.categoryBreakdown')} hint={netBasisHint} />}>
                                     {breakdownFailed ? (
                                         <InlineError onRetry={retryDashboard} />
                                     ) : (
@@ -418,7 +433,7 @@ export const DashboardPage = () => {
                                 </Card>
 
                                 <Card
-                                    title={t('dashboard.monthlyTrend')}
+                                    title={<NetBasisTitle title={t('dashboard.monthlyTrend')} hint={netBasisHint} />}
                                     {...(!isMobile && {
                                         extra: (
                                             <Flex gap="small" align="center">
@@ -479,11 +494,11 @@ export const DashboardPage = () => {
                                 )}
 
                                 {projectionFailed ? (
-                                    <Card title={t('dashboard.projection')}>
+                                    <Card title={<NetBasisTitle title={t('dashboard.projection')} hint={netBasisHint} />}>
                                         <InlineError onRetry={retryDashboard} />
                                     </Card>
                                 ) : projection && (
-                                    <Card title={t('dashboard.projection')}>
+                                    <Card title={<NetBasisTitle title={t('dashboard.projection')} hint={netBasisHint} />}>
                                         {/* Nella colonna destra (9/24) fra lg e xl tre importi affiancati non ci stanno:
                                             il simbolo € andava a capo. Due per riga finché non c'è spazio. */}
                                         <Row gutter={[16, 8]} align="middle">
@@ -512,7 +527,7 @@ export const DashboardPage = () => {
                                 )}
 
                                 <Card
-                                    title={t('reports.comparison')}
+                                    title={<NetBasisTitle title={t('reports.comparison')} hint={netBasisHint} />}
                                     extra={
                                         <SafeDatePicker
                                             picker="month"

@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react';
-import { App, Card, Dropdown, Flex, Tag, theme, Tooltip } from 'antd';
+import { App, Button, Card, Dropdown, Flex, Tag, theme, Tooltip } from 'antd';
 import { BranchesOutlined, DeleteOutlined, EditOutlined, LoadingOutlined, LockOutlined, PlusOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { useOutletContext } from 'react-router-dom';
-import axios from 'axios';
+import { useQueryClient } from '@tanstack/react-query';
 import type { Category, CategoryRequest } from '../../types/api';
 import { createCategory, deleteCategory, mergeCategoryInto, updateCategory } from '../../services/api';
 import { CategoryFormModal } from '../../components/modals/CategoryFormModal';
@@ -11,10 +11,13 @@ import { CategoryMergeModal } from '../../components/modals/CategoryMergeModal';
 import { useConfirm } from '../../hooks/useConfirm';
 import type { AppOutletContext } from '../../types/outletContext';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
+import { queryKeys } from '../../queryKeys';
+import { apiErrorText, getApiErrorStatus } from '../../utils/apiError';
 
 export const CategoriesCard = () => {
     const { t } = useTranslation();
-    const { message } = App.useApp();
+    const { message, notification } = App.useApp();
+    const queryClient = useQueryClient();
     const confirm = useConfirm();
     const { token } = theme.useToken();
     const { categories, fetchCategories } = useOutletContext<AppOutletContext>();
@@ -28,6 +31,11 @@ export const CategoriesCard = () => {
 
     const sortedCategories = useMemo(
         () => [...categories].sort((a, b) => a.name.localeCompare(b.name)),
+        [categories]
+    );
+
+    const userCategoriesCount = useMemo(
+        () => categories.filter(c => !c.isDefault).length,
         [categories]
     );
 
@@ -60,12 +68,11 @@ export const CategoriesCard = () => {
             setEditingCategory(null);
             fetchCategories();
         } catch (error) {
-            const status = axios.isAxiosError(error) ? error.response?.status : undefined;
-            if (status === 400 || status === 409) {
-                message.error(t('settings.categories.duplicateError'));
-            } else {
-                message.error(t('settings.categories.saveError'));
-            }
+            // 409 (nome già esistente) e 400 (validazione): il modale riporta l'errore sul
+            // campo nome. Il resto (es. 404 su una categoria predefinita) in un toast.
+            const status = getApiErrorStatus(error);
+            if (status === 400 || status === 409) throw error;
+            message.error(apiErrorText(error, t('settings.categories.saveError')));
         } finally {
             setSubmitting(false);
         }
@@ -83,8 +90,32 @@ export const CategoriesCard = () => {
                     await deleteCategory(record.id);
                     message.success(t('settings.categories.deletedSuccess'));
                     fetchCategories();
-                } catch {
-                    message.error(t('settings.categories.deleteError'));
+                } catch (error) {
+                    if (getApiErrorStatus(error) === 409) {
+                        // Categoria ancora usata da transazioni, budget o template: il backend
+                        // suggerisce l'unione, che qui si offre come azione diretta.
+                        const key = `category-in-use-${record.id}`;
+                        notification.warning({
+                            key,
+                            title: t('settings.categories.inUseTitle'),
+                            description: apiErrorText(error, t('settings.categories.deleteError')),
+                            duration: 10,
+                            actions: userCategoriesCount > 1 ? (
+                                <Button
+                                    size="small"
+                                    type="primary"
+                                    onClick={() => {
+                                        notification.destroy(key);
+                                        openMergeModal(record);
+                                    }}
+                                >
+                                    {t('settings.categories.mergeInstead')}
+                                </Button>
+                            ) : undefined,
+                        });
+                    } else {
+                        message.error(apiErrorText(error, t('settings.categories.deleteError')));
+                    }
                 } finally {
                     setRowBusyId(null);
                 }
@@ -101,17 +132,18 @@ export const CategoriesCard = () => {
             setMergeModalOpen(false);
             setMergeSource(null);
             fetchCategories();
-        } catch {
-            message.error(t('settings.categories.mergeError'));
+            // Il merge sposta transazioni (anche quelle nel cestino), budget e template:
+            // cambiano liste, nomi di categoria e aggregati. Budget, template e cestino si
+            // ricaricano già al mount delle loro pagine; qui le query in cache.
+            queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
+            queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
+            queryClient.invalidateQueries({ queryKey: ['reports'] });
+        } catch (error) {
+            message.error(apiErrorText(error, t('settings.categories.mergeError')));
         } finally {
             setSubmitting(false);
         }
     };
-
-    const userCategoriesCount = useMemo(
-        () => categories.filter(c => !c.isDefault).length,
-        [categories]
-    );
 
     const pillBaseStyle = {
         margin: 0,

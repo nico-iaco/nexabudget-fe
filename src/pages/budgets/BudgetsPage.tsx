@@ -21,6 +21,7 @@ import { FONT_SIZE, SPACING, getSemanticColors } from '../../theme/tokens';
 import type { AppOutletContext } from '../../types/outletContext';
 import { formatMoney, formatPercent } from '../../utils/format';
 import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
+import { apiErrorText } from '../../utils/apiError';
 
 const { Text } = Typography;
 
@@ -101,8 +102,8 @@ export const BudgetsPage = () => {
             setIsModalOpen(false);
             setEditing(null);
             fetchBudgets();
-        } catch {
-            message.error(t('budgets.saveError'));
+        } catch (error) {
+            message.error(apiErrorText(error, t('budgets.saveError')));
         }
     };
 
@@ -111,8 +112,8 @@ export const BudgetsPage = () => {
             await api.deleteBudgetTemplate(id);
             message.success(t('budgets.deletedSuccess'));
             fetchBudgets();
-        } catch {
-            message.error(t('budgets.deleteError'));
+        } catch (error) {
+            message.error(apiErrorText(error, t('budgets.deleteError')));
         }
     };
 

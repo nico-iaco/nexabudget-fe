@@ -16,6 +16,7 @@ import { FONT_SIZE, getSemanticColors } from '../../theme/tokens';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
 import { formatMoney } from '../../utils/format';
+import { apiErrorText, getApiErrorStatus } from '../../utils/apiError';
 import { useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '../../types/outletContext';
 
@@ -23,7 +24,7 @@ const { Text } = Typography;
 
 export const TrashPage = () => {
     const { t } = useTranslation();
-    const { message } = App.useApp();
+    const { message, notification } = App.useApp();
     usePageTitle(t('trash.title'));
     const { preferences } = usePreferences();
     const semantic = getSemanticColors(preferences.theme === 'dark');
@@ -99,29 +100,73 @@ export const TrashPage = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [activeTab]);
 
-    const handleRestoreTransaction = async (id: string) => {
-        setRestoringId(id);
-        try {
-            await api.restoreTransaction(id);
-            message.success(t('trash.restoreSuccess'));
-            fetchDeletedTransactions();
-            invalidateRestoredData();
-        } catch {
-            message.error(t('trash.restoreError'));
-        } finally {
-            setRestoringId(null);
-        }
-    };
-
     const handleRestoreAccount = async (id: string) => {
         setRestoringId(id);
         try {
             await api.restoreAccount(id);
             message.success(t('trash.restoreSuccess'));
             fetchDeletedAccounts();
+            // Il conto riporta con sé solo le transazioni cancellate insieme a lui: quelle
+            // già nel cestino prima restano lì. Si ricarica la lista invece di dedurla.
+            if (loadedTabsRef.current.has('transactions')) fetchDeletedTransactions();
             invalidateRestoredData();
+        } catch (error) {
+            message.error(apiErrorText(error, t('trash.restoreError')));
+        } finally {
+            setRestoringId(null);
+        }
+    };
+
+    // 409: il conto della transazione è nel cestino. Si mostra il messaggio del backend e,
+    // se il conto è fra quelli eliminati, si offre di ripristinarlo direttamente.
+    const notifyAccountInTrash = async (record: Transaction, error: unknown) => {
+        let deletedAccount: DeletedAccount | undefined;
+        try {
+            const resp = await api.getDeletedAccounts();
+            const list = Array.isArray(resp.data) ? resp.data : [];
+            setDeletedAccounts(list);
+            setAccLoadError(false);
+            deletedAccount = list.find(a => a.id === record.accountId);
         } catch {
-            message.error(t('trash.restoreError'));
+            // Senza la lista resta il messaggio del backend, che indica già cosa fare.
+        }
+        const key = `restore-account-first-${record.id}`;
+        const account = deletedAccount;
+        notification.warning({
+            key,
+            title: t('trash.restoreAccountFirstTitle'),
+            description: apiErrorText(error, t('trash.restoreError')),
+            duration: 10,
+            actions: account ? (
+                <Button
+                    size="small"
+                    type="primary"
+                    onClick={() => {
+                        notification.destroy(key);
+                        void handleRestoreAccount(account.id);
+                    }}
+                >
+                    {t('trash.restoreAccountNamed', { name: account.name })}
+                </Button>
+            ) : undefined,
+        });
+    };
+
+    const handleRestoreTransaction = async (record: Transaction) => {
+        setRestoringId(record.id);
+        try {
+            // Per un trasferimento il backend ripristina entrambe le gambe: lista e saldi
+            // di tutti i conti vengono ricaricati, non solo la riga cliccata.
+            await api.restoreTransaction(record.id);
+            message.success(t('trash.restoreSuccess'));
+            fetchDeletedTransactions();
+            invalidateRestoredData();
+        } catch (error) {
+            if (getApiErrorStatus(error) === 409) {
+                await notifyAccountInTrash(record, error);
+            } else {
+                message.error(apiErrorText(error, t('trash.restoreError')));
+            }
         } finally {
             setRestoringId(null);
         }
@@ -192,7 +237,7 @@ export const TrashPage = () => {
             render: (_: unknown, record: Transaction) => (
                 <Button
                     size="small"
-                    onClick={() => handleRestoreTransaction(record.id)}
+                    onClick={() => handleRestoreTransaction(record)}
                     loading={restoringId === record.id}
                 >
                     {t('trash.restore')}

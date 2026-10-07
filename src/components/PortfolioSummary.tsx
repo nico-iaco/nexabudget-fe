@@ -7,7 +7,7 @@ import {FONT_SIZE, SPACING, GRADIENT_BALANCE, GRADIENT_BALANCE_DARK} from '../th
 import {useMediaQuery} from '../hooks/useMediaQuery';
 import {usePreferences} from '../contexts/PreferencesContext';
 import {StatCard} from './common/StatCard';
-import { formatMoney, formatNumber } from '../utils/format';
+import { formatMoney, formatNumber, formatUnitPrice } from '../utils/format';
 import { ItemList } from './common/ItemList';
 
 const { Text } = Typography;
@@ -39,18 +39,20 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
         const groups: Record<string, GroupedAsset> = {};
 
         data.assets.forEach(asset => {
-            if (!groups[asset.symbol]) {
-                groups[asset.symbol] = {
-                    symbol: asset.symbol,
+            // Il backend tratta i simboli senza distinzione di maiuscole ("btc" = "BTC").
+            const symbol = asset.symbol.toUpperCase();
+            if (!groups[symbol]) {
+                groups[symbol] = {
+                    symbol,
                     amount: 0,
                     price: asset.price, // Assuming price is same for same symbol or taking one
                     value: 0,
                     assets: []
                 };
             }
-            groups[asset.symbol].amount += asset.amount;
-            groups[asset.symbol].value += asset.value;
-            groups[asset.symbol].assets.push(asset);
+            groups[symbol].amount += asset.amount;
+            groups[symbol].value += asset.value;
+            groups[symbol].assets.push(asset);
         });
 
         return Object.values(groups);
@@ -82,8 +84,8 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
             title: t('portfolio.price'),
             dataIndex: 'price',
             key: 'price',
-            render: (price: number) =>
-                formatAmount(price),
+            // Prezzo unitario con decimali dinamici: i token sotto il centesimo non sono 0,00.
+            render: (price: number) => formatUnitPrice(price, currency),
         },
         {
             title: t('portfolio.value'),

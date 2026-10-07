@@ -10,6 +10,7 @@ import * as api from '../../services/api';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { RADIUS, SPACING } from '../../theme/tokens';
+import { getApiErrorMessage, getApiErrorStatus } from '../../utils/apiError';
 
 const AI_CARD_GRADIENT_LIGHT = 'linear-gradient(135deg, oklch(96% 0.02 260), oklch(93% 0.03 250))';
 const AI_CARD_GRADIENT_DARK = 'linear-gradient(135deg, oklch(24% 0.02 260), oklch(28% 0.03 250))';
@@ -70,14 +71,30 @@ export const AiAnalysisCard: React.FC = () => {
                 endDate: end.format('YYYY-MM-DD'),
                 userLanguage: preferences.language
             });
-            setJobId(res.data.jobId);
+            const { jobId: newJobId, status, content } = res.data;
+            if (status === 'COMPLETED') {
+                // 200 + COMPLETED: report già in cache per periodo e lingua. Niente polling:
+                // risultato e download sono subito disponibili. Se la POST non porta il
+                // contenuto, lo si legge una volta dallo stato del job.
+                const text = content ?? (await api.getAiAnalysisStatus(newJobId)).data.content;
+                setResult(text || t('dashboard.aiAnalysis.emptyResult'));
+                setCompletedJobId(newJobId);
+                setLoading(false);
+            } else if (status === 'FAILED') {
+                message.error(t('dashboard.aiAnalysis.failed'));
+                setLoading(false);
+            } else {
+                setJobId(newJobId);
+            }
         } catch (error: unknown) {
             setLoading(false);
-            const status = (error as { response?: { status?: number } })?.response?.status;
-            if (status === 400) {
-                message.error(t('dashboard.aiAnalysis.invalidRequest'));
+            const status = getApiErrorStatus(error);
+            if (status === 403) {
+                message.error(t('dashboard.aiAnalysis.expired'));
+            } else if (status === 400) {
+                message.error(getApiErrorMessage(error) ?? t('dashboard.aiAnalysis.invalidRequest'));
             } else {
-                message.error(t('dashboard.aiAnalysis.errorRequest'));
+                message.error(getApiErrorMessage(error) ?? t('dashboard.aiAnalysis.errorRequest'));
             }
         }
     };
@@ -121,7 +138,15 @@ export const AiAnalysisCard: React.FC = () => {
                 }
             } catch (error) {
                 console.error(error);
-                // Non fermo il polling al primo errore di rete, ma potrei aggiungere un contatore di retry.
+                // 403: il job non è dell'utente o le sue informazioni sono scadute. Ritentare
+                // non serve: si ferma il polling e si chiede di rigenerare il report.
+                if (getApiErrorStatus(error) === 403) {
+                    messageRef.current.error(tRef.current('dashboard.aiAnalysis.expired'));
+                    setLoading(false);
+                    setJobId(null);
+                    clearInterval(interval);
+                }
+                // Altri errori (rete): il polling continua fino al timeout.
             }
         }, AI_ANALYSIS_POLL_INTERVAL_MS);
 
@@ -167,8 +192,14 @@ export const AiAnalysisCard: React.FC = () => {
             
             link.parentNode?.removeChild(link);
             window.URL.revokeObjectURL(url);
-        } catch {
-            message.error(t('dashboard.aiAnalysis.downloadError'));
+        } catch (error) {
+            if (getApiErrorStatus(error) === 403) {
+                // Job scaduto: il download non tornerà disponibile, va rigenerato.
+                setCompletedJobId(null);
+                message.error(t('dashboard.aiAnalysis.expired'));
+            } else {
+                message.error(t('dashboard.aiAnalysis.downloadError'));
+            }
         }
     };
 
@@ -251,11 +282,13 @@ export const AiAnalysisCard: React.FC = () => {
 
                 {result && !loading && (
                     <div style={{ marginTop: SPACING.md, padding: SPACING.md, backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)', borderRadius: RADIUS.lg }}>
-                        <Flex justify="flex-end" style={{ marginBottom: SPACING.md }}>
-                            <Button type="default" icon={<DownloadOutlined />} onClick={handleDownload}>
-                                {t('dashboard.aiAnalysis.downloadReport')}
-                            </Button>
-                        </Flex>
+                        {completedJobId && (
+                            <Flex justify="flex-end" style={{ marginBottom: SPACING.md }}>
+                                <Button type="default" icon={<DownloadOutlined />} onClick={handleDownload}>
+                                    {t('dashboard.aiAnalysis.downloadReport')}
+                                </Button>
+                            </Flex>
+                        )}
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {result}
                         </ReactMarkdown>

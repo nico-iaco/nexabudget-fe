@@ -344,6 +344,8 @@ export const TransactionImportModal = ({
             return;
         }
 
+        // Il backend tratta `selectedHashes` vuoto come "importa tutte le righe non
+        // duplicate": con zero righe selezionate la conferma non deve mai partire.
         if (selectedImportHashes.length === 0) {
             message.warning(t('transactions.import.selectAtLeastOne'));
             return;
@@ -450,7 +452,14 @@ export const TransactionImportModal = ({
                             >
                                 {t('transactions.import.backToSetup')}
                             </Button>,
-                            <Button key="confirm" type="primary" loading={confirmImportLoading} onClick={handleConfirmImport}>
+                            <Button
+                                key="confirm"
+                                type="primary"
+                                loading={confirmImportLoading}
+                                disabled={selectedPreviewCount === 0}
+                                title={selectedPreviewCount === 0 ? t('transactions.import.selectAtLeastOne') : undefined}
+                                onClick={handleConfirmImport}
+                            >
                                 {t('transactions.import.confirmImport')}
                             </Button>,
                         ]
@@ -617,6 +626,10 @@ export const TransactionImportModal = ({
                         showIcon
                         title={t('transactions.import.duplicatesInfo')}
                     />
+
+                    {selectedPreviewCount === 0 && (
+                        <Alert type="warning" showIcon title={t('transactions.import.selectAtLeastOne')} />
+                    )}
 
                     <Table
                         size="small"

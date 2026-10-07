@@ -8,12 +8,14 @@ import * as api from '../../services/api';
 import type {UserRequest} from '../../types/api';
 import {SPACING} from '../../theme/tokens';
 import {AuthCard} from '../../components/common/AuthCard';
+import {apiErrorText, applyApiFieldErrors} from '../../utils/apiError';
 
 export const RegisterPage = () => {
     const { t } = useTranslation();
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const [form] = Form.useForm<UserRequest>();
 
     const onFinish = async (values: UserRequest) => {
         setLoading(true);
@@ -22,7 +24,10 @@ export const RegisterPage = () => {
             await api.register(values);
             navigate('/login');
         } catch (err) {
-            setError(t('auth.registrationError'));
+            // Errori di validazione per campo sotto i rispettivi input; il messaggio del
+            // backend (es. 409) nell'Alert al posto del generico "registrazione fallita".
+            applyApiFieldErrors(form, err);
+            setError(apiErrorText(err, t('auth.registrationError')));
             console.error(err);
         } finally {
             setLoading(false);
@@ -32,7 +37,7 @@ export const RegisterPage = () => {
     return (
         <AuthCard title={t('auth.signUp')} subtitle={t('app.name')}>
             {error && <Alert title={error} type="error" showIcon style={{ marginBottom: SPACING.lg }} />}
-            <Form name="register" onFinish={onFinish} autoComplete="off" size="large">
+            <Form form={form} name="register" onFinish={onFinish} autoComplete="off" size="large">
                 <Form.Item
                     name="username"
                     rules={[{ required: true, message: t('auth.usernameRequired') }]}
