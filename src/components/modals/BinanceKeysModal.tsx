@@ -21,7 +21,6 @@ export const BinanceKeysModal: React.FC<BinanceKeysModalProps> = ({ open, onClos
         try {
             await saveBinanceKeys(values);
             message.success(t('binanceKeys.saveSuccess'));
-            form.resetFields();
             onSuccess();
             onClose();
         } catch (error) {
@@ -37,6 +36,9 @@ export const BinanceKeysModal: React.FC<BinanceKeysModalProps> = ({ open, onClos
             title={t('binanceKeys.title')}
             open={open}
             onCancel={onClose}
+            // Le chiavi non devono sopravvivere alla chiusura: con Annulla (o dopo un
+            // salvataggio fallito) riaprendo il modale i segreti erano ancora nel form.
+            afterClose={() => form.resetFields()}
             footer={null}
         >
             <Form

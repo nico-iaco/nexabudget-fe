@@ -18,8 +18,9 @@ Both are consumed through a single provider-agnostic backend API, `/api/banking/
 Linking is driven by the state machine in `src/hooks/useBankLink.ts` and rendered by `BankLinkModal`, mounted in the application shell so it can be opened from the sidebar or from any page via the outlet context (`onOpenBankLink`).
 
 1. **Select Provider**: The user picks GoCardless or Enable Banking. When re-linking an account that is already associated with a provider (for example renewing an expired consent), this step is pre-filled and skipped.
-2. **Select Country**: The user chooses their bank's country. The client fetches the list of supported institutions for the chosen provider:
+2. **Select Country**: The user chooses their bank's country (names are shown in the app language via `Intl.DisplayNames`). The client fetches the list of supported institutions for the chosen provider:
     `api.getBankList(provider, countryCode)`
+    Only the latest request is applied, so switching country quickly, going back, or closing the wizard never lets a late response overwrite the current step.
 3. **Select Institution**: The user selects their bank from the returned list.
 4. **Initiate Link Request**: The client requests a secure consent link from the backend:
     `api.getBankLink(provider, { institutionId, localAccountId })`
@@ -43,8 +44,8 @@ Linking is driven by the state machine in `src/hooks/useBankLink.ts` and rendere
 
 Synchronization status polling lives in `src/hooks/useAccountSync.ts` (used by the shell), not in the page that started the link:
 
-* Once a sync starts, the account's `synchronizing` property is `true`. While **any** account reports that state, the hook refreshes the account list every **10 seconds**, skipping ticks while the tab is hidden (`document.hidden`), and gives up after a **5-minute** safety timeout.
-* When the last account flips back to `synchronizing: false`, the hook invalidates the transaction cache and raises a success notification.
+* Once a sync starts, the account's `synchronizing` property is `true`. While **any** account reports that state, the hook refreshes the account list every **10 seconds**, skipping ticks while the tab is hidden (`document.hidden`). After **5 minutes** it slows down to one refresh per minute rather than stopping, so the end of a long sync is still detected.
+* When the last account flips back to `synchronizing: false`, the hook invalidates the transaction list and all derived dashboard/report data, then notifies the user: a warning naming any account whose bank link needs re-authentication (`requiresReauth`), otherwise a success message.
 * `handleSyncAllAccounts` triggers an on-demand sync for every current account that is linked to an external provider, reporting full, partial, or total failure.
 
 ```mermaid
@@ -71,7 +72,7 @@ sequenceDiagram
     App->>BE: POST /banking/{provider}/{id}/link
     App->>BE: POST /banking/{provider}/{id}/sync
     BE-->>App: Set Account synchronizing = true
-    loop Polling every 10s (tab visible, max 5 min)
+    loop Polling every 10s (tab visible), then every 60s after 5 min
         App->>BE: GET /accounts/
         BE-->>App: Return list (sync status)
     end
@@ -90,7 +91,7 @@ Users can connect their exchange portfolios by entering read-only API keys:
 
 * **Binance**: Keys are submitted via `api.saveBinanceKeys({ apiKey, apiSecret })`.
 * **Coinbase**: Keys are submitted via `api.saveCoinbaseKeys({ apiKeyName, privateKey })`.
-* *Note: For security, API keys are never stored on the client side; they are transmitted to the backend over HTTPS and saved securely server-side.*
+* *Note: For security, API keys are never stored on the client side; they are transmitted to the backend over HTTPS and saved securely server-side. The key forms are cleared every time their dialog closes, including on cancel.*
 
 Once keys are set, users can trigger manual synchronization directly from the UI (`CryptoPage.tsx`), which also hosts the key and manual-holding modals:
 
@@ -107,10 +108,12 @@ For assets stored in cold wallets or untracked exchanges, users can manage manua
 
 ### 3. Valuation Aggregation
 
-The crypto portfolio page calls `api.getPortfolioValue(currency)` on mount. The backend queries real-time pricing feeds for all registered assets (API-synced and manual), converts their value to the user's preferred currency, and returns:
+The crypto portfolio page and the dashboard call `api.getPortfolioValue(currency)` with the user's default currency. The backend queries real-time pricing feeds for all registered assets (API-synced and manual), converts their value to that currency, and returns:
 
 * Aggregated portfolio total value.
 * Individual asset breakdowns (symbol, amount, unit price, holding value).
+
+If the portfolio cannot be loaded, the page shows an inline error with *Retry* rather than an empty portfolio. Adding, editing, deleting or syncing holdings also refreshes the dashboard's crypto card.
 
 ---
 
@@ -129,8 +132,9 @@ NexaBudget integrates large language model capabilities to provide intelligent f
 A dedicated assistant (NexaBot) allows users to converse about their financial data.
 
 * **Sessions**: Users can open multiple separate chat conversations. Conversations are listed via `api.getChatSessions()` and deleted using `api.deleteChatSession(sessionId)`.
-* **Messages**: On selecting a session, `api.getChatSessionMessages(sessionId)` hydrates the thread.
-* **Interaction**: The user types a message. The client sends it via `api.sendChatMessage({ sessionId, message })`.
+* **Messages**: On selecting a session, `api.getChatSessionMessages(sessionId)` hydrates the thread. A load failure is shown inline with *Retry*.
+* **Interaction**: The user types a message. The client sends it via `api.sendChatMessage({ sessionId, message })`. On desktop, Enter sends (Shift+Enter adds a line), except while an IME composition is in progress.
+* **Switching conversations**: each session switch or new chat starts a new "view"; a reply or message load that belongs to a previous view is not applied to the current one (a reply to a conversation the user left is still saved server-side and appears when it is reopened).
 * **Rendering**: Replies arrive as Markdown and are rendered with `react-markdown` + `remark-gfm`.
 * **Agent Tools**: The assistant can execute financial actions or query database statistics dynamically on the user's behalf. When tools are utilized, the response contains a `toolsUsed` array, indicating which internal functions the model executed. The client displays these as tags (e.g., `get_transactions`, `get_accounts`) to maintain transparency.
 
@@ -154,7 +158,8 @@ Manual transaction entry or bulk bank imports often result in uncategorized item
 
 * The user initiates the process by calling `api.startCategorizationJob()`.
 * The backend starts a background job that analyzes transaction descriptions and assigns appropriate categories.
-* The client displays a progress indicator by polling `api.getCategorizationJobStatus(jobId)`. The job payload tracks the total, processed, and successfully categorized count.
+* The client displays a progress indicator by polling `api.getCategorizationJobStatus(jobId)` every 10 seconds. The job payload tracks the total, processed, and successfully categorized count.
+* The job can be sent to the background (a small floating widget) and always reaches a final state: three consecutive polling errors, or the 10-minute cap after one last status check, mark it as failed. On completion the transaction list and the dashboard/report data are refreshed.
 
 ### 3. AI Reports Analysis
 

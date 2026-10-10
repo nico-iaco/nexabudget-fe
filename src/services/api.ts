@@ -108,7 +108,11 @@ apiClient.interceptors.response.use(
             localStorage.removeItem('authToken');
             localStorage.removeItem('auth');
             clearCachedApiResponses();
-            window.location.href = '/login';
+            // Dopo il login si torna dove si era (es. callback bancaria con sessione scaduta).
+            const from = window.location.pathname + window.location.search;
+            window.location.href = from.startsWith('/login')
+                ? '/login'
+                : `/login?from=${encodeURIComponent(from)}`;
         }
         return Promise.reject(error);
     }

@@ -50,7 +50,7 @@ export const Layout = () => {
     const confirm = useConfirm();
 
     const {
-        token: { colorBgContainer, borderRadiusLG },
+        token: { colorBgContainer, borderRadiusLG, colorBgMask },
     } = theme.useToken();
 
     // Derivato, non stato+effetto: prima un useEffect faceva `setSelectedKeys([pathname])`,
@@ -94,7 +94,7 @@ export const Layout = () => {
     useEffect(() => {
         const handler = () => {
             notification.info({
-                message: t('pwa.updateAvailable'),
+                title: t('pwa.updateAvailable'),
                 description: t('pwa.updateDescription'),
                 btn: (
                     <Button type="primary" size="small" onClick={() => applyPWAUpdate()}>
@@ -114,7 +114,7 @@ export const Layout = () => {
     useEffect(() => {
         if (isAccountsError) {
             notification.error({
-                message: t('common.loadAccountsErrorTitle'),
+                title: t('common.loadAccountsErrorTitle'),
                 description: t('common.loadAccountsErrorDescription'),
                 btn: (
                     <Button type="primary" size="small" onClick={() => refetchAccounts()}>
@@ -130,7 +130,7 @@ export const Layout = () => {
     useEffect(() => {
         if (isCategoriesError) {
             notification.error({
-                message: t('common.loadCategoriesErrorTitle'),
+                title: t('common.loadCategoriesErrorTitle'),
                 description: t('common.loadCategoriesErrorDescription'),
                 btn: (
                     <Button type="primary" size="small" onClick={() => refetchCategories()}>
@@ -313,7 +313,7 @@ export const Layout = () => {
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        backgroundColor: 'rgba(0, 0, 0, 0.45)',
+                        backgroundColor: colorBgMask,
                         zIndex: 1000,
                     }}
                     onClick={() => setCollapsed(true)}

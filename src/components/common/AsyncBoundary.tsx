@@ -62,9 +62,7 @@ export const AsyncBoundary = ({
         return (
             <EmptyState
                 image={<WarningOutlined style={{ fontSize: 40 }} />}
-                description={t('common.errorBoundaryDescription', {
-                    defaultValue: 'Si è verificato un errore nel caricamento dei dati.',
-                })}
+                description={t('common.sectionLoadError')}
                 actions={
                     onRetry
                         ? [
@@ -81,7 +79,7 @@ export const AsyncBoundary = ({
     }
 
     if (isEmpty) {
-        return <>{empty ?? <EmptyState description={t('common.noData', { defaultValue: 'Nessun dato disponibile.' })} />}</>;
+        return <>{empty ?? <EmptyState description={t('common.noData')} />}</>;
     }
 
     return <>{children}</>;

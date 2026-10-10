@@ -6,6 +6,7 @@ import {BankOutlined} from '@ant-design/icons';
 import {FONT_SIZE, RADIUS, SPACING} from '../../theme/tokens';
 import {getCurrencySymbol} from '../../utils/currency';
 import {ItemList} from '../common/ItemList';
+import { commaDecimalParser } from '../../utils/number';
 
 const { Text } = Typography;
 
@@ -122,14 +123,14 @@ export const BankAccountPicker = ({
                         label={currentBalanceLabel}
                         help={currentBalanceHelp}
                     >
-                        <InputNumber
+                        <InputNumber<number>
                             style={{width: '100%'}}
                             value={currentBalance}
                             onChange={(value) => onBalanceChange(value)}
                             placeholder={currentBalancePlaceholder}
                             suffix={getCurrencySymbol(currency)}
                             precision={2}
-                            parser={(value) => value?.replace(',', '.') as unknown as number}
+                            parser={commaDecimalParser}
                         />
                     </Form.Item>
                 </>

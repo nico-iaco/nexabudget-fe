@@ -3,7 +3,17 @@ import {useEffect, useState} from 'react';
 import {Button, Card, Flex, Typography} from 'antd';
 import {CloseOutlined, DownloadOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
-import { FONT_SIZE, SHADOW, SPACING } from '../theme/tokens';
+import { FONT_SIZE, SHADOW, SPACING, aboveBottomNav } from '../theme/tokens';
+import { useBreakpoints } from '../hooks/useBreakpoints';
+
+const DISMISSED_KEY = 'pwa-install-dismissed';
+
+const isDismissed = () => {
+    try { return !!localStorage.getItem(DISMISSED_KEY); } catch { return false; }
+};
+const rememberDismissed = () => {
+    try { localStorage.setItem(DISMISSED_KEY, 'true'); } catch { /* storage non disponibile */ }
+};
 
 const { Text } = Typography;
 
@@ -16,32 +26,41 @@ export const PWAInstallPrompt = () => {
     const { t } = useTranslation();
     const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
     const [showPrompt, setShowPrompt] = useState(false);
+    const { isSmallMobile } = useBreakpoints();
 
     useEffect(() => {
         const handler = (e: Event) => {
             e.preventDefault();
             setDeferredPrompt(e as BeforeInstallPromptEvent);
 
-            // Check if user has dismissed the prompt before
-            const dismissed = localStorage.getItem('pwa-install-dismissed');
-            if (!dismissed) {
+            // Non riproporlo a chi l'ha già chiuso (dalla card o dal dialog del browser).
+            if (!isDismissed()) {
                 setShowPrompt(true);
             }
         };
+        // Installata da un'altra via (menu del browser): la card non serve più.
+        const onInstalled = () => {
+            setDeferredPrompt(null);
+            setShowPrompt(false);
+        };
 
         window.addEventListener('beforeinstallprompt', handler);
+        window.addEventListener('appinstalled', onInstalled);
 
-        return () => window.removeEventListener('beforeinstallprompt', handler);
+        return () => {
+            window.removeEventListener('beforeinstallprompt', handler);
+            window.removeEventListener('appinstalled', onInstalled);
+        };
     }, []);
 
     const handleInstall = async () => {
         if (!deferredPrompt) return;
 
         deferredPrompt.prompt();
-        // Attendiamo la scelta dell'utente, ma l'esito ('accepted' | 'dismissed') non
-        // richiede azioni diverse: in entrambi i casi il prompt va chiuso e il
-        // deferred event scartato.
-        await deferredPrompt.userChoice;
+        // Rifiutato dal dialog del browser: come la X della card, non va riproposto a
+        // ogni caricamento.
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'dismissed') rememberDismissed();
 
         setDeferredPrompt(null);
         setShowPrompt(false);
@@ -49,7 +68,7 @@ export const PWAInstallPrompt = () => {
 
     const handleDismiss = () => {
         setShowPrompt(false);
-        localStorage.setItem('pwa-install-dismissed', 'true');
+        rememberDismissed();
     };
 
     if (!showPrompt) return null;
@@ -58,7 +77,8 @@ export const PWAInstallPrompt = () => {
         <Card
             style={{
                 position: 'fixed',
-                bottom: 16,
+                // Su mobile resta sopra la bottom nav invece di coprirla.
+                bottom: isSmallMobile ? aboveBottomNav(SPACING.md) : SPACING.md,
                 left: 16,
                 right: 16,
                 maxWidth: 400,
@@ -89,6 +109,7 @@ export const PWAInstallPrompt = () => {
                         icon={<CloseOutlined />}
                         onClick={handleDismiss}
                         size="small"
+                        aria-label={t('common.close')}
                     />
                 </Flex>
             </Flex>

@@ -6,11 +6,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { App } from 'antd';
 import { useTranslation } from 'react-i18next';
 import * as api from '../services/api';
-import { queryKeys } from '../queryKeys';
+import { invalidateDerivedData, queryKeys } from '../queryKeys';
 import type { Account } from '../types/api';
 
 const SYNC_POLL_INTERVAL_MS = 10_000;
 const SYNC_POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minuti
+// Dopo il timeout il polling rallenta invece di fermarsi: fermandosi, `isSyncing` restava
+// true, l'effetto non ripartiva più e la fine della sync non veniva mai notificata.
+const SYNC_POLL_SLOW_INTERVAL_MS = 60_000;
 
 /**
  * Gestisce il polling di sincronizzazione bancaria e la notifica di completamento.
@@ -35,31 +38,60 @@ export const useAccountSync = (
     // Polling quando almeno un account è in stato synchronizing
     useEffect(() => {
         if (!isSyncing) return;
-        const poll = setInterval(() => {
+        const tick = () => {
             if (!document.hidden) fetchAccountsRef.current(true);
-        }, SYNC_POLL_INTERVAL_MS);
-        const timeout = setTimeout(() => clearInterval(poll), SYNC_POLL_TIMEOUT_MS);
+        };
+        let poll = setInterval(tick, SYNC_POLL_INTERVAL_MS);
+        const timeout = setTimeout(() => {
+            clearInterval(poll);
+            poll = setInterval(tick, SYNC_POLL_SLOW_INTERVAL_MS);
+        }, SYNC_POLL_TIMEOUT_MS);
         return () => {
             clearInterval(poll);
             clearTimeout(timeout);
         };
     }, [isSyncing]);
 
-    // Notifica di completamento quando isSyncing passa da true a false
-    const prevSyncingRef = useRef(isSyncing);
+    // Notifica di completamento quando isSyncing passa da true a false. L'esito si legge
+    // dai conti che stavano sincronizzando: prima compariva "sync completata" anche
+    // quando la sync finiva con il collegamento scaduto, o il conto era stato eliminato.
+    const prevSyncingIdsRef = useRef<string[]>([]);
+    // Conti finiti mentre altri erano ancora in sync: si accumulano fino alla fine di
+    // tutti, altrimenti l'esito (es. riautenticazione) dei primi andava perso.
+    const finishedIdsRef = useRef<Set<string>>(new Set());
     useEffect(() => {
-        if (prevSyncingRef.current && !isSyncing) {
-            // Invalida anche le transazioni così si aggiornano automaticamente
-            queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
+        const syncingIds = accounts.filter(acc => acc.synchronizing).map(acc => acc.id);
+        prevSyncingIdsRef.current
+            .filter(id => !syncingIds.includes(id))
+            .forEach(id => finishedIdsRef.current.add(id));
+        prevSyncingIdsRef.current = syncingIds;
+        if (finishedIdsRef.current.size === 0 || syncingIds.length > 0) return;
+
+        const finishedIds = finishedIdsRef.current;
+        finishedIdsRef.current = new Set();
+        const finished = accounts.filter(acc => finishedIds.has(acc.id));
+        if (finished.length === 0) return; // conti eliminati durante la sync
+
+        // Invalida transazioni e dati derivati: la sync importa nuovi movimenti.
+        queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
+        invalidateDerivedData(queryClient);
+        const needsReauth = finished.filter(acc => acc.requiresReauth);
+        if (needsReauth.length > 0) {
+            notification.warning({
+                title: t('transactions.syncErrorTitle'),
+                description: `${needsReauth.map(acc => acc.name).join(', ')}: ${t('accounts.requiresReauthTooltip')}`,
+                placement: 'topRight',
+                duration: 8,
+            });
+        } else {
             notification.success({
-                message: t('transactions.syncSuccessTitle'),
+                title: t('transactions.syncSuccessTitle'),
                 description: t('transactions.syncSuccessDescription'),
                 placement: 'topRight',
                 duration: 5,
             });
         }
-        prevSyncingRef.current = isSyncing;
-    }, [isSyncing, t, notification, queryClient]);
+    }, [accounts, t, notification, queryClient]);
 
     const handleSyncAllAccounts = async () => {
         const syncableAccounts = accounts.filter(

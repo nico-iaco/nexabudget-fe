@@ -21,6 +21,10 @@ const resources = {
                 name: 'NexaBudget'
             },
             common: {
+                noData: 'Nessun dato disponibile.',
+                errorBoundaryDescription: 'Si è verificato un errore imprevisto in questa sezione.',
+                backToDashboard: 'Torna alla Dashboard',
+                notFound: 'La pagina che stai cercando non esiste.',
                 save: 'Salva',
                 cancel: 'Annulla',
                 delete: 'Elimina',
@@ -51,6 +55,10 @@ const resources = {
                 skipToContent: 'Salta al contenuto'
             },
             presets: {
+                last24Months: 'Ultimi 24 mesi',
+                endDate: 'Fine',
+                startDate: 'Inizio',
+                custom: 'Personalizzato',
                 last7Days: 'Ultimi 7 giorni',
                 thisMonth: 'Questo mese',
                 previousMonth: 'Mese scorso',
@@ -72,6 +80,8 @@ const resources = {
                 chat: 'NexaBot'
             },
             auth: {
+                serverError: 'Il server non è al momento disponibile. Riprova tra poco.',
+                networkError: 'Impossibile contattare il server. Controlla la connessione e riprova.',
                 loginTitle: 'Login',
                 signIn: 'Accedi',
                 signUp: 'Registrati',
@@ -488,6 +498,7 @@ const resources = {
                 holdingDeleteError: 'Impossibile eliminare la holding.'
             },
             portfolio: {
+                empty: 'Nessun asset nel portafoglio. Collega un exchange o aggiungi una holding manuale.',
                 totalValue: 'Valore Totale Portafoglio',
                 yourAssets: 'I tuoi asset',
                 asset: 'Asset',
@@ -740,6 +751,8 @@ const resources = {
                 remaining: 'Rimanente',
                 noMonthlyData: '—',
                 alerts: {
+                    deleteConfirm: 'Sei sicuro di voler eliminare questo alert?',
+                    loadError: 'Impossibile caricare gli alert.',
                     title: 'Alert per "{{name}}"',
                     newAlert: 'Nuovo Alert',
                     threshold: 'Soglia (%)',
@@ -757,6 +770,11 @@ const resources = {
                 }
             },
             audit: {
+                total: '{{count}} attività',
+                entityCategory: 'Categoria',
+                entityBudget: 'Budget',
+                entityAccount: 'Conto',
+                entityTransaction: 'Transazione',
                 title: 'Registro Attività',
                 timestamp: 'Data/Ora',
                 action: 'Azione',
@@ -815,6 +833,10 @@ const resources = {
                 name: 'NexaBudget'
             },
             common: {
+                noData: 'No data available.',
+                errorBoundaryDescription: 'An unexpected error occurred in this section.',
+                backToDashboard: 'Back to Dashboard',
+                notFound: 'The page you are looking for does not exist.',
                 save: 'Save',
                 cancel: 'Cancel',
                 delete: 'Delete',
@@ -845,6 +867,10 @@ const resources = {
                 skipToContent: 'Skip to content'
             },
             presets: {
+                last24Months: 'Last 24 months',
+                endDate: 'End',
+                startDate: 'Start',
+                custom: 'Custom',
                 last7Days: 'Last 7 days',
                 thisMonth: 'This month',
                 previousMonth: 'Last month',
@@ -866,6 +892,8 @@ const resources = {
                 chat: 'NexaBot'
             },
             auth: {
+                serverError: 'The server is currently unavailable. Please try again shortly.',
+                networkError: 'Could not reach the server. Check your connection and try again.',
                 loginTitle: 'Login',
                 signIn: 'Sign In',
                 signUp: 'Sign Up',
@@ -1282,6 +1310,7 @@ const resources = {
                 holdingDeleteError: 'Failed to delete holding.'
             },
             portfolio: {
+                empty: 'No assets in your portfolio. Connect an exchange or add a manual holding.',
                 totalValue: 'Total Portfolio Value',
                 yourAssets: 'Your Assets',
                 asset: 'Asset',
@@ -1534,6 +1563,8 @@ const resources = {
                 remaining: 'Remaining',
                 noMonthlyData: '—',
                 alerts: {
+                    deleteConfirm: 'Are you sure you want to delete this alert?',
+                    loadError: 'Could not load alerts.',
                     title: 'Alerts for "{{name}}"',
                     newAlert: 'New Alert',
                     threshold: 'Threshold (%)',
@@ -1551,6 +1582,11 @@ const resources = {
                 }
             },
             audit: {
+                total: '{{count}} entries',
+                entityCategory: 'Category',
+                entityBudget: 'Budget',
+                entityAccount: 'Account',
+                entityTransaction: 'Transaction',
                 title: 'Activity Log',
                 timestamp: 'Date/Time',
                 action: 'Action',

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Card, Statistic } from 'antd';
-import { FONT_HEADING } from '../../theme/tokens';
+import { FONT_HEADING, ON_GRADIENT_TEXT, ON_GRADIENT_TEXT_MUTED } from '../../theme/tokens';
 import { formatMoney } from '../../utils/format';
 
 interface StatCardProps {
@@ -23,6 +23,12 @@ interface StatCardProps {
     gradient?: string;
 }
 
+// Statistic chiama il formatter anche con `value` undefined: senza guardia usciva "NaN €".
+const formatAmount = (v: string | number | undefined, currency: string) => {
+    const n = v === undefined || v === null || v === '' ? NaN : Number(v);
+    return Number.isFinite(n) ? formatMoney(n, currency) : '–';
+};
+
 /**
  * Card con singola metrica (Statistic + footer opzionale).
  * Unifica le implementazioni duplicate in DashboardPage, BalanceTrendSection e PortfolioSummary.
@@ -36,18 +42,18 @@ export const StatCard = ({
         style={gradient ? { background: gradient, border: 'none', ...style } : style}
     >
         <Statistic
-            title={gradient ? <span style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 600 }}>{title}</span> : title}
+            title={gradient ? <span style={{ color: ON_GRADIENT_TEXT_MUTED, fontWeight: 600 }}>{title}</span> : title}
             value={value}
             precision={precision}
             styles={{
                 content: {
-                    color: gradient ? '#fff' : color,
+                    color: gradient ? ON_GRADIENT_TEXT : color,
                     ...(gradient ? { fontFamily: FONT_HEADING, fontWeight: 800 } : {}),
                 },
             }}
             prefix={prefix}
             suffix={suffix}
-            formatter={(formatter ?? (currency ? (v: string | number) => formatMoney(Number(v), currency) : undefined)) as never}
+            formatter={(formatter ?? (currency ? (v: string | number | undefined) => formatAmount(v, currency) : undefined)) as never}
             loading={loading}
         />
         {footer}

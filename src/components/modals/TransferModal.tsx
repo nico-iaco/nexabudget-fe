@@ -102,7 +102,7 @@ export const TransferModal = ({ open, onCancel, onFinish, accounts, loading = fa
                     label={t('transfers.amount')}
                     rules={[{ required: true, message: t('transfers.amountRequired') }]}
                 >
-                    <InputNumber<number> style={{ width: '100%' }} min={0.01} suffix={getCurrencySymbol(sourceAccount?.currency ?? 'EUR')} parser={commaDecimalParser} />
+                    <InputNumber<number> style={{ width: '100%' }} min={0.01} precision={2} inputMode="decimal" suffix={getCurrencySymbol(sourceAccount?.currency ?? 'EUR')} parser={commaDecimalParser} />
                 </Form.Item>
                 <Form.Item
                     name="transferDate"

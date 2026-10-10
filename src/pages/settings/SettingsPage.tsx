@@ -6,11 +6,13 @@ import {usePreferences} from '../../contexts/PreferencesContext';
 import {useAuth} from '../../contexts/AuthContext';
 import {updateUserProfile} from '../../services/api';
 import {useState} from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { invalidateDerivedData, queryKeys } from '../../queryKeys';
 import {ApiKeysCard} from './ApiKeysCard';
 import {CategoriesCard} from './CategoriesCard';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { PageHeader } from '../../components/common/PageHeader';
-import { SPACING } from '../../theme/tokens';
+import { SPACING, SURFACE_DARK, SURFACE_DARK_BORDER, SURFACE_LIGHT, SURFACE_LIGHT_BORDER } from '../../theme/tokens';
 import { apiErrorText } from '../../utils/apiError';
 
 const { Text } = Typography;
@@ -23,12 +25,17 @@ export const SettingsPage = () => {
     const { auth, updateUser } = useAuth();
     const [updatingParams, setUpdatingParams] = useState(false);
     const { token } = theme.useToken();
+    const queryClient = useQueryClient();
 
     const handleUpdateCurrency = async (newCurrency: string) => {
         try {
             setUpdatingParams(true);
             const { data } = await updateUserProfile({ defaultCurrency: newCurrency });
             updateUser(data);
+            // Saldo totale e aggregati sono espressi nella valuta preferita: senza
+            // invalidazione restavano i valori vecchi formattati con il nuovo simbolo.
+            queryClient.invalidateQueries({ queryKey: queryKeys.totalBalance });
+            invalidateDerivedData(queryClient);
             message.success(t('settings.profileUpdateSuccess'));
         } catch (error) {
             message.error(apiErrorText(error, t('settings.profileUpdateError')));
@@ -68,8 +75,8 @@ export const SettingsPage = () => {
             <Card title={t('settings.appearanceTitle')} style={{ marginBottom: SPACING.md }}>
                 <Flex gap={SPACING.sm}>
                     {([
-                        { value: 'light' as const, label: t('settings.themeLight'), swatchBg: '#fff', swatchBorder: '#ecedf0' },
-                        { value: 'dark' as const, label: t('settings.themeDark'), swatchBg: '#1a1d29', swatchBorder: '#1a1d29' },
+                        { value: 'light' as const, label: t('settings.themeLight'), swatchBg: SURFACE_LIGHT, swatchBorder: SURFACE_LIGHT_BORDER },
+                        { value: 'dark' as const, label: t('settings.themeDark'), swatchBg: SURFACE_DARK, swatchBorder: SURFACE_DARK_BORDER },
                     ]).map(opt => {
                         const selected = preferences.theme === opt.value;
                         return (

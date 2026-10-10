@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { invalidateDerivedData } from '../../queryKeys';
 import {
-    App, Button, Card, Col, Flex, Popconfirm, Progress, Row, Skeleton, Tag, Typography, theme
+    App, Button, Card, Col, Flex, Progress, Row, Skeleton, Tag, Typography, theme
 } from 'antd';
 import { BellOutlined, DeleteOutlined, EditOutlined, PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
@@ -12,12 +14,13 @@ import * as api from '../../services/api';
 import type { BudgetTemplate, BudgetTemplateRequest, MonthlySummaryResponse } from '../../types/api';
 import { BudgetTemplateModal } from '../../components/modals/BudgetTemplateModal';
 import { BudgetAlertsDrawer } from './BudgetAlertsDrawer';
+import { useConfirm } from '../../hooks/useConfirm';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { PageHeader } from '../../components/common/PageHeader';
 import { Fab } from '../../components/common/Fab';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { FONT_SIZE, SPACING, getSemanticColors } from '../../theme/tokens';
+import { FONT_SIZE, SPACING, budgetUsageColor, getSemanticColors } from '../../theme/tokens';
 import type { AppOutletContext } from '../../types/outletContext';
 import { formatMoney, formatPercent } from '../../utils/format';
 import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
@@ -28,6 +31,10 @@ const { Text } = Typography;
 export const BudgetsPage = () => {
     const { t } = useTranslation();
     const { message } = App.useApp();
+    const queryClient = useQueryClient();
+    const [saving, setSaving] = useState(false);
+    // Card, non riga di tabella: conferma modale (convenzione di useConfirm).
+    const confirm = useConfirm();
     usePageTitle(t('budgets.title'));
     const { categories } = useOutletContext<AppOutletContext>();
     const { isSmallMobile: isMobile } = useBreakpoints();
@@ -36,11 +43,7 @@ export const BudgetsPage = () => {
     const semantic = getSemanticColors(preferences.theme === 'dark');
     const currency = useDefaultCurrency();
 
-    const progressColor = (pct: number): string => {
-        if (pct >= 100) return semantic.negative;
-        if (pct >= 75) return semantic.warning;
-        return semantic.positive;
-    };
+    const progressColor = (pct: number) => budgetUsageColor(pct, semantic);
 
     const [budgets, setBudgets] = useState<BudgetTemplate[]>([]);
     const [summaries, setSummaries] = useState<MonthlySummaryResponse[]>([]);
@@ -91,6 +94,8 @@ export const BudgetsPage = () => {
     useEffect(() => { fetchBudgets(); }, []);
 
     const handleFinish = async (values: BudgetTemplateRequest) => {
+        if (saving) return;
+        setSaving(true);
         try {
             if (editing) {
                 await api.updateBudgetTemplate(editing.id, values);
@@ -102,8 +107,11 @@ export const BudgetsPage = () => {
             setIsModalOpen(false);
             setEditing(null);
             fetchBudgets();
+            invalidateDerivedData(queryClient);
         } catch (error) {
             message.error(apiErrorText(error, t('budgets.saveError')));
+        } finally {
+            setSaving(false);
         }
     };
 
@@ -112,6 +120,7 @@ export const BudgetsPage = () => {
             await api.deleteBudgetTemplate(id);
             message.success(t('budgets.deletedSuccess'));
             fetchBudgets();
+            invalidateDerivedData(queryClient);
         } catch (error) {
             message.error(apiErrorText(error, t('budgets.deleteError')));
         }
@@ -145,7 +154,7 @@ export const BudgetsPage = () => {
                     size="small"
                     showInfo={false}
                     strokeColor={progressColor(s.percentageUsed)}
-                    aria-label={`${t('budgets.spent')}: ${s.percentageUsed.toFixed(0)}%`}
+                    aria-label={`${t('budgets.spent')}: ${formatPercent(s.percentageUsed, 0)}`}
                 />
                 <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
                     {t('budgets.remaining')}: {formatMoney(s.remaining, currency)}
@@ -190,15 +199,18 @@ export const BudgetsPage = () => {
                     onClick={() => { setEditing(record); setIsModalOpen(true); }}
                     aria-label={t('common.edit')}
                 />
-                <Popconfirm
-                    title={t('budgets.deleteConfirm')}
-                    onConfirm={() => handleDelete(record.id)}
-                    okText={t('common.delete')}
-                    cancelText={t('common.cancel')}
-                    okButtonProps={{ danger: true }}
-                >
-                    <Button danger icon={<DeleteOutlined />} size="small" aria-label={t('common.delete')} />
-                </Popconfirm>
+                <Button
+                    danger
+                    icon={<DeleteOutlined />}
+                    size="small"
+                    aria-label={t('common.delete')}
+                    onClick={() => confirm({
+                        title: t('budgets.deleteConfirm'),
+                        okText: t('common.delete'),
+                        danger: true,
+                        onOk: () => handleDelete(record.id),
+                    })}
+                />
             </Flex>
         </Card>
     );
@@ -268,6 +280,7 @@ export const BudgetsPage = () => {
                 open={isModalOpen}
                 onCancel={() => { setIsModalOpen(false); setEditing(null); }}
                 onFinish={handleFinish}
+                saving={saving}
                 editing={editing}
                 categories={categories}
             />

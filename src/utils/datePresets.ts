@@ -7,7 +7,7 @@ import dayjs, { type Dayjs } from 'dayjs';
 export type DateRangeValue = [Dayjs, Dayjs];
 
 export interface RangePreset {
-    key: 'last7Days' | 'thisMonth' | 'previousMonth' | 'last3Months' | 'last6Months' | 'last12Months';
+    key: 'last7Days' | 'thisMonth' | 'previousMonth' | 'last3Months' | 'last6Months' | 'last12Months' | 'last24Months';
     label: string;
     value: DateRangeValue;
 }
@@ -34,6 +34,7 @@ export const getRangePresets = (
         last3Months: lastMonthsRange(3),
         last6Months: lastMonthsRange(6),
         last12Months: lastMonthsRange(12),
+        last24Months: lastMonthsRange(24),
     };
     return keys.map(key => ({ key, label: t(`presets.${key}`), value: all[key] }));
 };

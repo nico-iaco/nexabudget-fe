@@ -37,26 +37,22 @@ The service worker is disabled in development (`devOptions.enabled: false`), so 
 
 ## 🔄 Service Worker Lifecycle & Hot Updates
 
-NexaBudget handles service worker updates gracefully without interrupting the user. This is configured in `src/pwaRegister.ts` and `src/components/Layout.tsx`:
+Updates are applied automatically (`registerType: 'autoUpdate'`). This is configured in `src/pwaRegister.ts` and `src/components/Layout.tsx`:
 
 1. **Registration**: When the page loads, `main.tsx` invokes `registerPWA()`, registering the worker in the background.
-2. **Detection**: If a new version of the frontend is compiled and deployed, the service worker detects the updated assets on the server.
-3. **Event Dispatch**: The `onNeedRefresh()` hook catches the update and fires a browser-wide custom event:
+2. **Detection & activation**: When a new version is deployed, the new service worker installs and activates on its own; `vite-plugin-pwa` then calls `onNeedReload()`.
+3. **Reload**: On every regular page, `pwaRegister.ts` reloads immediately so the fresh bundles are used.
+4. **Bank callback exception**: the callback routes (`/banking/*`, `/gocardless/callback/*`) carry a one-time authorization code that must not be sent twice, so the reload is deferred there. Instead a browser-wide custom event is fired:
     `window.dispatchEvent(new CustomEvent('pwa-update-available'));`
-4. **UI Notification Banner**:
-    Inside the application shell (`Layout.tsx`), a React `useEffect` hook listens for the event and renders a non-intrusive Ant Design notification box:
-    * Displays "Update Available" text.
-    * Provides an "Update Now" action button.
-    * The notification has `duration: 0`, so it stays until the user acts on it.
-5. **Activation**: Clicking the button calls `applyPWAUpdate()`, which activates the waiting service worker and reloads the page to flush old cached bundles and load the fresh assets.
+    The application shell (`Layout.tsx`) listens for it and shows a persistent notification (`duration: 0`) with an "Update Now" button; clicking it calls `applyPWAUpdate()`, which reloads the page once the user has finished linking.
 
-Decoupling the two sides through a window event is deliberate: `pwaRegister.ts` runs before React mounts, so it cannot render UI itself.
+Decoupling the two sides through a window event is deliberate: `pwaRegister.ts` runs before React mounts, so it cannot render UI itself. In `autoUpdate` mode the plugin never calls `onNeedRefresh()`, so there is no "update available" prompt outside the bank callbacks.
 
 ---
 
 ## 📲 Install Prompt
 
-`src/components/PWAInstallPrompt.tsx`, mounted in the shell, captures the browser's `beforeinstallprompt` event and replaces the default browser affordance with an in-app card offering installation. A dismissal is remembered in `localStorage` under `pwa-install-dismissed`, so the invitation is not shown again. Platforms that do not fire the event (notably iOS Safari) fall back to the manual "Add to Home Screen" flow documented in the README.
+`src/components/PWAInstallPrompt.tsx`, mounted in the shell, captures the browser's `beforeinstallprompt` event and replaces the default browser affordance with an in-app card offering installation. A dismissal — closing the card, or declining the browser's own install dialog — is remembered in `localStorage` under `pwa-install-dismissed`, so the invitation is not shown again; the card also disappears when the app gets installed by other means (`appinstalled`). On phones the card sits above the bottom navigation bar instead of covering it. Platforms that do not fire the event (notably iOS Safari) fall back to the manual "Add to Home Screen" flow documented in the README.
 
 ---
 

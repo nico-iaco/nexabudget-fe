@@ -6,10 +6,12 @@ import { getApiKeys, createApiKey, updateApiKey, deleteApiKey } from '../../serv
 import type { ApiKeyResponse, CreateApiKeyRequest, UpdateApiKeyRequest } from '../../types/api';
 import { ApiKeyFormModal } from '../../components/modals/ApiKeyFormModal';
 import { ApiKeySecretModal } from '../../components/modals/ApiKeySecretModal';
-import dayjs from 'dayjs';
 import type { ColumnsType } from 'antd/es/table';
 import { FONT_SIZE, SPACING } from '../../theme/tokens';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
+import { InlineError } from '../../components/common/InlineError';
+import { EmptyState } from '../../components/common/EmptyState';
+import { formatDateTime } from '../../utils/format';
 
 const { Text } = Typography;
 
@@ -19,6 +21,7 @@ export const ApiKeysCard = () => {
     const { isSmallMobile } = useBreakpoints();
     const [keys, setKeys] = useState<ApiKeyResponse[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loadFailed, setLoadFailed] = useState(false);
     const [formModalVisible, setFormModalVisible] = useState(false);
     const [secretModalVisible, setSecretModalVisible] = useState(false);
     const [editingKey, setEditingKey] = useState<ApiKeyResponse | undefined>(undefined);
@@ -30,7 +33,11 @@ export const ApiKeysCard = () => {
         try {
             const { data } = await getApiKeys();
             setKeys(data);
+            setLoadFailed(false);
         } catch {
+            // Un errore non è "nessuna chiave": senza dati la tabella lascia il posto a
+            // InlineError; con dati già a schermo basta il toast.
+            setLoadFailed(true);
             message.error(t('settings.apiKeys.fetchError'));
         } finally {
             setLoading(false);
@@ -85,7 +92,9 @@ export const ApiKeysCard = () => {
             };
             await updateApiKey(id, req);
             message.success(checked ? t('settings.apiKeys.activated') : t('settings.apiKeys.deactivated'));
-            fetchKeys();
+            // Atteso: lo Switch è controllato e senza attesa tornava al valore vecchio
+            // finché il refetch non arrivava, accettando nel frattempo un secondo clic.
+            await fetchKeys();
         } catch {
             message.error(t('settings.apiKeys.toggleError'));
         } finally {
@@ -98,7 +107,7 @@ export const ApiKeysCard = () => {
             setLoading(true);
             await deleteApiKey(id);
             message.success(t('settings.apiKeys.deleteSuccess'));
-            fetchKeys();
+            await fetchKeys();
         } catch {
             message.error(t('settings.apiKeys.deleteError'));
         } finally {
@@ -152,9 +161,9 @@ export const ApiKeysCard = () => {
             hidden: isSmallMobile,
             render: (date: string, record: ApiKeyResponse) => (
                 <Space orientation="vertical" size={0}>
-                    {date ? dayjs(date).format('DD/MM/YYYY HH:mm') : <Text type="secondary">{t('settings.apiKeys.noExpiration')}</Text>}
+                    {date ? formatDateTime(date) : <Text type="secondary">{t('settings.apiKeys.noExpiration')}</Text>}
                     <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>
-                        {t('settings.apiKeys.lastUsedAt')}: {record.lastUsedAt ? dayjs(record.lastUsedAt).format('DD/MM/YYYY HH:mm') : t('settings.apiKeys.never')}
+                        {t('settings.apiKeys.lastUsedAt')}: {record.lastUsedAt ? formatDateTime(record.lastUsedAt) : t('settings.apiKeys.never')}
                     </Text>
                 </Space>
             ),
@@ -182,8 +191,8 @@ export const ApiKeysCard = () => {
                     <Popconfirm
                         title={t('settings.apiKeys.deleteConfirm')}
                         onConfirm={() => handleDelete(record.id)}
-                        okText={t('common.yes')}
-                        cancelText={t('common.no')}
+                        okText={t('common.delete')}
+                        cancelText={t('common.cancel')}
                         okButtonProps={{ danger: true }}
                     >
                         <Button type="text" danger icon={<DeleteOutlined />} aria-label={t('common.delete')} />
@@ -199,15 +208,19 @@ export const ApiKeysCard = () => {
             extra={<Button type="primary" icon={<PlusOutlined />} onClick={() => { setEditingKey(undefined); setFormModalVisible(true); }}>{t('settings.apiKeys.generateNew')}</Button>}
             style={{ marginBottom: SPACING.md }}
         >
-            <Table
-                dataSource={keys}
-                columns={columns}
-                rowKey="id"
-                loading={loading}
-                tableLayout="fixed"
-                pagination={false}
-                locale={{ emptyText: t('settings.apiKeys.emptyList') }}
-            />
+            {loadFailed && keys.length === 0 ? (
+                <InlineError message={t('settings.apiKeys.fetchError')} onRetry={fetchKeys} />
+            ) : (
+                <Table
+                    dataSource={keys}
+                    columns={columns}
+                    rowKey="id"
+                    loading={loading}
+                    tableLayout="fixed"
+                    pagination={false}
+                    locale={{ emptyText: <EmptyState description={t('settings.apiKeys.emptyList')} /> }}
+                />
+            )}
             {formModalVisible && (
                 <ApiKeyFormModal
                     open={formModalVisible}
@@ -220,7 +233,11 @@ export const ApiKeysCard = () => {
             {secretModalVisible && (
                 <ApiKeySecretModal
                     open={secretModalVisible}
-                    onClose={() => setSecretModalVisible(false)}
+                    onClose={() => {
+                        setSecretModalVisible(false);
+                        // La chiave in chiaro non deve restare in memoria dopo la chiusura.
+                        setNewPlaintextKey('');
+                    }}
                     plaintextKey={newPlaintextKey}
                 />
             )}

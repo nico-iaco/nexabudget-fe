@@ -42,10 +42,21 @@ Before any HTTP request is dispatched, the request interceptor executes:
 The response interceptor processes responses and errors globally:
 
 * If a request fails with an HTTP `403 Forbidden` status code, the client infers that the JWT token has expired or been revoked.
-* **Exception**: Auth endpoints (login and register calls) are ignored to prevent recursive redirect loops during credential submission errors.
-* **Logout Handler**: The interceptor flushes storage by deleting `authToken` and `auth` from `localStorage`, then forces a browser redirect to the login screen:
-    `window.location.href = '/login';`
+* **Exception**: Auth endpoints (login and register calls) and the AI-analysis job are ignored, to prevent recursive redirect loops during credential submission errors and because those 403s do not mean the session expired.
+* **Logout Handler**: The interceptor flushes storage by deleting `authToken` and `auth` from `localStorage` (and the cached API responses), then forces a browser redirect to the login screen, carrying the current page:
+    `window.location.href = '/login?from=<current path>';`
+    After signing in again, the router returns the user to that page (see [Architecture](architecture.md#router-guarding)).
 * **Note**: only `403` triggers this flow. A `401 Unauthorized` response is passed through to the caller unchanged, so callers should still handle rejected promises themselves.
+
+### Reading errors
+
+`src/utils/apiError.ts` reads the backend's error body (`{ status, message, timestamp, errors? }`) uniformly. Callers use these helpers instead of casting the Axios error by hand:
+
+* `getApiErrorStatus(error)` — the HTTP status, or `undefined` when there was no response (network failure).
+* `getApiErrorMessage(error)` / `apiErrorText(error, fallback)` — the backend's user-facing `message` for 4xx responses, otherwise the caller's translated fallback.
+* `applyApiFieldErrors(form, error, fallbackField?)` — maps per-field validation errors onto an Ant Design form.
+
+The login page uses the status to tell apart invalid credentials, an unreachable server, and a server error.
 
 ---
 

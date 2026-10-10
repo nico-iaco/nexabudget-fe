@@ -6,6 +6,7 @@
 import { useEffect, useState } from 'react';
 import { DatePicker, Flex, theme } from 'antd';
 import dayjs, { type Dayjs } from 'dayjs';
+import { useTranslation } from 'react-i18next';
 import { FONT_SIZE, RADIUS } from '../../theme/tokens';
 import { NativeDateInput } from './SafeDatePicker';
 import { detectNativeDatePicker } from '../../utils/device';
@@ -47,7 +48,7 @@ interface RangePickerProps {
 
 const RangeDatePicker = ({
     start, end, onChangeStart, onChangeEnd,
-    startPlaceholder = 'Inizio', endPlaceholder = 'Fine',
+    startPlaceholder, endPlaceholder,
     disabled = false, maxDate, nativePicker,
 }: RangePickerProps) => {
     const maxDayjs = maxDate ? dayjs(maxDate, 'YYYY-MM-DD') : undefined;
@@ -114,12 +115,13 @@ export const DatePresetPicker = ({
     presets,
     value,
     onChange,
-    customLabel = 'Personalizzato',
-    startPlaceholder = 'Inizio',
-    endPlaceholder = 'Fine',
+    customLabel,
+    startPlaceholder,
+    endPlaceholder,
     disabled = false,
     maxDate,
 }: DatePresetPickerProps) => {
+    const { t } = useTranslation();
     const { token } = theme.useToken();
     const [customMode, setCustomMode] = useState(false);
     const [hoveredIdx, setHoveredIdx] = useState<number | 'custom' | null>(null);
@@ -201,7 +203,7 @@ export const DatePresetPicker = ({
                             if (activePresetIdx !== -1) onChange([null, null]);
                         }}
                     >
-                        {customLabel}
+                        {customLabel ?? t('presets.custom')}
                     </button>
                 </Flex>
             </div>
@@ -210,10 +212,12 @@ export const DatePresetPicker = ({
                 <RangeDatePicker
                     start={value[0]}
                     end={value[1]}
-                    onChangeStart={d => onChange([d, value[1]])}
-                    onChangeEnd={d => onChange([value[0], d])}
-                    startPlaceholder={startPlaceholder}
-                    endPlaceholder={endPlaceholder}
+                    // min/max dei date input nativi non bastano: la rotella di iOS Safari non
+                    // li rispetta. Un estremo che scavalca l'altro lo trascina con sé.
+                    onChangeStart={d => onChange([d, d && value[1]?.isBefore(d, 'day') ? d : value[1]])}
+                    onChangeEnd={d => onChange([d && value[0]?.isAfter(d, 'day') ? d : value[0], d])}
+                    startPlaceholder={startPlaceholder ?? t('presets.startDate')}
+                    endPlaceholder={endPlaceholder ?? t('presets.endDate')}
                     disabled={disabled}
                     maxDate={maxDate}
                     nativePicker={nativePicker}

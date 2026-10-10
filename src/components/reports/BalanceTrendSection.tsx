@@ -17,8 +17,9 @@ import { ArrowDownOutlined, ArrowUpOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { Dayjs } from 'dayjs';
-import { AxiosError } from 'axios';
+import { getApiErrorStatus } from '../../utils/apiError';
 import * as api from '../../services/api';
+import { queryKeys } from '../../queryKeys';
 import type { BalanceTrendItem, BalanceTrendResponse } from '../../types/api';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { SPACING, FONT_SIZE, getSemanticColors } from '../../theme/tokens';
@@ -27,7 +28,7 @@ import { EmptyState } from '../common/EmptyState';
 import { InlineError } from '../common/InlineError';
 import { StatCard } from '../common/StatCard';
 import { formatMoney, formatPercent } from '../../utils/format';
-import { lastMonthsRange } from '../../utils/datePresets';
+import { getRangePresets, lastMonthsRange } from '../../utils/datePresets';
 
 const BalanceTrendChart = lazy(() =>
     import('./BalanceTrendChart').then(m => ({ default: m.BalanceTrendChart })),
@@ -40,8 +41,10 @@ const DEBOUNCE_MS = 300;
 
 const defaultRange = (): [Dayjs, Dayjs] => lastMonthsRange(12);
 
+// Preset condivisi (utils/datePresets): stesse etichette e stessi intervalli delle altre
+// pagine ("Ultimi 12 mesi", non "12 mesi").
 const TREND_PRESETS = (t: (k: string) => string) =>
-    [3, 6, 12, 24].map(n => ({ label: t(`reports.months${n}`), value: lastMonthsRange(n) }));
+    getRangePresets(t, ['last3Months', 'last6Months', 'last12Months', 'last24Months']);
 
 const useDebounced = <T,>(value: T, delay = DEBOUNCE_MS): T => {
     const [debounced, setDebounced] = useState(value);
@@ -81,7 +84,7 @@ export const BalanceTrendSection = ({ showTable = true }: BalanceTrendSectionPro
     const queryEnabled = isValidRange && !!debouncedStart && !!debouncedEnd;
 
     const { data, isPending, isFetching, isError, error, refetch } = useQuery<BalanceTrendResponse>({
-        queryKey: ['reports', 'balance-trend', debouncedStart, debouncedEnd],
+        queryKey: queryKeys.balanceTrend(debouncedStart, debouncedEnd),
         queryFn: () => api.getBalanceTrend({ startDate: debouncedStart!, endDate: debouncedEnd! }).then(r => r.data),
         enabled: queryEnabled,
         placeholderData: keepPreviousData,
@@ -89,7 +92,7 @@ export const BalanceTrendSection = ({ showTable = true }: BalanceTrendSectionPro
 
     useEffect(() => {
         if (!isError || !error) return;
-        const status = error instanceof AxiosError ? error.response?.status : undefined;
+        const status = getApiErrorStatus(error);
         if (status && status >= 400) {
             message.error(t('reports.balanceTrend.loadError'));
         } else {
@@ -164,7 +167,7 @@ export const BalanceTrendSection = ({ showTable = true }: BalanceTrendSectionPro
             onChange={(dates) => {
                 if (dates && dates[0] && dates[1]) setRange([dates[0], dates[1]]);
             }}
-           
+            presets={TREND_PRESETS(t)}
         />
     );
 
@@ -172,7 +175,7 @@ export const BalanceTrendSection = ({ showTable = true }: BalanceTrendSectionPro
 
     const cardTitle = isSmallMobile ? (
         <Flex vertical gap={8} style={{ paddingTop: 8, paddingBottom: 8 }}>
-            <Typography.Text strong style={{ fontSize: 16 }}>
+            <Typography.Text strong style={{ fontSize: FONT_SIZE.xl }}>
                 {t('reports.balanceTrend.title')}
             </Typography.Text>
             <DatePresetPicker
@@ -221,9 +224,8 @@ export const BalanceTrendSection = ({ showTable = true }: BalanceTrendSectionPro
                                 size="small"
                                 title={t('reports.balanceTrend.openingBalance')}
                                 value={opening}
-                                precision={2}
                                 color={token.colorPrimary}
-                                formatter={(val) => formatAmount(Number(val))}
+                                currency={currency}
                             />
                         </Col>
                         <Col xs={24} sm={8}>
@@ -231,9 +233,8 @@ export const BalanceTrendSection = ({ showTable = true }: BalanceTrendSectionPro
                                 size="small"
                                 title={t('reports.balanceTrend.closingBalanceFinal')}
                                 value={closing}
-                                precision={2}
                                 color={closing >= 0 ? semantic.positive : semantic.negative}
-                                formatter={(val) => formatAmount(Number(val))}
+                                currency={currency}
                             />
                         </Col>
                         <Col xs={24} sm={8}>
@@ -241,7 +242,6 @@ export const BalanceTrendSection = ({ showTable = true }: BalanceTrendSectionPro
                                 size="small"
                                 title={t('reports.balanceTrend.change')}
                                 value={absChange}
-                                precision={2}
                                 color={changeColor}
                                 prefix={changePositive ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
                                 formatter={(val) => formatSignedAmount(Number(val))}

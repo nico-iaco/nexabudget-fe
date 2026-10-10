@@ -10,12 +10,12 @@ import type { ColumnsType } from 'antd/es/table';
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { InlineError } from '../../components/common/InlineError';
-import { queryKeys } from '../../queryKeys';
+import { invalidateDerivedData, queryKeys } from '../../queryKeys';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import { FONT_SIZE, getSemanticColors } from '../../theme/tokens';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
-import { formatMoney } from '../../utils/format';
+import { formatMoney, formatDate, formatDateTime } from '../../utils/format';
 import { apiErrorText, getApiErrorStatus } from '../../utils/apiError';
 import { useOutletContext } from 'react-router-dom';
 import type { AppOutletContext } from '../../types/outletContext';
@@ -49,10 +49,8 @@ export const TrashPage = () => {
     // invalidazione restava invisibile fino allo scadere dello staleTime.
     const invalidateRestoredData = () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.accounts });
-        queryClient.invalidateQueries({ queryKey: queryKeys.totalBalance });
         queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
-        queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
-        queryClient.invalidateQueries({ queryKey: ['reports'] });
+        invalidateDerivedData(queryClient);
     };
 
     const fetchDeletedTransactions = async () => {
@@ -182,7 +180,7 @@ export const TrashPage = () => {
             dataIndex: 'date',
             key: 'date',
             width: 110,
-            render: (v: string) => dayjs(v).format('DD/MM/YYYY'),
+            render: (v: string) => formatDate(v),
             sorter: (a, b) => dayjs(a.date).unix() - dayjs(b.date).unix(),
             defaultSortOrder: 'descend',
             hidden: isSmallMobile,
@@ -195,7 +193,7 @@ export const TrashPage = () => {
             render: (v: string, record: Transaction) => isSmallMobile ? (
                 <>
                     <Text ellipsis={{ tooltip: v }} style={{ display: 'block' }}>{v}</Text>
-                    <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>{dayjs(record.date).format('DD/MM/YYYY')}</Text>
+                    <Text type="secondary" style={{ fontSize: FONT_SIZE.xs }}>{formatDate(record.date)}</Text>
                 </>
             ) : v,
         },
@@ -282,7 +280,7 @@ export const TrashPage = () => {
             dataIndex: 'deletedAt',
             key: 'deletedAt',
             width: isSmallMobile ? 110 : 150,
-            render: (v: string) => dayjs(v).format('DD/MM/YYYY HH:mm'),
+            render: (v: string) => formatDateTime(v),
             sorter: (a, b) => dayjs(a.deletedAt).unix() - dayjs(b.deletedAt).unix(),
             defaultSortOrder: 'descend',
         },

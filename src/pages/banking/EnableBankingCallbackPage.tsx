@@ -142,7 +142,7 @@ export const EnableBankingCallbackPage = () => {
             await api.syncBankAccount('enable-banking', localAccountId, {actualBalance: currentBalance});
 
             apiNotification.info({
-                message: t('enableBankingCallback.syncStartedTitle'),
+                title: t('enableBankingCallback.syncStartedTitle'),
                 description: t('enableBankingCallback.syncStartedDescription'),
                 placement: 'bottomRight',
                 duration: 5,
@@ -153,7 +153,7 @@ export const EnableBankingCallbackPage = () => {
         } catch (err) {
             console.error(err);
             apiNotification.error({
-                message: t('enableBankingCallback.syncErrorTitle'),
+                title: t('enableBankingCallback.syncErrorTitle'),
                 description: t('enableBankingCallback.syncErrorDescription'),
                 placement: 'bottomRight',
                 duration: 5,

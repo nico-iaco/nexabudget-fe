@@ -3,6 +3,7 @@
 // Regola: usare questo hook per azioni destructive modali (es. delete account, delete sessione chat).
 //         Usare Popconfirm inline per azioni su singola riga di tabella.
 import { App } from 'antd';
+import { useTranslation } from 'react-i18next';
 
 interface ConfirmOptions {
     title: string;
@@ -31,13 +32,14 @@ interface ConfirmOptions {
  */
 export const useConfirm = () => {
     const { modal } = App.useApp();
+    const { t } = useTranslation();
 
     return (opts: ConfirmOptions) => {
         modal.confirm({
             title: opts.title,
             content: opts.content,
-            okText: opts.okText ?? 'Conferma',
-            cancelText: opts.cancelText ?? 'Annulla',
+            okText: opts.okText ?? t('common.confirm'),
+            cancelText: opts.cancelText ?? t('common.cancel'),
             okButtonProps: opts.danger ? { danger: true } : undefined,
             onOk: opts.onOk,
             onCancel: opts.onCancel,

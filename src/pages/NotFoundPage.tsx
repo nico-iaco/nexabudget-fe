@@ -17,10 +17,10 @@ export const NotFoundPage = () => {
                 </div>
             }
             title="404"
-            subTitle={t('common.notFound', { defaultValue: 'La pagina che stai cercando non esiste.' })}
+            subTitle={t('common.notFound')}
             extra={
                 <Button type="primary" onClick={() => navigate('/dashboard')}>
-                    {t('common.backToDashboard', { defaultValue: 'Torna alla Dashboard' })}
+                    {t('common.backToDashboard')}
                 </Button>
             }
         />

@@ -21,7 +21,6 @@ export const CoinbaseKeysModal: React.FC<CoinbaseKeysModalProps> = ({ open, onCl
         try {
             await saveCoinbaseKeys(values);
             message.success(t('coinbaseKeys.saveSuccess'));
-            form.resetFields();
             onSuccess();
             onClose();
         } catch (error) {
@@ -37,6 +36,9 @@ export const CoinbaseKeysModal: React.FC<CoinbaseKeysModalProps> = ({ open, onCl
             title={t('coinbaseKeys.title')}
             open={open}
             onCancel={onClose}
+            // Le chiavi non devono sopravvivere alla chiusura: con Annulla (o dopo un
+            // salvataggio fallito) riaprendo il modale i segreti erano ancora nel form.
+            afterClose={() => form.resetFields()}
             footer={null}
         >
             <Form

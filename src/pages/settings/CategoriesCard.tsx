@@ -11,8 +11,9 @@ import { CategoryMergeModal } from '../../components/modals/CategoryMergeModal';
 import { useConfirm } from '../../hooks/useConfirm';
 import type { AppOutletContext } from '../../types/outletContext';
 import { FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
-import { queryKeys } from '../../queryKeys';
+import { invalidateDerivedData, queryKeys } from '../../queryKeys';
 import { apiErrorText, getApiErrorStatus } from '../../utils/apiError';
+import { EmptyState } from '../../components/common/EmptyState';
 
 export const CategoriesCard = () => {
     const { t } = useTranslation();
@@ -60,6 +61,9 @@ export const CategoriesCard = () => {
             if (editingCategory) {
                 await updateCategory(editingCategory.id, values);
                 message.success(t('settings.categories.updatedSuccess'));
+                // Il nome della categoria è denormalizzato su transazioni e aggregati.
+                queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
+                invalidateDerivedData(queryClient);
             } else {
                 await createCategory(values);
                 message.success(t('settings.categories.createdSuccess'));
@@ -136,8 +140,7 @@ export const CategoriesCard = () => {
             // cambiano liste, nomi di categoria e aggregati. Budget, template e cestino si
             // ricaricano già al mount delle loro pagine; qui le query in cache.
             queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
-            queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
-            queryClient.invalidateQueries({ queryKey: ['reports'] });
+            invalidateDerivedData(queryClient);
         } catch (error) {
             message.error(apiErrorText(error, t('settings.categories.mergeError')));
         } finally {
@@ -159,9 +162,7 @@ export const CategoriesCard = () => {
         <Card title={t('settings.categories.cardTitle')} style={{ marginBottom: SPACING.md }}>
             <Flex wrap="wrap" gap={8}>
                 {sortedCategories.length === 0 && (
-                    <span style={{ color: token.colorTextSecondary, fontSize: FONT_SIZE.sm }}>
-                        {t('settings.categories.emptyList')}
-                    </span>
+                    <EmptyState description={t('settings.categories.emptyList')} style={{ width: '100%', marginTop: 0 }} />
                 )}
 
                 {sortedCategories.map(cat => {

@@ -40,9 +40,7 @@ export const RouteErrorFallback = ({ error, onReset, compact = false }: RouteErr
 
     const description = chunkError
         ? t('pwa.updateDescription')
-        : t('common.errorBoundaryDescription', {
-              defaultValue: 'Si è verificato un errore imprevisto in questa sezione.',
-          });
+        : t('common.errorBoundaryDescription');
 
     return (
         <div

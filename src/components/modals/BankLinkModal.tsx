@@ -1,10 +1,12 @@
-import {Button, Flex, Form, Modal, Select, Spin, Steps} from 'antd';
-import {europeanCountries} from '../../utils/countries';
+import {Button, Flex, Form, Modal, Spin, Steps} from 'antd';
+import {getEuropeanCountries} from '../../utils/countries';
+import {SafeSelect} from '../common/SafeSelect';
 import type {Account, BankInstitutionDto, BankProvider} from '../../types/api';
 import {useTranslation} from 'react-i18next';
 import {SPACING} from '../../theme/tokens';
 
-const { Option } = Select;
+// SafeSelect come negli altri modali: il popup di AntD Select è mal posizionato nella PWA iOS.
+const { Option } = SafeSelect;
 
 interface BankLinkModalProps {
     open: boolean;
@@ -43,6 +45,8 @@ export const BankLinkModal = ({
     onConfirm
 }: BankLinkModalProps) => {
     const { t } = useTranslation();
+    // Nomi dei paesi nella lingua corrente (il componente ri-renderizza al cambio lingua).
+    const countries = getEuropeanCountries();
     return (
         <Modal
             title={t('bankLink.connectTitle', { name: account?.name ?? '' })}
@@ -77,14 +81,14 @@ export const BankLinkModal = ({
             {currentStep === 0 && (
                 <Form layout="vertical">
                     <Form.Item label={t('bankLink.selectYourProvider')}>
-                        <Select
+                        <SafeSelect
                             placeholder={t('bankLink.selectProviderPlaceholder')}
-                            onChange={onProviderSelect}
+                            onChange={v => onProviderSelect(v as BankProvider)}
                             value={selectedProvider ?? undefined}
                         >
                             <Option key="gocardless" value="gocardless">{t('bankLink.providerGoCardless')}</Option>
                             <Option key="enable-banking" value="enable-banking">{t('bankLink.providerEnableBanking')}</Option>
-                        </Select>
+                        </SafeSelect>
                     </Form.Item>
                 </Form>
             )}
@@ -92,22 +96,22 @@ export const BankLinkModal = ({
             {currentStep === 1 && (
                 <Form layout="vertical">
                     <Form.Item label={t('bankLink.selectYourCountry')}>
-                        <Select
+                        <SafeSelect
                             showSearch
                             placeholder={t('bankLink.selectCountryPlaceholder')}
-                            onChange={onCountrySelect}
+                            onChange={v => onCountrySelect(v as string)}
                             value={selectedCountry}
                             loading={loadingBanks}
                             filterOption={(input, option) =>
                                 (option?.label as string ?? '').toLowerCase().includes(input.toLowerCase())
                             }
                         >
-                            {europeanCountries.map(country => (
+                            {countries.map(country => (
                                 <Option key={country.code} value={country.code} label={country.name}>
                                     {country.name}
                                 </Option>
                             ))}
-                        </Select>
+                        </SafeSelect>
                     </Form.Item>
                 </Form>
             )}
@@ -118,10 +122,10 @@ export const BankLinkModal = ({
                         {loadingBanks ? (
                             <Spin />
                         ) : (
-                            <Select
+                            <SafeSelect
                                 showSearch
                                 placeholder={t('bankLink.selectBankPlaceholder')}
-                                onChange={onBankSelect}
+                                onChange={v => onBankSelect(v as string)}
                                 value={selectedBank}
                                 filterOption={(input, option) =>
                                     (option?.label as string ?? '').toLowerCase().includes(input.toLowerCase())
@@ -141,7 +145,7 @@ export const BankLinkModal = ({
                                         </Flex>
                                     </Option>
                                 ))}
-                            </Select>
+                            </SafeSelect>
                         )}
                     </Form.Item>
                 </Form>

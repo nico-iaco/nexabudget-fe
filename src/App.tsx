@@ -12,6 +12,7 @@ import { usePreferences } from './contexts/PreferencesContext';
 import { FONT_BODY, PRIMARY_DARK_HEX, PRIMARY_LIGHT_HEX, RADIUS, RADIUS_BASE } from './theme/tokens';
 import { ErrorBoundary } from './components/common/ErrorBoundary';
 import { RouteErrorFallback } from './components/common/RouteErrorFallback';
+import { safeRedirect } from './utils/redirect';
 
 // Dynamic imports (Code Splitting)
 const LoginPage = lazy(() => import('./pages/auth/LoginPage').then(m => ({ default: m.LoginPage })));
@@ -41,13 +42,25 @@ const PublicLayout = () => (
 );
 
 const PrivateRoute = ({ children }: { children: JSX.Element }) => {
-    const { auth } = useAuth();
-    return auth ? children : <Navigate to="/login" />;
+    const { auth, explicitLogout } = useAuth();
+    const location = useLocation();
+    if (auth) return children;
+    // `from`: dopo il login si torna alla pagina richiesta (sessione scaduta, link diretto).
+    // Non dopo un logout volontario: chi entra dopo, magari un altro utente, finirebbe
+    // sulla pagina lasciata dal precedente.
+    return <Navigate to="/login" replace state={explicitLogout ? undefined : { from: location.pathname + location.search }} />;
 };
 
+// Il redirect post-login vive qui e non in LoginPage: `login()` aggiorna l'auth prima
+// che una navigate() in transizione arrivi a destinazione, e questo componente
+// rimandava comunque a "/".
 const RedirectIfAuth = ({ children }: { children: JSX.Element }) => {
     const { auth } = useAuth();
-    return auth ? <Navigate to="/" /> : children;
+    const location = useLocation();
+    if (!auth) return children;
+    const from = (location.state as { from?: unknown } | null)?.from
+        ?? new URLSearchParams(location.search).get('from');
+    return <Navigate to={safeRedirect(from)} replace />;
 };
 
 /**

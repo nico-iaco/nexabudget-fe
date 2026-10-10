@@ -7,15 +7,10 @@ import dayjs, { Dayjs } from 'dayjs';
 import { getRangePresets } from '../../utils/datePresets';
 import { useTranslation } from 'react-i18next';
 import * as api from '../../services/api';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { RADIUS, SPACING } from '../../theme/tokens';
+import { RADIUS, SPACING, AI_CARD_GRADIENT_LIGHT, AI_CARD_GRADIENT_DARK, AI_CARD_BORDER_LIGHT, AI_CARD_BORDER_DARK } from '../../theme/tokens';
 import { getApiErrorMessage, getApiErrorStatus } from '../../utils/apiError';
-
-const AI_CARD_GRADIENT_LIGHT = 'linear-gradient(135deg, oklch(96% 0.02 260), oklch(93% 0.03 250))';
-const AI_CARD_GRADIENT_DARK = 'linear-gradient(135deg, oklch(24% 0.02 260), oklch(28% 0.03 250))';
-const AI_CARD_BORDER_LIGHT = 'oklch(88% 0.03 250)';
-const AI_CARD_BORDER_DARK = 'oklch(32% 0.03 250)';
 import { DatePresetPicker } from '../common/DatePresetPicker';
 
 const { RangePicker } = DatePicker;
@@ -27,14 +22,14 @@ const { Title, Text } = Typography;
 
 // Preset condivisi (utils/datePresets): stessi intervalli della dashboard e dei report.
 const PRESETS = (t: (k: string) => string) =>
-    getRangePresets(t, ['last7Days', 'thisMonth', 'last6Months', 'last12Months']);
+    getRangePresets(t, ['last7Days', 'thisMonth', 'previousMonth', 'last6Months', 'last12Months']);
 
 export const AiAnalysisCard: React.FC = () => {
     const { t } = useTranslation();
     const { message } = App.useApp();
     const { preferences } = usePreferences();
     const { token } = theme.useToken();
-    const isMobile = useMediaQuery('(max-width: 768px)');
+    const { isSmallMobile: isMobile } = useBreakpoints();
     
     // By default, let's select "lastMonth" as a nice starting point, but user starts with null null originally.
     // Let's keep it null null to avoid triggering generation accidentally on mount.
@@ -281,7 +276,7 @@ export const AiAnalysisCard: React.FC = () => {
                 )}
 
                 {result && !loading && (
-                    <div style={{ marginTop: SPACING.md, padding: SPACING.md, backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.02)', borderRadius: RADIUS.lg }}>
+                    <div style={{ marginTop: SPACING.md, padding: SPACING.md, backgroundColor: token.colorFillQuaternary, borderRadius: RADIUS.lg }}>
                         {completedJobId && (
                             <Flex justify="flex-end" style={{ marginBottom: SPACING.md }}>
                                 <Button type="default" icon={<DownloadOutlined />} onClick={handleDownload}>

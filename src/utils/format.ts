@@ -8,6 +8,7 @@
 // Il locale segue la lingua dell'app (i18n), non quella del browser. Le funzioni leggono
 // `i18n.language` al momento della chiamata: i componenti che le usano ri-renderizzano già
 // al cambio lingua perché usano `useTranslation`.
+import dayjs, { type ConfigType } from 'dayjs';
 import { i18n } from '../i18n';
 
 const localeTag = (): string => (i18n.language === 'en' ? 'en-US' : 'it-IT');
@@ -85,3 +86,15 @@ export const formatPercent = (value: number, decimals = 1, signed = false): stri
         ...(signed ? { signDisplay: 'exceptZero' } : {}),
     }).format(value / 100);
 
+
+// Date mostrate all'utente: formato della lingua attiva ("09/10/2026" in italiano,
+// "10/09/2026" in inglese) invece di 'DD/MM/YYYY' fisso. dayjs segue già la lingua
+// (listener in i18n) e il plugin localizedFormat è registrato in main.tsx.
+// Le date verso l'API restano 'YYYY-MM-DD'.
+
+/** Data breve localizzata: "09/10/2026". */
+export const formatDate = (value: ConfigType): string => dayjs(value).format('L');
+
+/** Data e ora localizzate: "09/10/2026 14:30" (con `seconds`: "09/10/2026 14:30:05"). */
+export const formatDateTime = (value: ConfigType, { seconds = false } = {}): string =>
+    dayjs(value).format(seconds ? 'L LTS' : 'L LT');

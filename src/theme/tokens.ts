@@ -34,6 +34,13 @@ const SEMANTIC_DARK = {
 /** Pick the semantic color set matching the active PreferencesContext theme. */
 export const getSemanticColors = (isDark: boolean) => (isDark ? SEMANTIC_DARK : SEMANTIC_LIGHT);
 
+/** Colore di un budget dalla percentuale usata: verde, arancio da 75%, rosso da 100%. */
+export const budgetUsageColor = (pct: number, semantic: ReturnType<typeof getSemanticColors>): string => {
+    if (pct >= 100) return semantic.negative;
+    if (pct >= 75) return semantic.warning;
+    return semantic.positive;
+};
+
 // Brand gradients (logo mark, balance/KPI panels).
 export const GRADIENT_BRAND = `linear-gradient(135deg, ${PRIMARY_LIGHT}, oklch(66% 0.15 200))`;
 export const GRADIENT_BRAND_DARK = `linear-gradient(135deg, ${PRIMARY_DARK}, oklch(75% 0.13 200))`;
@@ -55,6 +62,21 @@ export const SIDER_TEXT_SECONDARY = 'rgba(255, 255, 255, 0.65)';
 // Dark-mode shell surfaces (NexaBudget Redesign — replaces the navy SIDER_BG).
 export const SURFACE_DARK = 'oklch(19% 0.012 260)';
 export const SURFACE_DARK_BORDER = 'oklch(26% 0.012 260)';
+// Superficie chiara e suo bordo (anteprima del tema nelle impostazioni).
+export const SURFACE_LIGHT = '#fff';
+export const SURFACE_LIGHT_BORDER = '#ecedf0';
+
+// Testo e tracce sopra i gradienti di brand (card principale, saldo nella Sider): sempre
+// chiari, indipendentemente dal tema.
+export const ON_GRADIENT_TEXT = '#fff';
+export const ON_GRADIENT_TEXT_MUTED = SIDER_TEXT_PRIMARY;
+export const ON_GRADIENT_SPARKLINE = 'rgba(255, 255, 255, 0.55)';
+
+// Card "Analisi AI" della dashboard: sfondo e bordo in tinta col brand.
+export const AI_CARD_GRADIENT_LIGHT = 'linear-gradient(135deg, oklch(96% 0.02 260), oklch(93% 0.03 250))';
+export const AI_CARD_GRADIENT_DARK = 'linear-gradient(135deg, oklch(24% 0.02 260), oklch(28% 0.03 250))';
+export const AI_CARD_BORDER_LIGHT = 'oklch(88% 0.03 250)';
+export const AI_CARD_BORDER_DARK = 'oklch(32% 0.03 250)';
 
 // Bar-chart series keys — kept as stable identifiers so colour-mapping
 // doesn't depend on translated label strings.
@@ -118,4 +140,10 @@ export const SHADOW = {
     bottomNav: '0 -2px 8px rgba(0,0,0,0.08)',
     tooltip: '0 3px 6px -4px rgba(0,0,0,0.32), 0 6px 16px 0 rgba(0,0,0,0.16)',
     elevated: '0 6px 24px rgba(0,0,0,0.18)',
+    auth: '0 8px 24px rgba(20,20,40,0.08)',
 } as const;
+
+// Bottom nav mobile (BottomNavBar, solo isSmallMobile): altezza e offset per gli elementi
+// fissi che devono restarle sopra (FAB, prompt PWA, widget AI) invece di coprirla.
+export const BOTTOM_NAV_HEIGHT = 'calc(56px + env(safe-area-inset-bottom, 0px))';
+export const aboveBottomNav = (gap: number) => `calc(56px + env(safe-area-inset-bottom, 0px) + ${gap}px)`;

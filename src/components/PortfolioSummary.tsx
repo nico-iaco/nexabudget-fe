@@ -3,14 +3,24 @@ import {Button, Card, Col, Collapse, Popconfirm, Row, Table, Tag, Typography, Fl
 import {DeleteOutlined, EditOutlined} from '@ant-design/icons';
 import {useTranslation} from 'react-i18next';
 import type {CryptoAsset, PortfolioValueResponse} from '../types/api.ts';
-import {FONT_SIZE, SPACING, GRADIENT_BALANCE, GRADIENT_BALANCE_DARK} from '../theme/tokens';
-import {useMediaQuery} from '../hooks/useMediaQuery';
+import {CHART_CATEGORICAL, FONT_SIZE, SPACING, GRADIENT_BALANCE, GRADIENT_BALANCE_DARK} from '../theme/tokens';
+import { useBreakpoints } from '../hooks/useBreakpoints';
 import {usePreferences} from '../contexts/PreferencesContext';
 import {StatCard} from './common/StatCard';
 import { formatMoney, formatNumber, formatUnitPrice } from '../utils/format';
 import { ItemList } from './common/ItemList';
+import { useConfirm } from '../hooks/useConfirm';
+import { EmptyState } from './common/EmptyState';
 
 const { Text } = Typography;
+
+// Colore del tag dal simbolo, non dalla posizione in pagina: prima lo stesso asset
+// cambiava colore cambiando pagina o ordinamento. Palette condivisa con i grafici.
+const symbolColor = (symbol: string): string => {
+    let hash = 0;
+    for (const ch of symbol) hash = (hash * 31 + ch.charCodeAt(0)) >>> 0;
+    return CHART_CATEGORICAL[hash % CHART_CATEGORICAL.length];
+};
 
 interface PortfolioSummaryProps {
     data: PortfolioValueResponse | null;
@@ -29,7 +39,8 @@ interface GroupedAsset {
 
 export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loading, onEditAsset, onDeleteAsset }) => {
     const { t } = useTranslation();
-    const isMobile = useMediaQuery('(max-width: 768px)');
+    const confirm = useConfirm();
+    const { isSmallMobile: isMobile } = useBreakpoints();
     const { preferences } = usePreferences();
     const { token } = theme.useToken();
     const isDark = preferences.theme === 'dark';
@@ -58,7 +69,6 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
         return Object.values(groups);
     }, [data?.assets]);
 
-    const colors = ['magenta', 'red', 'volcano', 'orange', 'gold', 'lime', 'green', 'cyan', 'blue', 'geekblue', 'purple'];
 
     // utils/format tiene in cache i formatter Intl (costosi da costruire), quindi
     // chiamarlo per cella non ricostruisce nulla.
@@ -70,8 +80,8 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
             title: t('portfolio.asset'),
             dataIndex: 'symbol',
             key: 'symbol',
-            render: (text: string, _: GroupedAsset, index: number) => (
-                <Tag color={colors[index % colors.length]}>{text}</Tag>
+            render: (text: string) => (
+                <Tag color={symbolColor(text)}>{text}</Tag>
             ),
         },
         {
@@ -130,8 +140,9 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                                     title={t('portfolio.deleteHolding')}
                                     description={t('portfolio.deleteHoldingConfirm')}
                                     onConfirm={() => onDeleteAsset?.(asset)}
-                                    okText={t('common.yes')}
-                                    cancelText={t('common.no')}
+                                    okText={t('common.delete')}
+                                    cancelText={t('common.cancel')}
+                                    okButtonProps={{ danger: true }}
                                 >
                                     <Button icon={<DeleteOutlined />} size="small" danger aria-label={t('common.delete')} />
                                 </Popconfirm>
@@ -167,8 +178,9 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                         items={groupedAssets}
                         rowKey={record => record.symbol}
                         loading={loading}
+                        empty={<EmptyState description={t('portfolio.empty')} />}
                         aria-label={t('portfolio.yourAssets')}
-                        renderItem={(record, index) => (
+                        renderItem={record => (
                             <Card size="small" style={{ marginBottom: SPACING.sm }}>
                                 <Collapse
                                     ghost
@@ -177,7 +189,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                                             key: record.symbol,
                                             label: (
                                                 <Flex justify="space-between" align="center" style={{ width: '100%' }}>
-                                                    <Tag color={colors[index % colors.length]}>{record.symbol}</Tag>
+                                                    <Tag color={symbolColor(record.symbol)}>{record.symbol}</Tag>
                                                     <div style={{ textAlign: 'right' }}>
                                                         <div><Text strong>{formatAmount(record.value)}</Text></div>
                                                         <div><Text type="secondary" style={{ fontSize: `${FONT_SIZE.sm}px` }}>{formatNumber(record.amount, 8)}</Text></div>
@@ -209,15 +221,20 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                                                                         onClick={() => onEditAsset?.(asset)}
                                                                         aria-label={t('common.edit')}
                                                                     />
-                                                                    <Popconfirm
-                                                                        title={t('portfolio.deleteHolding')}
-                                                                        description={t('portfolio.deleteHoldingConfirm')}
-                                                                        onConfirm={() => onDeleteAsset?.(asset)}
-                                                                        okText={t('common.yes')}
-                                                                        cancelText={t('common.no')}
-                                                                    >
-                                                                        <Button type="text" danger icon={<DeleteOutlined />} size="small" aria-label={t('common.delete')} />
-                                                                    </Popconfirm>
+                                                                    <Button
+                                                                        type="text"
+                                                                        danger
+                                                                        icon={<DeleteOutlined />}
+                                                                        size="small"
+                                                                        aria-label={t('common.delete')}
+                                                                        onClick={() => confirm({
+                                                                            title: t('portfolio.deleteHolding'),
+                                                                            content: t('portfolio.deleteHoldingConfirm'),
+                                                                            okText: t('common.delete'),
+                                                                            danger: true,
+                                                                            onOk: () => onDeleteAsset?.(asset),
+                                                                        })}
+                                                                    />
                                                                 </Flex>
                                                             )}
                                                         </Flex>
@@ -236,6 +253,7 @@ export const PortfolioSummary: React.FC<PortfolioSummaryProps> = ({ data, loadin
                         columns={columns}
                         rowKey="symbol"
                         loading={loading}
+                        locale={{ emptyText: <EmptyState description={t('portfolio.empty')} /> }}
                         pagination={{ defaultPageSize: 20, hideOnSinglePage: true }}
                         scroll={{ x: true }}
                         expandable={{

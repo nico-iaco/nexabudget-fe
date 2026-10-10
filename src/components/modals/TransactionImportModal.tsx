@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
     Alert,
+    App,
     Button,
     Checkbox,
     Descriptions,
     Flex,
     Form,
-    message,
     Modal,
     Radio,
-    Select,
     Steps,
     Table,
     Tag,
@@ -18,6 +17,8 @@ import {
 } from 'antd';
 import { FileSearchOutlined, InboxOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
+import { SafeSelect } from '../common/SafeSelect';
+import { getApiErrorMessage } from '../../utils/apiError';
 import dayjs from 'dayjs';
 import * as api from '../../services/api';
 import type {
@@ -30,7 +31,7 @@ import type {
 import type { ColumnsType } from 'antd/es/table';
 import { getSemanticColors } from '../../theme/tokens';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { formatMoney } from '../../utils/format';
+import { formatMoney, formatDate } from '../../utils/format';
 
 const { Text } = Typography;
 
@@ -85,11 +86,6 @@ const detectDelimiter = (lines: string[]): string => {
 const detectDateFormat = (value: string | undefined): string | undefined =>
     value ? DATE_FORMATS.find(f => f.pattern.test(value.trim()))?.java : undefined;
 
-const errorMessage = (error: unknown): string | undefined => {
-    const data = (error as { response?: { data?: { message?: unknown } } })?.response?.data;
-    return typeof data?.message === 'string' ? data.message : undefined;
-};
-
 interface TransactionImportModalProps {
     open: boolean;
     accountId: string;
@@ -113,6 +109,7 @@ export const TransactionImportModal = ({
     onImported,
 }: TransactionImportModalProps) => {
     const { t } = useTranslation();
+    const { message } = App.useApp();
     const { preferences } = usePreferences();
     const semantic = getSemanticColors(preferences.theme === 'dark');
 
@@ -254,7 +251,7 @@ export const TransactionImportModal = ({
             key: 'date',
             width: 110,
             responsive: ['sm'],
-            render: (value: string) => dayjs(value).format('DD/MM/YYYY'),
+            render: (value: string) => formatDate(value),
         },
         {
             title: t('transactions.description'),
@@ -331,7 +328,7 @@ export const TransactionImportModal = ({
             setImportStep(1);
         } catch (error) {
             console.error('Failed to preview import', error);
-            const detail = errorMessage(error);
+            const detail = getApiErrorMessage(error);
             message.error(detail ? `${t('transactions.import.previewError')} ${detail}` : t('transactions.import.previewError'));
         } finally {
             setPreviewLoading(false);
@@ -368,7 +365,7 @@ export const TransactionImportModal = ({
             onImported();
         } catch (error) {
             console.error('Failed to import transactions', error);
-            const detail = errorMessage(error);
+            const detail = getApiErrorMessage(error);
             message.error(detail ? `${t('transactions.import.confirmError')} ${detail}` : t('transactions.import.confirmError'));
         } finally {
             setConfirmImportLoading(false);
@@ -531,39 +528,39 @@ export const TransactionImportModal = ({
                         <>
                             <Descriptions bordered size="small" column={1} title={t('transactions.import.csvMappingTitle')}>
                                 <Descriptions.Item label={t('transactions.import.dateColumn')}>
-                                    <Select
+                                    <SafeSelect
                                         value={csvMapping.dateColumn}
-                                        onChange={(value) => setCsvMapping(prev => ({ ...prev, dateColumn: value }))}
+                                        onChange={(value) => setCsvMapping(prev => ({ ...prev, dateColumn: value as number }))}
                                         options={csvColumnOptions}
                                     />
                                 </Descriptions.Item>
                                 <Descriptions.Item label={t('transactions.import.amountColumn')}>
-                                    <Select
+                                    <SafeSelect
                                         value={csvMapping.amountColumn}
-                                        onChange={(value) => setCsvMapping(prev => ({ ...prev, amountColumn: value }))}
+                                        onChange={(value) => setCsvMapping(prev => ({ ...prev, amountColumn: value as number }))}
                                         options={csvColumnOptions}
                                     />
                                 </Descriptions.Item>
                                 <Descriptions.Item label={t('transactions.import.descriptionColumn')}>
-                                    <Select
+                                    <SafeSelect
                                         value={csvMapping.descriptionColumn}
-                                        onChange={(value) => setCsvMapping(prev => ({ ...prev, descriptionColumn: value }))}
+                                        onChange={(value) => setCsvMapping(prev => ({ ...prev, descriptionColumn: value as number }))}
                                         options={csvColumnOptions}
                                     />
                                 </Descriptions.Item>
                                 <Descriptions.Item label={t('transactions.import.typeColumn')}>
-                                    <Select
+                                    <SafeSelect
                                         value={csvMapping.typeColumn ?? undefined}
-                                        onChange={(value) => setCsvMapping(prev => ({ ...prev, typeColumn: value ?? null }))}
+                                        onChange={(value) => setCsvMapping(prev => ({ ...prev, typeColumn: (value as number | undefined) ?? null }))}
                                         options={csvColumnOptions}
                                         allowClear
                                         placeholder={t('transactions.import.optional')}
                                     />
                                 </Descriptions.Item>
                                 <Descriptions.Item label={t('transactions.import.dateFormat')}>
-                                    <Select
+                                    <SafeSelect
                                         value={csvMapping.dateFormat}
-                                        onChange={(value) => setCsvMapping(prev => ({ ...prev, dateFormat: value }))}
+                                        onChange={(value) => setCsvMapping(prev => ({ ...prev, dateFormat: value as string }))}
                                         options={DATE_FORMATS.map(f => ({
                                             value: f.java,
                                             label: `${f.java} — ${dateExample.format(f.dayjs)}`,
@@ -571,9 +568,9 @@ export const TransactionImportModal = ({
                                     />
                                 </Descriptions.Item>
                                 <Descriptions.Item label={t('transactions.import.delimiter')}>
-                                    <Select
+                                    <SafeSelect
                                         value={csvMapping.delimiter}
-                                        onChange={(value) => setCsvMapping(prev => ({ ...prev, delimiter: value }))}
+                                        onChange={(value) => setCsvMapping(prev => ({ ...prev, delimiter: value as string }))}
                                         options={[
                                             { value: ',', label: ',' },
                                             { value: ';', label: ';' },
@@ -650,10 +647,10 @@ export const TransactionImportModal = ({
                             extra={t('transactions.import.defaultCategoryHelp')}
                             style={{ marginBottom: 0 }}
                         >
-                            <Select
+                            <SafeSelect
                                 placeholder={t('transactions.import.defaultCategoryPlaceholder')}
                                 value={defaultImportCategoryId}
-                                onChange={(value) => setDefaultImportCategoryId(value)}
+                                onChange={(value) => setDefaultImportCategoryId(value as string | undefined)}
                                 allowClear
                                 options={categories.map(c => ({ value: c.id, label: c.name }))}
                                 showSearch={{ optionFilterProp: 'label' }}

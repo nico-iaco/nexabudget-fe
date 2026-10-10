@@ -89,7 +89,11 @@ Keys are grouped by feature area:
 * `crypto`, `portfolio`, `binanceKeys`, `coinbaseKeys`, `manualHolding`: crypto tracking and exchange credentials.
 * `budgets`, `audit`, `trash`, `chat`, `settings`, `pwa`: remaining feature areas.
 
-Some call sites pass a `defaultValue` alongside the key as a safety net; that fallback text is Italian.
+Some call sites pass a `defaultValue` alongside the key as a safety net (that fallback text is Italian), but every key used in the code must exist in **both** trees — otherwise English users see the Italian fallback. Date-range preset labels live under `presets`.
+
+### Numbers & dates
+
+Never format amounts, numbers, percentages or dates by hand: use `formatMoney`, `formatNumber`, `formatPercent`, `formatDate` and `formatDateTime` from `src/utils/format.ts`, which follow the active language. Dates sent to the API always use `YYYY-MM-DD`. Numeric inputs that accept a comma as decimal separator use `commaDecimalParser` from `src/utils/number.ts`.
 
 ### Usage in Components
 
@@ -115,7 +119,7 @@ The Markdown files in `docs/` and the root `README.md` are **published automatic
 
 A second workflow, `docker-image.yml`, builds and publishes the container image.
 
-Coding-agent guidance for this repository lives in `CLAUDE.md` at the root; it is not published to the wiki.
+Coding-agent guidance for this repository lives in `CLAUDE.md` at the root; it is not published to the wiki. Keep both `CLAUDE.md` and these documents up to date in the same change that makes them inaccurate.
 
 ---
 

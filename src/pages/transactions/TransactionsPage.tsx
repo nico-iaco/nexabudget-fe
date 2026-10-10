@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useOutletContext, useParams } from 'react-router-dom';
 import {
     Alert,
+    App,
     Badge,
     Button,
     DatePicker,
@@ -12,9 +13,7 @@ import {
     Form,
     Input,
     InputNumber,
-    message,
     Modal,
-    notification,
     Progress,
     Radio,
     Segmented,
@@ -50,14 +49,14 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { InlineError } from '../../components/common/InlineError';
 import { ItemList } from '../../components/common/ItemList';
 import { getCurrencySymbol } from '../../utils/currency';
-import { formatMoney, formatNumber } from '../../utils/format';
-import { FONT_SIZE, RADIUS, SHADOW, SPACING, getSemanticColors } from '../../theme/tokens';
+import { formatMoney, formatNumber, formatDate } from '../../utils/format';
+import { FONT_SIZE, RADIUS, SHADOW, SPACING, aboveBottomNav, getSemanticColors } from '../../theme/tokens';
 import { usePreferences } from '../../contexts/PreferencesContext';
 import type { ColumnsType, TableProps } from 'antd/es/table';
 import type { MenuProps } from 'antd';
 import type { AppOutletContext } from '../../types/outletContext';
 import { commaDecimalParser } from '../../utils/number';
-import { queryKeys } from '../../queryKeys';
+import { invalidateDerivedData as invalidateDerivedQueries, queryKeys } from '../../queryKeys';
 import {
     DEFAULT_TRANSACTION_SORT,
     useTransactionFilters,
@@ -68,7 +67,7 @@ import {
 import { TRANSACTIONS_PAGE_SIZE, useTransactionsList } from '../../hooks/useTransactionsList';
 import { getRangePresets } from '../../utils/datePresets';
 import { DatePresetPicker } from '../../components/common/DatePresetPicker';
-import { apiErrorText, applyApiFieldErrors } from '../../utils/apiError';
+import { apiErrorText, applyApiFieldErrors, getApiErrorStatus } from '../../utils/apiError';
 
 const { Text } = Typography;
 const { Option } = Select;
@@ -84,6 +83,9 @@ const SEARCH_DEBOUNCE_MS = 300;
 const TRANSFER_CANDIDATES_PAGE_SIZE = 200;
 const AI_POLL_INTERVAL_MS = 10_000;
 const AI_POLL_TIMEOUT_MS = 10 * 60 * 1000; // 10 minuti
+// Errori di polling consecutivi tollerati prima di dichiarare fallito il job: un singolo
+// errore di rete transitorio non deve far credere che la categorizzazione sia fallita.
+const AI_POLL_MAX_CONSECUTIVE_ERRORS = 3;
 
 /**
  * Carica la pagina successiva quando il fondo della lista entra nel viewport, con un
@@ -116,6 +118,9 @@ const LoadMore = ({ onLoadMore, loading, label }: { onLoadMore: () => void; load
 
 export const TransactionsPage = () => {
     const { t } = useTranslation();
+    // Toast e notifiche dal contesto App: rispettano tema e ConfigProvider (il `message`
+    // statico di antd usciva chiaro in dark mode).
+    const { message, notification: apiNotification } = App.useApp();
     const { accountId } = useParams<{ accountId?: string }>();
     const {
         accounts,
@@ -191,6 +196,19 @@ export const TransactionsPage = () => {
         isFetchingNextPage,
     } = useTransactionsList({ accountId, filters: apiFilters, page: currentPage, infinite: isMobile });
 
+    // `?page=N` oltre l'ultima pagina (eliminata l'ultima riga, filtro che restringe i
+    // risultati, link condiviso): la Table evidenziava N-1 ma la query restava su N, vuota,
+    // e cliccare la pagina evidenziata non faceva nulla. Si riporta l'URL sull'ultima valida.
+    useEffect(() => {
+        if (isMobile || loading || loadFailed || !hasData) return;
+        if (currentPage > 1 && transactions.length === 0) {
+            const lastPage = Math.max(1, Math.ceil(totalTransactions / TRANSACTIONS_PAGE_SIZE));
+            // Solo se cambia davvero: con conteggio e contenuto del backend in disaccordo
+            // (pagina "valida" ma vuota) si riscriverebbe lo stesso URL all'infinito.
+            if (lastPage !== currentPage) setPage(lastPage);
+        }
+    }, [isMobile, loading, loadFailed, hasData, currentPage, transactions.length, totalTransactions, setPage]);
+
     // Il campo di ricerca ha uno stato locale e scrive nell'URL con debounce: senza,
     // ogni tasto premuto avrebbe fatto una richiesta (12 per una ricerca di 12 caratteri).
     const [searchInput, setSearchInput] = useState(filters.search ?? '');
@@ -202,13 +220,16 @@ export const TransactionsPage = () => {
         setSearchInput(filters.search ?? '');
     }
     const urlSearch = filters.search ?? '';
+    // setSearch cambia identità a ogni cambio di URL: dipendere da lui riavvierebbe il
+    // timer anche quando l'utente non sta scrivendo. Il timer però deve chiamare la
+    // versione più recente: quella del render in cui è partito scrive l'URL di allora, e
+    // un filtro o un ordinamento scelti nei 300 ms di attesa andavano persi.
+    const setSearchRef = useRef(setSearch);
+    useEffect(() => { setSearchRef.current = setSearch; });
     useEffect(() => {
         if (searchInput === urlSearch) return;
-        const id = setTimeout(() => setSearch(searchInput), SEARCH_DEBOUNCE_MS);
+        const id = setTimeout(() => setSearchRef.current(searchInput), SEARCH_DEBOUNCE_MS);
         return () => clearTimeout(id);
-        // setSearch cambia identità a ogni cambio di URL: dipendere da lui riavvierebbe il
-        // timer anche quando l'utente non sta scrivendo.
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [searchInput, urlSearch]);
 
     const handleClearFilters = () => {
@@ -235,6 +256,9 @@ export const TransactionsPage = () => {
     const [destinationTransactions, setDestinationTransactions] = useState<Transaction[]>([]);
     const [loadingDestTransactions, setLoadingDestTransactions] = useState(false);
     const [selectedDestTransactionId, setSelectedDestTransactionId] = useState<string | null>(null);
+    // Richiesta di collegamento/conversione in corso: un doppio clic creava due
+    // controparti sul conto di destinazione.
+    const [linkingTransfer, setLinkingTransfer] = useState(false);
     const [isBalanceModalOpen, setIsBalanceModalOpen] = useState(false);
     const [currentBalance, setCurrentBalance] = useState<number | null>(null);
 
@@ -251,8 +275,11 @@ export const TransactionsPage = () => {
     const [aiCategorizationLoading, setAiCategorizationLoading] = useState(false);
     const aiPollingRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const aiPollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // Letto dalla callback dell'intervallo, che altrimenti vedrebbe il valore del render
+    // in cui il polling è partito.
+    const aiBackgroundedRef = useRef(false);
+    useEffect(() => { aiBackgroundedRef.current = isAiCategorizationBackgrounded; });
 
-    const [apiNotification, contextHolder] = notification.useNotification();
 
     const currentAccount = useMemo(() => {
         if (!accountId) return null;
@@ -267,8 +294,8 @@ export const TransactionsPage = () => {
         let count = 0;
         if (filters.type) count++;
         if (filters.categoryId) count++;
-        if (filters.startDate) count++;
-        if (filters.endDate) count++;
+        // Un intervallo di date è un filtro solo, anche con entrambi gli estremi.
+        if (filters.startDate || filters.endDate) count++;
         return count;
     }, [filters]);
 
@@ -303,7 +330,7 @@ export const TransactionsPage = () => {
             // Aspetta che il modal si chiuda completamente prima di mostrare la notifica
             setTimeout(() => {
                 apiNotification.success({
-                    message: t('transactions.syncStartedTitle'),
+                    title: t('transactions.syncStartedTitle'),
                     description: t('transactions.syncStartedDescription'),
                     placement: 'topRight',
                     duration: 5,
@@ -314,7 +341,7 @@ export const TransactionsPage = () => {
             console.error('Error during sync:', error);
             setIsBalanceModalOpen(false);
             apiNotification.error({
-                message: t('transactions.syncErrorTitle'),
+                title: t('transactions.syncErrorTitle'),
                 description: t('transactions.syncErrorDescription'),
                 placement: 'topRight',
                 duration: 5,
@@ -349,8 +376,39 @@ export const TransactionsPage = () => {
         setIsAiCategorizationModalOpen(false);
         setIsAiCategorizationBackgrounded(false);
         if (job?.status === 'COMPLETED') {
-            refreshTransactions();
+            afterTransactionsChange();
         }
+        setAiCategorizationJob(null);
+    };
+
+    // Chiusura del job, in ogni caso: completato, fallito, errore di polling o timeout.
+    // Prima errore e timeout fermavano solo il polling e il job restava IN_PROGRESS per
+    // sempre: widget fisso a schermo e impossibile avviarne un altro.
+    const finishAiJob = (status: 'COMPLETED' | 'FAILED', job?: CategorizationJobResponse) => {
+        stopAiPolling();
+        if (!aiBackgroundedRef.current) {
+            // Modale aperto: mostra l'esito; la lista si aggiorna alla chiusura
+            // (dismissAiCategorization).
+            setAiCategorizationJob(prev => job ?? (prev ? { ...prev, status } : prev));
+            return;
+        }
+        if (status === 'COMPLETED') {
+            afterTransactionsChange();
+            apiNotification.success({
+                title: t('transactions.categorizeAi.statusCompleted'),
+                description: t('transactions.categorizeAi.recap', { categorized: job?.categorized ?? 0 }),
+                placement: 'topRight',
+                duration: 5,
+            });
+        } else {
+            apiNotification.error({
+                title: t('transactions.categorizeAi.statusFailed'),
+                description: t('transactions.categorizeAi.errorMessage'),
+                placement: 'topRight',
+                duration: 5,
+            });
+        }
+        setIsAiCategorizationBackgrounded(false);
         setAiCategorizationJob(null);
     };
 
@@ -358,43 +416,39 @@ export const TransactionsPage = () => {
         stopAiPolling();
         // Tetto di sicurezza: se il backend non chiude mai il job, il polling si ferma
         // comunque invece di proseguire indefinitamente.
-        aiPollTimeoutRef.current = setTimeout(() => stopAiPolling(), AI_POLL_TIMEOUT_MS);
-        aiPollingRef.current = setInterval(async () => {
+        // Allo scadere si chiede un'ultima volta lo stato: il job può essere finito proprio
+        // nell'ultimo intervallo (o mentre la tab era in background).
+        aiPollTimeoutRef.current = setTimeout(async () => {
+            stopAiPolling();
+            try {
+                const res = await api.getCategorizationJobStatus(jobId);
+                finishAiJob(res.data.status === 'COMPLETED' ? 'COMPLETED' : 'FAILED', res.data.status === 'COMPLETED' ? res.data : undefined);
+            } catch {
+                finishAiJob('FAILED');
+            }
+        }, AI_POLL_TIMEOUT_MS);
+        let consecutiveErrors = 0;
+        const interval = setInterval(async () => {
             // Niente richieste mentre la tab è in background.
             if (document.hidden) return;
             try {
                 const res = await api.getCategorizationJobStatus(jobId);
-                setAiCategorizationJob(res.data);
+                // Polling fermato (o sostituito) mentre la richiesta era in volo: una
+                // risposta tardiva IN_PROGRESS riporterebbe in vita un job già chiuso.
+                if (aiPollingRef.current !== interval) return;
+                consecutiveErrors = 0;
                 if (res.data.status === 'COMPLETED' || res.data.status === 'FAILED') {
-                    stopAiPolling();
-                    setIsAiCategorizationBackgrounded(prev => {
-                        if (prev) {
-                            if (res.data.status === 'COMPLETED') {
-                                refreshTransactions();
-                                apiNotification.success({
-                                    message: t('transactions.categorizeAi.statusCompleted'),
-                                    description: t('transactions.categorizeAi.recap', { categorized: res.data.categorized }),
-                                    placement: 'topRight',
-                                    duration: 5,
-                                });
-                            } else {
-                                apiNotification.error({
-                                    message: t('transactions.categorizeAi.statusFailed'),
-                                    description: t('transactions.categorizeAi.errorMessage'),
-                                    placement: 'topRight',
-                                    duration: 5,
-                                });
-                            }
-                            setIsAiCategorizationBackgrounded(false);
-                            setAiCategorizationJob(null);
-                        }
-                        return false;
-                    });
+                    finishAiJob(res.data.status, res.data);
+                } else {
+                    setAiCategorizationJob(res.data);
                 }
             } catch {
-                stopAiPolling();
+                if (aiPollingRef.current !== interval) return;
+                consecutiveErrors += 1;
+                if (consecutiveErrors >= AI_POLL_MAX_CONSECUTIVE_ERRORS) finishAiJob('FAILED');
             }
         }, AI_POLL_INTERVAL_MS);
+        aiPollingRef.current = interval;
     };
 
     const handleStartAiCategorization = async () => {
@@ -413,11 +467,9 @@ export const TransactionsPage = () => {
                 startAiPolling(res.data.jobId);
             }
         } catch (error: unknown) {
-            const axiosError = error as { response?: { status?: number; data?: { message?: string } } };
-            const status = axiosError?.response?.status;
+            const status = getApiErrorStatus(error);
             if (status === 422 || status === 400) {
-                const backendMessage = axiosError?.response?.data?.message;
-                message.info(backendMessage ?? t('transactions.categorizeAi.noUncategorized'));
+                message.info(apiErrorText(error, t('transactions.categorizeAi.noUncategorized')));
             } else {
                 message.error(t('transactions.categorizeAi.startError'));
             }
@@ -446,13 +498,9 @@ export const TransactionsPage = () => {
     };
 
     // Le mutazioni sulle transazioni cambiano anche i dati derivati (totali, trend,
-    // breakdown, budget, saldo): si invalidano per prefisso, così coprono sia
-    // `['dashboardData', …]` sia le query sotto `['reports', …]`.
+    // breakdown, budget, saldo).
     const queryClient = useQueryClient();
-    const invalidateDerivedData = useCallback(() => {
-        queryClient.invalidateQueries({ queryKey: ['dashboardData'] });
-        queryClient.invalidateQueries({ queryKey: ['reports'] });
-    }, [queryClient]);
+    const invalidateDerivedData = useCallback(() => invalidateDerivedQueries(queryClient), [queryClient]);
 
     // Ricarica tutte le liste di transazioni in cache (ogni conto, filtro e modalità).
     const refreshTransactions = useCallback(() => {
@@ -477,6 +525,9 @@ export const TransactionsPage = () => {
 
     useEffect(() => {
         if (!destinationAccountId || !sourceTransaction) return;
+        // Cambiando conto rapidamente, una risposta lenta del conto precedente non deve
+        // sovrascrivere i candidati di quello attuale.
+        let cancelled = false;
 
         const fetchDestinationTransactions = async () => {
             setLoadingDestTransactions(true);
@@ -512,17 +563,19 @@ export const TransactionsPage = () => {
                         !t.transferId &&
                         tDate.isAfter(startDate) && tDate.isBefore(endDate);
                 });
-                setDestinationTransactions(filtered);
+                if (!cancelled) setDestinationTransactions(filtered);
             } catch (error) {
+                if (cancelled) return;
                 console.error("Failed to fetch destination transactions", error);
                 message.error(t('transactions.linkTransferLoadError'));
             } finally {
-                setLoadingDestTransactions(false);
+                if (!cancelled) setLoadingDestTransactions(false);
             }
         };
 
         fetchDestinationTransactions();
-    }, [destinationAccountId, sourceTransaction, linkIsMultiCurrency]);
+        return () => { cancelled = true; };
+    }, [destinationAccountId, sourceTransaction, linkIsMultiCurrency, message, t]);
 
 
     // Eliminazione senza conferma preventiva ma con "Annulla": è un soft delete (finisce nel
@@ -562,21 +615,30 @@ export const TransactionsPage = () => {
             duration: 8,
             actions: <Button size="small" onClick={undo}>{t('common.undo')}</Button>,
         });
-    }, [t, afterTransactionsChange, apiNotification]);
+    }, [t, message, afterTransactionsChange, apiNotification]);
 
     const handleDelete = useCallback((id: string) => { void deleteWithUndo([id]); }, [deleteWithUndo]);
 
+    // Solo le righe selezionate ancora a schermo: un refetch (sync, ricategorizzazione con
+    // filtro attivo, focus) può togliere dalla vista righe rimaste nella selezione, che
+    // altrimenti verrebbero eliminate "alla cieca" e contate nella toolbar.
+    const visibleSelectedIds = useMemo(() => {
+        const visible = new Set(transactions.map(tx => tx.id));
+        return selectedIds.filter(id => visible.has(id));
+    }, [transactions, selectedIds]);
+
     const handleBulkDelete = async () => {
+        if (visibleSelectedIds.length === 0) return;
         setBulkWorking(true);
         try {
-            await deleteWithUndo(selectedIds);
+            await deleteWithUndo(visibleSelectedIds);
         } finally {
             setBulkWorking(false);
         }
     };
 
     const handleBulkCategorize = async (categoryId: string | undefined) => {
-        const targets = transactions.filter(tx => selectedIds.includes(tx.id));
+        const targets = transactions.filter(tx => visibleSelectedIds.includes(tx.id));
         if (targets.length === 0) return;
         setBulkWorking(true);
         try {
@@ -679,6 +741,7 @@ export const TransactionsPage = () => {
             destinationTransactionId: selectedDestTransactionId,
         };
 
+        setLinkingTransfer(true);
         try {
             await api.linkTransactionsAsTransfer(request);
             message.success(t('transactions.linkTransferSuccess'));
@@ -687,12 +750,15 @@ export const TransactionsPage = () => {
         } catch (error) {
             console.error("Failed to link transactions", error);
             message.error(apiErrorText(error, t('transactions.linkTransferError')));
+        } finally {
+            setLinkingTransfer(false);
         }
     };
 
     const handleConvertSingleToTransfer = async () => {
         if (!sourceTransaction || !destinationAccountId) return;
 
+        setLinkingTransfer(true);
         try {
             await api.convertSingleToTransfer({
                 sourceTransactionId: sourceTransaction.id,
@@ -705,6 +771,8 @@ export const TransactionsPage = () => {
         } catch (error) {
             console.error("Failed to convert single transaction to transfer", error);
             message.error(apiErrorText(error, t('transactions.linkTransferError')));
+        } finally {
+            setLinkingTransfer(false);
         }
     };
 
@@ -724,7 +792,7 @@ export const TransactionsPage = () => {
             key: 'date',
             width: 110,
             hidden: isCompactTable,
-            render: (text: string) => dayjs(text).format('DD/MM/YYYY'),
+            render: (text: string) => formatDate(text),
             // sorter: true = ordinamento lato server. Un comparatore client riordinava
             // solo i 20 elementi della pagina corrente.
             sorter: true,
@@ -742,7 +810,7 @@ export const TransactionsPage = () => {
                 <>
                     <Text ellipsis={{ tooltip: text }} style={{ display: 'block' }}>{text}</Text>
                     <Text type="secondary" ellipsis style={{ display: 'block', fontSize: FONT_SIZE.xs }}>
-                        {dayjs(record.date).format('DD/MM/YYYY')}
+                        {formatDate(record.date)}
                         {record.categoryName && ` · ${record.categoryName}`}
                     </Text>
                 </>
@@ -786,7 +854,8 @@ export const TransactionsPage = () => {
                             {t('transactions.exchangeRateHint', {
                                 originalAmount: formatNumber(record.originalAmount, 2, 2),
                                 originalCurrency: record.originalCurrency,
-                                exchangeRate: record.exchangeRate
+                                // Separatore decimale della lingua ("1,0823", non "1.0823").
+                                exchangeRate: formatNumber(record.exchangeRate, 6)
                             })}
                         </Text>
                     )}
@@ -941,7 +1010,7 @@ export const TransactionsPage = () => {
         return (
             <>
                 {staleWarning}
-                {selectedIds.length > 0 && (
+                {visibleSelectedIds.length > 0 && (
                     <Flex
                         align="center"
                         gap="small"
@@ -950,7 +1019,7 @@ export const TransactionsPage = () => {
                         aria-label={t('transactions.bulk.toolbar')}
                         style={{ marginBottom: SPACING.sm }}
                     >
-                        <Text strong>{t('transactions.bulk.selected', { count: selectedIds.length })}</Text>
+                        <Text strong>{t('transactions.bulk.selected', { count: visibleSelectedIds.length })}</Text>
                         <Select
                             placeholder={t('transactions.bulk.setCategory')}
                             value={null}
@@ -973,7 +1042,7 @@ export const TransactionsPage = () => {
                     dataSource={processedTransactions}
                     rowKey="id"
                     rowSelection={{
-                        selectedRowKeys: selectedIds,
+                        selectedRowKeys: visibleSelectedIds,
                         onChange: (keys) => setSelectedIds(keys.map(String)),
                     }}
                     loading={loading}
@@ -1025,7 +1094,6 @@ export const TransactionsPage = () => {
 
     return (
         <>
-            {contextHolder}
             <PageHeader
                 title={pageTitle}
                 actions={isMobile ? (
@@ -1313,6 +1381,7 @@ export const TransactionsPage = () => {
                             ref={amountInputRef}
                             style={{ width: '100%' }}
                             min={0}
+                            precision={2}
                             suffix={formSelectedCurrency}
                             parser={commaDecimalParser}
                             inputMode="decimal"
@@ -1349,11 +1418,11 @@ export const TransactionsPage = () => {
                 footer={[
                     <Button key="back" onClick={handleCancelLinkTransferModal}>{t('common.cancel')}</Button>,
                     <Button key="convert" type="default" onClick={handleConvertSingleToTransfer}
-                        disabled={!destinationAccountId}>
+                        disabled={!destinationAccountId || linkingTransfer}>
                         {t('transactions.linkTransferCreate')}
                     </Button>,
                     <Button key="submit" type="primary" onClick={handleConfirmLinkTransfer}
-                        disabled={!selectedDestTransactionId}>
+                        disabled={!selectedDestTransactionId} loading={linkingTransfer}>
                         {t('transactions.linkTransferSave')}
                     </Button>,
                 ]}
@@ -1364,17 +1433,22 @@ export const TransactionsPage = () => {
                     <Space orientation="vertical" style={{ width: '100%' }}>
                         <Text strong>{t('transactions.linkTransferSource')}</Text>
                         <p>
-                            {dayjs(sourceTransaction.date).format('DD/MM/YYYY')} - {sourceTransaction.description} ({sourceTransaction.accountName})
+                            {formatDate(sourceTransaction.date)} - {sourceTransaction.description} ({sourceTransaction.accountName})
                             -
                             <Text
-                                type={sourceTransaction.type === 'IN' ? 'success' : 'danger'}> {formatMoney(sourceTransaction.amount, accountsById.get(sourceTransaction.accountId)?.currency ?? 'EUR')}</Text>
+                                style={{ color: sourceTransaction.type === 'IN' ? semantic.positive : semantic.negative }}> {formatMoney(sourceTransaction.amount, accountsById.get(sourceTransaction.accountId)?.currency ?? 'EUR')}</Text>
                         </p>
 
                         <Form layout="vertical">
                             <Form.Item label={t('transactions.linkTransferSelectAccount')}>
                                 <SafeSelect
                                     placeholder={t('transactions.selectAccount')}
-                                    onChange={(value) => setDestinationAccountId(value as string)}
+                                    onChange={(value) => {
+                                        // Il candidato scelto appartiene al conto precedente.
+                                        setDestinationAccountId(value as string);
+                                        setSelectedDestTransactionId(null);
+                                        setDestinationTransactions([]);
+                                    }}
                                     value={destinationAccountId}
                                 >
                                     {accounts
@@ -1403,9 +1477,9 @@ export const TransactionsPage = () => {
                                             rowKey={item => item.id}
                                             renderItem={item => (
                                                 <Radio value={item.id}>
-                                                    {dayjs(item.date).format('DD/MM/YYYY')} - {item.description} -
+                                                    {formatDate(item.date)} - {item.description} -
                                                     <Text
-                                                        type={item.type === 'IN' ? 'success' : 'danger'}> {formatMoney(item.amount, accountsById.get(destinationAccountId ?? '')?.currency ?? 'EUR')}</Text>
+                                                        style={{ color: item.type === 'IN' ? semantic.positive : semantic.negative }}> {formatMoney(item.amount, accountsById.get(destinationAccountId ?? '')?.currency ?? 'EUR')}</Text>
                                                 </Radio>
                                             )}
                                         />
@@ -1457,6 +1531,7 @@ export const TransactionsPage = () => {
                         key="submit"
                         type="primary"
                         onClick={handleSyncBankTransactions}
+                        loading={syncingTransactions}
                     >
                         {t('common.confirm')}
                     </Button>
@@ -1571,8 +1646,9 @@ export const TransactionsPage = () => {
             {isAiCategorizationBackgrounded && aiCategorizationJob && (
                 <div style={{
                     position: 'fixed',
-                    bottom: 24,
-                    right: 24,
+                    // Su mobile resta sopra la bottom nav invece di coprirla.
+                    bottom: isMobile ? aboveBottomNav(SPACING.md) : SPACING.lg,
+                    right: isMobile ? SPACING.md : SPACING.lg,
                     zIndex: 1000,
                     width: 280,
                     background: 'var(--ant-color-bg-elevated)',

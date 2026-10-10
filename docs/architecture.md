@@ -34,10 +34,11 @@ NexaBudget deliberately avoids a heavyweight global store (Redux, Zustand). Stat
 
 Manages the user session and credential tokens:
 
-* Retrieves initial auth data from `localStorage`.
+* Retrieves initial auth data from `localStorage`. The stored value is parsed defensively: a corrupt entry simply starts the app logged out instead of crashing it.
 * Propagates the `AuthResponse` object (containing `token`, `userId`, `username`, and preference fields) to the entire application.
 * Persists the JWT token under `authToken` and user profile under `auth` in `localStorage`.
-* Exposes `login()`, `logout()`, and `updateUser()` hooks.
+* Keeps multiple tabs consistent: a `storage` listener notices when another tab logs out or logs in as a different user, clears the React Query cache, and adopts the new session — so a tab never mixes one user's cached data with another user's token.
+* Exposes `login()`, `logout()`, `updateUser()`, and `explicitLogout` (true after a deliberate logout, used by the router guard below).
 
 Token injection into requests and automatic sign-out on an expired token are **not** handled here — they live in the Axios interceptors described in [API Client Layer](api_client.md).
 
@@ -67,15 +68,18 @@ new QueryClient({
 
 **All query keys are declared in a single module, `src/queryKeys.ts`.** Because invalidation is key-based, inlining ad-hoc key arrays at call sites silently breaks refresh behaviour — new queries should register their key there instead.
 
+The same module exports **`invalidateDerivedData(queryClient)`**, which invalidates every query derived from transactions — the dashboard (`queryKeys.dashboardAll`) and everything under the reports prefix (`queryKeys.reportsAll`). It is called after any mutation that changes transactions, accounts, transfers, budgets, crypto holdings, category names, or the user's default currency, and when a bank sync completes. Without it the dashboard (5-minute `staleTime`) would keep showing the previous totals.
+
 Data-access hooks in `src/hooks/` wrap the query layer so pages never call Axios directly for shared entities:
 
 * `useAccounts` — account list + aggregated preferred balance.
 * `useCategories` — active categories.
 * `useAccountActions` — account CRUD and transfers via `useMutation`, with cache invalidation.
 * `useAccountSync` — bank-synchronization polling (see [Integrations](integrations.md)).
-* `useDashboardData` — parallel fetch of every dashboard widget, collecting per-request failures into a `partialErrors` list so a backend error is reported instead of rendering as "no data".
+* `useDashboardData` — parallel fetch of every dashboard widget, collecting per-request failures into a `partialErrors` list so a backend error is reported instead of rendering as "no data". It only queries complete date ranges: while the user is picking a custom range, the last complete one stays applied.
+* `useTransactionsList` — the transaction list: a paged query on desktop and an infinite query on mobile, both under the `queryKeys.transactions()` prefix, so invalidations from anywhere (bank sync, trash restore) refresh it. Filters, sort and page live in the URL (`useTransactionFilters`).
 
-> **Current limitation**: `src/pages/transactions/TransactionsPage.tsx` predates the React Query migration and still fetches imperatively into local state. As a result, transaction-cache invalidations triggered elsewhere do not refresh its table, and the legacy `transactionRefreshKey` signal in the outlet context is inert (see below).
+A few views (API keys, audit log, trash, chat, crypto) still fetch imperatively on mount; they guard against out-of-order responses and show an inline error instead of an empty list when a load fails.
 
 ```mermaid
 flowchart TD
@@ -112,7 +116,7 @@ To prevent redundant API calls and prop drilling, `Layout` gathers shared data t
 
 Crypto and API-key modals are **not** hosted here — they are owned by `CryptoPage` and `src/pages/settings/ApiKeysCard.tsx`.
 
-> `outletContext.transactionRefreshKey` is **deprecated and inert**: it is declared with no setter and is kept only for backward compatibility with `TransactionsPage` during the React Query migration. Use `queryClient.invalidateQueries` with a key from `src/queryKeys.ts` instead.
+> `outletContext.transactionRefreshKey` is **deprecated and inert**: it is declared with no setter and only still appears in the dashboard query key. Use `queryClient.invalidateQueries` with a key from `src/queryKeys.ts` (or `invalidateDerivedData`) instead.
 
 ### Navigation source of truth
 
@@ -187,8 +191,8 @@ Every route element is then wrapped by the `LazyRoute` helper, which combines tw
 
 The routing tree defines two custom guards to filter user access:
 
-1. **`<PrivateRoute>`**: Checks if the user is authenticated. If no auth session is detected, it redirects the browser to `/login`.
-2. **`<RedirectIfAuth>`**: Restricts access to public-only views (like registration and login). If an authenticated session exists, it automatically redirects the user to the `/dashboard`.
+1. **`<PrivateRoute>`**: Checks if the user is authenticated. If no auth session is detected, it redirects to `/login`, remembering the requested page in the navigation state (`from`) — except after a deliberate logout, so the next person to sign in on the device is not sent to the previous user's page.
+2. **`<RedirectIfAuth>`**: Restricts access to public-only views (like registration and login). Once a session exists it redirects to the remembered page (`state.from`, or `?from=` set by the API client after an expired session), falling back to `/`. `src/utils/redirect.ts` (`safeRedirect`) only accepts same-origin paths, so the login page cannot be turned into an open redirect. The redirect lives here rather than in `LoginPage`, because a navigation started there would lose the race with the auth state update.
 
 Unmatched paths fall through to `NotFoundPage`, both inside and outside the authenticated shell.
 
@@ -200,11 +204,13 @@ Unmatched paths fall through to `NotFoundPage`, both inside and outside the auth
 
 ## 🎨 Design Tokens & Shared Components
 
-`src/theme/tokens.ts` is the single source of truth for visual constants: the theme-aware brand primary, a `SEMANTIC` palette resolved via `getSemanticColors(isDark)`, and the `SPACING`, `FONT_SIZE`, `RADIUS`, and `SHADOW` scales, plus the brand gradients and heading/body font stacks. These are wired into the root `<ConfigProvider>` in `App.tsx` (primary colour, radii, font family, and per-component Button/Menu/Card/Modal overrides). New styling should import from this module rather than introduce inline literals.
+`src/theme/tokens.ts` is the single source of truth for visual constants: the theme-aware brand primary, a `SEMANTIC` palette resolved via `getSemanticColors(isDark)` (plus `budgetUsageColor` for budget progress), the `SPACING`, `FONT_SIZE`, `RADIUS`, and `SHADOW` scales, the brand gradients and the colours used on top of them (`ON_GRADIENT_*`), the categorical chart palette, the bottom-nav offset helpers (`BOTTOM_NAV_HEIGHT`, `aboveBottomNav`), and the heading/body font stacks. These are wired into the root `<ConfigProvider>` in `App.tsx` (primary colour, radii, font family, and per-component Button/Menu/Card/Modal overrides). New styling should import from this module rather than introduce inline literals.
 
 `ConfigProvider` also installs a global `getPopupContainer` that mounts Ant Design popups inside the nearest `.ant-drawer-body` / `.ant-modal-body`, which is what keeps Selects and DatePickers correctly positioned inside modals and drawers.
 
-Reusable primitives live in `src/components/common/`: `StatCard` (the single stat-tile implementation, shared by the dashboard, reports, and crypto portfolio), `EmptyState`, `PageHeader`, `AsyncBoundary` (declarative loading/error/empty states for query-driven views), `ErrorBoundary`, `RouteErrorFallback`, `SafeSelect`, `DatePresetPicker`, `Fab`, `AppLogo`, and `AuthCard`. Shared modals are collected in `src/components/modals/`; feature-specific components are grouped by domain (`dashboard/`, `reports/`, `layout/`, `banking/`, `onboarding/`).
+Reusable primitives live in `src/components/common/`: `StatCard` (the single stat-tile implementation, shared by the dashboard, reports, and crypto portfolio), `EmptyState`, `InlineError` (compact error with *Retry*, shown in place of a section that failed to load), `PageHeader`, `ItemList` (the replacement for AntD's deprecated `List`), `AsyncBoundary` (declarative loading/error/empty states for query-driven views; not yet adopted), `ErrorBoundary`, `RouteErrorFallback`, `SafeSelect` and `SafeDatePicker` (native controls on touch devices / the iOS PWA), `DatePresetPicker`, `Fab`, `AppLogo`, and `AuthCard`.
+
+Formatting is centralized in `src/utils/format.ts`: `formatMoney`, `formatNumber`, `formatPercent`, and `formatDate` / `formatDateTime` all follow the app language (e.g. `1.234,56 €` and `09/10/2026` in Italian, `€1,234.56` and `10/09/2026` in English). Numeric inputs share `commaDecimalParser` (`src/utils/number.ts`), which accepts both decimal separators and strips thousands separators. Toasts, notifications and confirmation dialogs are taken from `App.useApp()` so they follow the active theme; destructive confirmations go through `useConfirm()`. Shared modals are collected in `src/components/modals/`; feature-specific components are grouped by domain (`dashboard/`, `reports/`, `layout/`, `banking/`, `onboarding/`).
 
 ---
 
@@ -218,5 +224,7 @@ Responsive style adjustments are handled natively using a dual approach:
     * Enabling full-width viewport scaling for cards and transaction rows.
     * Adjusting spacing and font sizes for better touch targets.
     * Styling the mobile bottom navigation bar (`BottomNavBar`).
+
+Elements fixed to the bottom of the screen (floating action button, install prompt, AI-categorization widget) are offset with `aboveBottomNav()` so they never cover the bottom navigation bar.
 
 Two hooks complete the touch experience: `usePullToRefresh` (pull-down-to-refresh gesture on scrollable containers) and `src/utils/haptic.ts` for vibration feedback, which is intentionally limited to the installed/standalone PWA (see [PWA Configuration](pwa.md)).

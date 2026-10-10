@@ -31,7 +31,7 @@ NexaBudget is a modern and intuitive personal finance management application des
 - **Categorization**: Assign categories to transactions for better analysis, with support for merging two categories into one.
 - **Powerful Filtering & Sorting**: Easily find transactions by description, account, category, type, or date range.
 - **Statement Imports**: Import transactions from CSV (with configurable column mapping) or OFX files, with a preview and duplicate detection step before anything is saved.
-- **Dashboard**: Interactive overview with configurable date-range presets (last week / current month / last 6 months / last year) and custom range picker.
+- **Dashboard**: Interactive overview with configurable date-range presets (last 7 days / this month / last month / last 6 months / last 12 months) and custom range picker.
   - Monthly income & expense totals
   - Month-end projection
   - Month-over-month comparison with selectable month

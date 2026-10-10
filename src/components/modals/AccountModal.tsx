@@ -30,7 +30,6 @@ export const AccountModal = ({ open, onCancel, onFinish, editingAccount, loading
                     name: editingAccount.name,
                     type: editingAccount.type,
                     currency: editingAccount.currency,
-                    starterBalance: 0 // Default or fetch if needed, but it's disabled in edit mode
                 });
             } else {
                 form.resetFields();
@@ -73,20 +72,25 @@ export const AccountModal = ({ open, onCancel, onFinish, editingAccount, loading
                         <Option value="CONTANTI">{t('accounts.accountTypeCash')}</Option>
                     </SafeSelect>
                 </Form.Item>
-                <Form.Item
-                    name="starterBalance"
-                    label={t('accounts.startingBalance')}
-                    initialValue={0}
-                    rules={[{ required: true, message: t('accounts.startingBalanceRequired') }]}
-                >
-                    <InputNumber<number>
-                        style={{ width: '100%' }}
-                        min={0}
-                        suffix={getCurrencySymbol(currencyValue ?? 'EUR')}
-                        disabled={!!editingAccount}
-                        parser={commaDecimalParser}
-                    />
-                </Form.Item>
+                {/* Solo in creazione. In modifica il campo era disabilitato ma valorizzato a 0, e
+                    AntD include i campi disabilitati in onFinish: il PUT inviava sempre
+                    `starterBalance: 0`, col rischio di azzerare il saldo iniziale. */}
+                {!editingAccount && (
+                    <Form.Item
+                        name="starterBalance"
+                        label={t('accounts.startingBalance')}
+                        initialValue={0}
+                        rules={[{ required: true, message: t('accounts.startingBalanceRequired') }]}
+                    >
+                        <InputNumber<number>
+                            style={{ width: '100%' }}
+                            min={0}
+                            precision={2}
+                            suffix={getCurrencySymbol(currencyValue ?? 'EUR')}
+                            parser={commaDecimalParser}
+                        />
+                    </Form.Item>
+                )}
                 <Form.Item
                     name="currency"
                     label={t('accounts.currency')}

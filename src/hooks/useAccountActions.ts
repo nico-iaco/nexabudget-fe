@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import dayjs from 'dayjs';
 import * as api from '../services/api';
-import { queryKeys } from '../queryKeys';
+import { invalidateDerivedData, queryKeys } from '../queryKeys';
 import type { Account, AccountRequest } from '../types/api';
 import type { TransferFormValues } from '../components/modals/TransferModal';
 import { apiErrorText } from '../utils/apiError';
@@ -29,9 +29,11 @@ export const useAccountActions = () => {
     const [isTransferModalOpen, setIsTransferModalOpen] = useState(false);
 
     // --- Invalidazione account ---
+    // `queryKeys.accounts` è prefisso di `totalBalance`: una sola invalidazione aggiorna
+    // entrambi. Conti, saldi e movimenti alimentano anche dashboard e report.
     const invalidateAccounts = () => {
         queryClient.invalidateQueries({ queryKey: queryKeys.accounts });
-        queryClient.invalidateQueries({ queryKey: queryKeys.totalBalance });
+        invalidateDerivedData(queryClient);
     };
 
     // --- Mutazione crea/modifica account ---
@@ -62,6 +64,8 @@ export const useAccountActions = () => {
         onSuccess: () => {
             message.success(t('accounts.deletedSuccess'));
             invalidateAccounts();
+            // Le transazioni del conto eliminato spariscono anche dalle liste in cache.
+            queryClient.invalidateQueries({ queryKey: queryKeys.transactions() });
             navigate('/transactions');
         },
         onError: (error) => {

@@ -11,9 +11,11 @@ import {PreferencesProvider} from './contexts/PreferencesContext.tsx';
 import {registerPWA} from './pwaRegister';
 import dayjs from 'dayjs';
 import customParseFormat from 'dayjs/plugin/customParseFormat';
+import localizedFormat from 'dayjs/plugin/localizedFormat';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 dayjs.extend(customParseFormat);
+dayjs.extend(localizedFormat);
 
 const queryClient = new QueryClient({
     defaultOptions: {

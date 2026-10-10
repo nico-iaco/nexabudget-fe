@@ -11,12 +11,14 @@ import { useDefaultCurrency } from '../../hooks/useDefaultCurrency';
 interface Props {
     open: boolean;
     onCancel: () => void;
-    onFinish: (values: BudgetTemplateRequest) => void;
+    onFinish: (values: BudgetTemplateRequest) => void | Promise<void>;
+    /** Salvataggio in corso: il bottone resta in loading e non accetta un secondo invio. */
+    saving?: boolean;
     editing: BudgetTemplate | null;
     categories: Category[];
 }
 
-export const BudgetTemplateModal = ({ open, onCancel, onFinish, editing, categories: rawCategories }: Props) => {
+export const BudgetTemplateModal = ({ open, onCancel, onFinish, editing, categories: rawCategories, saving }: Props) => {
     const { t } = useTranslation();
     const [form] = Form.useForm<BudgetTemplateRequest>();
     const currency = useDefaultCurrency();
@@ -71,7 +73,7 @@ export const BudgetTemplateModal = ({ open, onCancel, onFinish, editing, categor
                     <Switch />
                 </Form.Item>
                 <Form.Item>
-                    <Button type="primary" htmlType="submit" block>{t('common.save')}</Button>
+                    <Button type="primary" htmlType="submit" block loading={saving}>{t('common.save')}</Button>
                 </Form.Item>
             </Form>
         </Modal>

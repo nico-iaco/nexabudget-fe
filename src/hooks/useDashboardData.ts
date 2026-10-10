@@ -2,10 +2,11 @@ import { useState, useMemo, useEffect, useRef } from 'react';
 import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import dayjs, { type Dayjs } from 'dayjs';
 import { useTranslation } from 'react-i18next';
-import { message } from 'antd';
+import { App } from 'antd';
 import * as api from '../services/api';
 import { SERIES_INCOME, SERIES_EXPENSE } from '../theme/tokens';
 import { queryKeys } from '../queryKeys';
+import { useDefaultCurrency } from './useDefaultCurrency';
 import type {
     CategoryBreakdownItem,
     MonthComparisonResponse,
@@ -60,18 +61,31 @@ interface DashboardQueryResult {
 const EMPTY_TREND: MonthlyTrendResponse = { currency: 'EUR', items: [] };
 
 export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12) => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
+    const { message } = App.useApp();
+    const currency = useDefaultCurrency();
     const [dateRange, setDateRange] = useState<DateRange>([dayjs().startOf('month'), dayjs().endOf('month')]);
 
-    const startKey = dateRange?.[0]?.format('YYYY-MM-DD') ?? null;
-    const endKey = dateRange?.[1]?.format('YYYY-MM-DD') ?? null;
+    // La query usa l'ultimo intervallo completo. Un intervallo vuoto o a metà (chip
+    // "Personalizzato", RangePicker svuotato, solo la data di inizio scelta) ricadeva
+    // sull'anno solare intero: totali "da inizio anno" che sembravano la selezione.
+    const [appliedRange, setAppliedRange] = useState<[string, string]>(() => [
+        dayjs().startOf('month').format('YYYY-MM-DD'),
+        dayjs().endOf('month').format('YYYY-MM-DD'),
+    ]);
+    const nextStart = dateRange?.[0]?.format('YYYY-MM-DD');
+    const nextEnd = dateRange?.[1]?.format('YYYY-MM-DD');
+    if (nextStart && nextEnd && (nextStart !== appliedRange[0] || nextEnd !== appliedRange[1])) {
+        setAppliedRange([nextStart, nextEnd]);
+    }
+    const [startKey, endKey] = appliedRange;
 
-    const { data, isPending, refetch } = useQuery<DashboardQueryResult>({
-        queryKey: ['dashboardData', transactionRefreshKey, startKey, endKey, trendMonths],
+    const { data, isPending, isPlaceholderData, refetch } = useQuery<DashboardQueryResult>({
+        queryKey: queryKeys.dashboard(transactionRefreshKey, startKey, endKey, trendMonths, currency),
         queryFn: async () => {
             const now = dayjs();
-            const startDate = startKey ?? now.startOf('year').format('YYYY-MM-DD');
-            const endDate = endKey ?? now.endOf('year').format('YYYY-MM-DD');
+            const startDate = startKey;
+            const endDate = endKey;
 
             const partialErrors: DashboardSection[] = [];
             const safe = <T,>(p: Promise<{ data: T }>, fallback: T, label: DashboardSection): Promise<T> =>
@@ -87,7 +101,7 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
                 safe(api.getMonthlyTrend(trendMonths), EMPTY_TREND, 'monthlyTrend'),
                 safe(api.getCategoryBreakdown(startDate, endDate), EMPTY_BREAKDOWN, 'categoryBreakdown'),
                 safe(api.getMonthlyProjection(), null, 'monthlyProjection'),
-                safe(api.getPortfolioValue('EUR'), null, 'portfolioValue'),
+                safe(api.getPortfolioValue(currency), null, 'portfolioValue'),
                 safe(api.getBudgetMonthlySummary(now.format('YYYY-MM-DD')), [], 'budgetSummary'),
             ]);
 
@@ -114,14 +128,16 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
         staleTime: 5 * 60 * 1000,
     });
 
-    const lastReportedErrorsRef = useRef<string[] | null>(null);
+    // Un toast per insieme di sezioni fallite, non a ogni refetch (focus della finestra)
+    // finché le stesse sezioni continuano a fallire: ogni sezione mostra già il suo errore.
+    const lastReportedErrorsRef = useRef('');
     useEffect(() => {
-        const partialErrors = data?.partialErrors;
-        if (partialErrors && partialErrors.length > 0 && lastReportedErrorsRef.current !== partialErrors) {
-            lastReportedErrorsRef.current = partialErrors;
+        const signature = [...(data?.partialErrors ?? [])].sort().join(',');
+        if (signature && signature !== lastReportedErrorsRef.current) {
             message.error(t('dashboard.loadError'));
         }
-    }, [data?.partialErrors, t]);
+        lastReportedErrorsRef.current = signature;
+    }, [data?.partialErrors, t, message]);
 
     // Query separata, non più dentro il Promise.all: condivide la chiave con lo
     // useQuery di DashboardPage, che chiedeva lo stesso endpoint con gli stessi
@@ -136,7 +152,11 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
     });
     const monthComparison = comparisonData ?? null;
     const trendResponse = data?.trend ?? EMPTY_TREND;
-    const monthlyTrendItems: MonthlyTrendItem[] = Array.isArray(trendResponse.items) ? trendResponse.items : [];
+    // Memoizzato: un `[]` nuovo a ogni render invalidava tutti i useMemo derivati.
+    const monthlyTrendItems = useMemo<MonthlyTrendItem[]>(
+        () => (Array.isArray(trendResponse.items) ? trendResponse.items : []),
+        [trendResponse.items]
+    );
     const trendCurrency = trendResponse.currency ?? 'EUR';
     const uncategorizedLabel = t('reports.uncategorized');
     const relabelUncategorized = (items: CategoryBreakdownItem[]): CategoryBreakdownItem[] =>
@@ -185,7 +205,9 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
             result.push({ month: label, type: SERIES_EXPENSE, value: item.expense });
         });
         return result;
-    }, [monthlyTrendItems]);
+        // i18n.language: le etichette dei mesi seguono la lingua (dayjs la segue già).
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [monthlyTrendItems, i18n.language]);
 
     const trendPoints = useMemo((): TrendPoint[] =>
         monthlyTrendItems.map(item => ({
@@ -194,7 +216,8 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
             expense: item.expense,
             net: item.net,
         })),
-        [monthlyTrendItems]
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [monthlyTrendItems, i18n.language]
     );
 
     const incomeSparkline = useMemo(
@@ -219,17 +242,22 @@ export const useDashboardData = (transactionRefreshKey: number, trendMonths = 12
 
     const hasData = totalIncome > 0 || totalExpenses > 0 || monthlyTrendItems.length > 0;
 
-    // Use server-provided change when available (avoids div-by-zero ambiguity client-side).
+    // Variazione spese mese corrente vs precedente. Con il mese precedente a zero la
+    // percentuale non ha senso (prima diventava un "+100%" fittizio): niente variazione.
     const expenseComparison = useMemo(() => {
         if (!monthComparison) return null;
         const prev = monthComparison.previousMonth?.expense ?? 0;
         const current = monthComparison.currentMonth?.expense ?? 0;
-        if (prev === 0) return { percentageChange: current > 0 ? 100 : 0 };
+        if (prev === 0) return null;
         return { percentageChange: ((current - prev) / prev) * 100 };
     }, [monthComparison]);
 
     return {
         loading: isPending,
+        /** Cambio di intervallo o mesi in corso: a schermo ci sono ancora i dati precedenti. */
+        refreshing: isPlaceholderData,
+        /** Intervallo effettivamente mostrato (l'ultimo completo selezionato). */
+        appliedRange,
         refetch,
         dateRange,
         setDateRange,

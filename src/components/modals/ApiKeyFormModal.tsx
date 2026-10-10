@@ -101,7 +101,7 @@ export const ApiKeyFormModal = ({ open, onCancel, onOk, editingKey, loading }: A
                 >
                     <SafeDatePicker
                         style={{ width: '100%' }}
-                        format="YYYY-MM-DD HH:mm"
+                        format="DD/MM/YYYY HH:mm"
                         showTime
                     />
                 </Form.Item>

@@ -12,7 +12,7 @@ import {
 } from '@ant-design/icons';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { NAV_ITEMS as ALL_NAV_ITEMS } from './navItems';
-import { FONT_SIZE, SHADOW } from '../../theme/tokens';
+import { BOTTOM_NAV_HEIGHT, FONT_SIZE, SHADOW } from '../../theme/tokens';
 
 /** Icone per la bottom-bar — stesso mapping di AppSider, solo subset mobile */
 const BOTTOM_BAR_ICON_MAP: Record<string, React.ReactNode> = {
@@ -45,7 +45,7 @@ const BottomNavBarInner = () => {
                 bottom: 0,
                 left: 0,
                 right: 0,
-                height: 'calc(56px + env(safe-area-inset-bottom, 0px))',
+                height: BOTTOM_NAV_HEIGHT,
                 paddingBottom: 'env(safe-area-inset-bottom, 0px)',
                 background: token.colorBgContainer,
                 borderTop: `1px solid ${token.colorBorderSecondary}`,

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { Button, theme } from 'antd';
+import { aboveBottomNav } from '../../theme/tokens';
 
 interface FabProps {
     icon: ReactNode;
@@ -24,7 +25,7 @@ export const Fab = ({ icon, onClick, 'aria-label': ariaLabel }: FabProps) => {
             aria-label={ariaLabel}
             style={{
                 position: 'fixed',
-                bottom: 'calc(56px + env(safe-area-inset-bottom, 0px) + 22px)',
+                bottom: aboveBottomNav(22),
                 right: 22,
                 width: 52,
                 height: 52,

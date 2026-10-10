@@ -2,10 +2,9 @@
 import { memo } from 'react';
 import {Button, Card, Flex, Tag, Typography} from 'antd';
 import {ArrowDownOutlined, ArrowUpOutlined, DeleteOutlined, EditOutlined, SwapOutlined} from '@ant-design/icons';
-import dayjs from 'dayjs';
 import {useTranslation} from 'react-i18next';
 import type {Transaction} from '../types/api';
-import { formatMoney, formatNumber } from '../utils/format';
+import { formatMoney, formatNumber, formatDate } from '../utils/format';
 import { FONT_SIZE, SPACING, getSemanticColors } from '../theme/tokens';
 import { usePreferences } from '../contexts/PreferencesContext';
 import { haptic } from '../utils/haptic';
@@ -51,7 +50,7 @@ const TransactionCardInner = ({ transaction, currency = 'EUR', onEdit, onDelete,
                         </Text>
                     )}
                     <Text type="secondary" style={{ fontSize: `${FONT_SIZE.sm}px`, marginTop: 4 }}>
-                        {dayjs(transaction.date).format('DD/MM/YYYY')}
+                        {formatDate(transaction.date)}
                     </Text>
                 </Flex>
                 <Flex vertical align="end" style={{ flexShrink: 0 }}>
@@ -64,7 +63,7 @@ const TransactionCardInner = ({ transaction, currency = 'EUR', onEdit, onDelete,
                             {t('transactions.exchangeRateHint', {
                                 originalAmount: formatNumber(transaction.originalAmount, 2, 2),
                                 originalCurrency: transaction.originalCurrency,
-                                exchangeRate: transaction.exchangeRate
+                                exchangeRate: formatNumber(transaction.exchangeRate, 6)
                             })}
                         </Text>
                     )}

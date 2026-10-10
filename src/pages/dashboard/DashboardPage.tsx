@@ -2,8 +2,7 @@
 import { useState, lazy, Suspense } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import {
-    Button, Card, Col, DatePicker, Flex, Progress, Row,
-    Select, Skeleton, Statistic, Table, Tabs, Tooltip, Typography
+    Button, Card, Col, DatePicker, Flex, Progress, Row, Select, Skeleton, Statistic, Table, Tabs, Tooltip, Typography, theme,
 } from 'antd';
 import { ArrowDownOutlined, ArrowUpOutlined, InfoCircleOutlined } from '@ant-design/icons';
 import { useTranslation } from 'react-i18next';
@@ -13,9 +12,10 @@ import { useDashboardData } from '../../hooks/useDashboardData';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { usePullToRefresh } from '../../hooks/usePullToRefresh';
 
-// On mobile we load a lightweight chart bundle (no G2Plot); on desktop the full one.
-// Evaluated once at module load — device type is fixed for a PWA session.
-// Deve combaciare col default di `height` in Sparkline (DashboardCharts*.tsx).
+// Su mobile si carica il bundle di grafici leggero, su desktop quello completo (entrambi
+// SVG scritti a mano). Valutato una volta al caricamento del modulo: in una sessione PWA
+// il tipo di dispositivo non cambia.
+// Deve combaciare col default di `height` in Sparkline (dashboard/Sparkline.tsx).
 const SPARKLINE_HEIGHT = 32;
 
 const _isMobileAtLoad = typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches;
@@ -35,9 +35,9 @@ import * as api from '../../services/api';
 import { queryKeys } from '../../queryKeys';
 import type { CategoryBreakdownItem, MonthComparisonResponse, MonthlySummaryResponse } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
-import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import { PRIMARY_LIGHT_HEX, PRIMARY_DARK_HEX, SPACING, FONT_SIZE, GRADIENT_BALANCE, GRADIENT_BALANCE_DARK, getSemanticColors } from '../../theme/tokens';
+import { ON_GRADIENT_SPARKLINE, SPACING, budgetUsageColor, FONT_SIZE, GRADIENT_BALANCE, GRADIENT_BALANCE_DARK, getSemanticColors } from '../../theme/tokens';
 import { PageHeader } from '../../components/common/PageHeader';
 import { EmptyState } from '../../components/common/EmptyState';
 import { InlineError } from '../../components/common/InlineError';
@@ -75,10 +75,11 @@ export const DashboardPage = () => {
     const { t } = useTranslation();
     const navigate = useNavigate();
     const { transactionRefreshKey, accounts, onOpenCreateAccount } = useOutletContext<AppOutletContext>();
-    const isMobile = useMediaQuery('(max-width: 768px)');
+    const { isSmallMobile: isMobile } = useBreakpoints();
     const { preferences } = usePreferences();
     const isDark = preferences.theme === 'dark';
     const semantic = getSemanticColors(isDark);
+    const { token } = theme.useToken();
     const balanceGradient = isDark ? GRADIENT_BALANCE_DARK : GRADIENT_BALANCE;
 
     usePageTitle(t('dashboard.title'));
@@ -88,6 +89,8 @@ export const DashboardPage = () => {
 
     const {
         loading,
+        refreshing,
+        appliedRange,
         dateRange,
         setDateRange,
         totalIncome,
@@ -119,6 +122,10 @@ export const DashboardPage = () => {
     // Senza breakdown né trend non sappiamo se l'utente ha dati: niente onboarding né
     // "aggiungi la prima transazione", solo l'errore.
     const coreFailed = breakdownFailed && trendFailed;
+    // Con una delle due fonti fallita "nessun dato" non è affidabile: niente stato vuoto da
+    // nuovo utente (prima bastava il trend fallito su un intervallo senza movimenti).
+    const emptyIsKnown = !breakdownFailed && !trendFailed;
+    const portfolioFailed = failedSections.has('portfolioValue');
     const retryDashboard = () => { void refetchDashboard(); };
 
     usePullToRefresh(refetchDashboard ?? (() => {}), isMobile);
@@ -136,7 +143,13 @@ export const DashboardPage = () => {
         placeholderData: keepPreviousData,
     });
 
-    const showCrypto = portfolioValue && portfolioValue.totalValue > 0;
+    // Un errore del portafoglio non mostra la card: chi non ha crypto vedrebbe una card
+    // d'errore fissa. Il toast delle sezioni fallite (useDashboardData) lo segnala già.
+    const showCrypto = !portfolioFailed && !!portfolioValue && portfolioValue.totalValue > 0;
+    // La variazione spese è sempre "mese corrente vs precedente": ha senso solo sotto il
+    // totale del mese corrente, non sotto quello di un altro intervallo.
+    const isCurrentMonthRange = appliedRange[0] === dayjs().startOf('month').format('YYYY-MM-DD')
+        && appliedRange[1] === dayjs().endOf('month').format('YYYY-MM-DD');
     // Quattro card affiancate solo da xl: fra 992 e 1199px la Sider da 300px lascia ~600px
     // e gli importi andavano a capo a metà (valore e simbolo su righe diverse).
     const statCols = showCrypto ? { xs: 24, sm: 12, xl: 6 } : { xs: 24, sm: 8 };
@@ -186,11 +199,7 @@ export const DashboardPage = () => {
         )
     );
 
-    const budgetProgressColor = (pct: number): string => {
-        if (pct >= 100) return semantic.negative;
-        if (pct >= 75) return semantic.warning;
-        return semantic.positive;
-    };
+    const budgetProgressColor = (pct: number) => budgetUsageColor(pct, semantic);
 
     const renderBudgetSummaryItem = (item: MonthlySummaryResponse) => (
         <Col key={item.budgetId} xs={24}>
@@ -286,7 +295,7 @@ export const DashboardPage = () => {
                                 value={dateRange}
                                 onChange={(dates) => setDateRange(dates)}
                                 style={{ maxWidth: 280 }}
-                               
+                                allowClear={false}
                             />
                         </Flex>
                     )}
@@ -298,7 +307,7 @@ export const DashboardPage = () => {
             <PageHeader title={t('dashboard.title')} actions={filterControls} />
 
             {/* Con dati mancanti la checklist segnerebbe come "da fare" passi già completati. */}
-            {!coreFailed && !budgetsFailed && (
+            {emptyIsKnown && !budgetsFailed && (
                 <OnboardingChecklist
                     hasAccounts={accounts.length > 0}
                     hasTransactions={hasData}
@@ -311,7 +320,7 @@ export const DashboardPage = () => {
 
             {coreFailed ? (
                 <InlineError message={t('dashboard.loadErrorFull')} onRetry={retryDashboard} />
-            ) : !hasData ? (
+            ) : !hasData && emptyIsKnown ? (
                 <EmptyState
                     description={
                         accounts.length === 0
@@ -330,7 +339,10 @@ export const DashboardPage = () => {
                     }
                 />
             ) : (
-                <>
+                <div
+                    aria-busy={refreshing}
+                    style={{ opacity: refreshing ? 0.6 : 1, transition: 'opacity 0.2s ease' }}
+                >
                     {/* Statistiche mese corrente */}
                     <Row gutter={[16, 16]}>
                         {breakdownFailed ? (
@@ -347,8 +359,8 @@ export const DashboardPage = () => {
                                         gradient={balanceGradient}
                                         prefix={netBalance >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />}
                                         footer={
-                                            <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
-                                                <Sparkline values={netSparkline} color="rgba(255,255,255,0.55)" />
+                                            <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT + SPACING.xs }} />}>
+                                                <Sparkline values={netSparkline} color={ON_GRADIENT_SPARKLINE} />
                                             </Suspense>
                                         }
                                     />
@@ -361,7 +373,7 @@ export const DashboardPage = () => {
                                         color={semantic.positive}
                                         prefix={<ArrowUpOutlined />}
                                         footer={
-                                            <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
+                                            <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT + SPACING.xs }} />}>
                                                 <Sparkline values={incomeSparkline} color={semantic.positive} />
                                             </Suspense>
                                         }
@@ -376,15 +388,15 @@ export const DashboardPage = () => {
                                         prefix={<ArrowDownOutlined />}
                                         footer={
                                             <>
-                                                {expenseComparison && (
-                                                    <div style={{ marginTop: 4, fontSize: FONT_SIZE.sm }}>
-                                                        <Text type={expenseComparison.percentageChange >= 0 ? 'danger' : 'success'}>
+                                                {expenseComparison && isCurrentMonthRange && (
+                                                    <div style={{ marginTop: SPACING.xs, fontSize: FONT_SIZE.sm }}>
+                                                        <Text type={expenseComparison.percentageChange > 0 ? 'danger' : expenseComparison.percentageChange < 0 ? 'success' : 'secondary'}>
                                                             {formatPercent(expenseComparison.percentageChange, 2, true)}
                                                         </Text>
                                                         <Text type="secondary"> {t('dashboard.thisMonthVsPrevious')}</Text>
                                                     </div>
                                                 )}
-                                                <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT }} />}>
+                                                <Suspense fallback={<div style={{ height: SPARKLINE_HEIGHT + SPACING.xs }} />}>
                                                     <Sparkline values={expenseSparkline} color={semantic.negative} />
                                                 </Suspense>
                                         </>
@@ -399,7 +411,7 @@ export const DashboardPage = () => {
                                     title={t('dashboard.cryptoPortfolio')}
                                     value={portfolioValue.totalValue}
                                     currency={portfolioValue.currency}
-                                    color={isDark ? PRIMARY_DARK_HEX : PRIMARY_LIGHT_HEX}
+                                    color={token.colorPrimary}
                                 />
                             </Col>
                         )}
@@ -578,7 +590,7 @@ export const DashboardPage = () => {
                             <BalanceTrendSection showTable={false} />
                         </Col>
                     </Row>
-                </>
+                </div>
             )}
         </>
     );

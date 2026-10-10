@@ -12,13 +12,22 @@ import {BinanceKeysModal} from '../../components/modals/BinanceKeysModal';
 import {CoinbaseKeysModal} from '../../components/modals/CoinbaseKeysModal';
 import {ManualHoldingModal} from '../../components/modals/ManualHoldingModal';
 import {PageHeader} from '../../components/common/PageHeader';
+import {InlineError} from '../../components/common/InlineError';
+import {useDefaultCurrency} from '../../hooks/useDefaultCurrency';
+import {useQueryClient} from '@tanstack/react-query';
+import {invalidateDerivedData} from '../../queryKeys';
 
 export const CryptoPage: React.FC = () => {
     const { t } = useTranslation();
     const { message } = App.useApp();
     usePageTitle(t('crypto.title'));
+    const currency = useDefaultCurrency();
+    const queryClient = useQueryClient();
     const [portfolioData, setPortfolioData] = useState<PortfolioValueResponse | null>(null);
-    const [loading, setLoading] = useState(false);
+    // true dal primo render: il fetch parte nell'effetto, e con false la card del totale
+    // mostrava per un frame un valore non ancora caricato.
+    const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [syncingBinance, setSyncingBinance] = useState(false);
     const [syncingCoinbase, setSyncingCoinbase] = useState(false);
     const [showBinanceModal, setShowBinanceModal] = useState(false);
@@ -29,15 +38,25 @@ export const CryptoPage: React.FC = () => {
     const fetchPortfolio = async () => {
         setLoading(true);
         try {
-            // Defaulting to EUR for now, could be a user preference later
-            const response = await getPortfolioValue('EUR');
+            // Valori nella valuta di base dell'utente, come il resto degli aggregati.
+            const response = await getPortfolioValue(currency);
             setPortfolioData(response.data);
+            setLoadError(false);
         } catch (error) {
             console.error('Failed to fetch portfolio:', error);
+            // Senza dati precedenti l'errore prende il posto del riepilogo (InlineError);
+            // con dati già a schermo basta il toast, il riepilogo resta valido.
+            setLoadError(true);
             message.error(t('crypto.loadError'));
         } finally {
             setLoading(false);
         }
+    };
+
+    // Dopo una modifica agli holding: anche la card crypto della dashboard è da rifare.
+    const refreshPortfolio = () => {
+        fetchPortfolio();
+        invalidateDerivedData(queryClient);
     };
 
     useEffect(() => {
@@ -51,7 +70,7 @@ export const CryptoPage: React.FC = () => {
             message.success(t('crypto.syncStarted'));
             // Refresh portfolio after a short delay to allow sync to process (or just immediately, depending on backend)
             // Ideally backend returns updated data or we poll, but for now let's just re-fetch
-            setTimeout(fetchPortfolio, 2000);
+            setTimeout(refreshPortfolio, 2000);
         } catch (error) {
             console.error('Failed to sync Binance:', error);
             message.error(t('crypto.syncError'));
@@ -65,7 +84,7 @@ export const CryptoPage: React.FC = () => {
         try {
             await syncFromCoinbase();
             message.success(t('crypto.syncStartedCoinbase'));
-            setTimeout(fetchPortfolio, 2000);
+            setTimeout(refreshPortfolio, 2000);
         } catch (error) {
             console.error('Failed to sync Coinbase:', error);
             message.error(t('crypto.syncErrorCoinbase'));
@@ -83,7 +102,7 @@ export const CryptoPage: React.FC = () => {
         try {
             await deleteManualHolding(asset.id);
             message.success(t('crypto.holdingDeleted'));
-            fetchPortfolio();
+            refreshPortfolio();
         } catch (error) {
             console.error('Failed to delete holding:', error);
             message.error(t('crypto.holdingDeleteError'));
@@ -160,29 +179,33 @@ export const CryptoPage: React.FC = () => {
                 )}
             />
 
-            <PortfolioSummary
-                data={portfolioData}
-                loading={loading}
-                onEditAsset={handleEditAsset}
-                onDeleteAsset={handleDeleteAsset}
-            />
+            {loadError && !portfolioData && !loading ? (
+                <InlineError message={t('crypto.loadError')} onRetry={fetchPortfolio} />
+            ) : (
+                <PortfolioSummary
+                    data={portfolioData}
+                    loading={loading}
+                    onEditAsset={handleEditAsset}
+                    onDeleteAsset={handleDeleteAsset}
+                />
+            )}
 
             <BinanceKeysModal
                 open={showBinanceModal}
                 onClose={() => setShowBinanceModal(false)}
-                onSuccess={fetchPortfolio}
+                onSuccess={refreshPortfolio}
             />
 
             <CoinbaseKeysModal
                 open={showCoinbaseModal}
                 onClose={() => setShowCoinbaseModal(false)}
-                onSuccess={fetchPortfolio}
+                onSuccess={refreshPortfolio}
             />
 
             <ManualHoldingModal
                 open={showManualModal}
                 onClose={handleCloseManualModal}
-                onSuccess={fetchPortfolio}
+                onSuccess={refreshPortfolio}
                 editingAsset={editingAsset}
             />
         </>

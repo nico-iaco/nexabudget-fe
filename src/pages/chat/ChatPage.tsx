@@ -1,6 +1,6 @@
 // src/pages/chat/ChatPage.tsx
 import { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { App, Button, Drawer, Flex, Popconfirm, Spin, Tag, Typography, theme } from 'antd';
+import { App, Button, Drawer, Flex, Spin, Tag, Typography, theme } from 'antd';
 import { DeleteOutlined, MenuOutlined, PlusOutlined, ReloadOutlined, RobotOutlined, SendOutlined } from '@ant-design/icons';
 import { Input } from 'antd';
 import type { TextAreaRef } from 'antd/es/input/TextArea';
@@ -15,7 +15,11 @@ import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { FONT_HEADING, FONT_SIZE, RADIUS, SPACING } from '../../theme/tokens';
 import { ItemList } from '../../components/common/ItemList';
+import { EmptyState } from '../../components/common/EmptyState';
+import { InlineError } from '../../components/common/InlineError';
+import { useConfirm } from '../../hooks/useConfirm';
 import { apiErrorText, getApiErrorStatus } from '../../utils/apiError';
+import { formatDateTime } from '../../utils/format';
 
 const { TextArea } = Input;
 const { Text } = Typography;
@@ -181,6 +185,16 @@ export const ChatPage = () => {
     const [sending, setSending] = useState(false);
     const [loadingMessages, setLoadingMessages] = useState(false);
     const [sidebarOpen, setSidebarOpen] = useState(false);
+    // Errori di caricamento: mostrati al posto della lista, non come "nessuna chat" o come
+    // una conversazione vuota.
+    const [sessionsLoadFailed, setSessionsLoadFailed] = useState(false);
+    const [messagesLoadFailed, setMessagesLoadFailed] = useState(false);
+    // "Vista" corrente: cresce a ogni cambio di sessione o nuova chat. Una risposta (invio
+    // o caricamento messaggi) partita in una vista precedente non deve toccare quella
+    // attuale: prima i messaggi della sessione A finivano sotto il titolo di B, e una
+    // risposta tardiva rendeva attiva la sessione sbagliata.
+    const viewRef = useRef(0);
+    const confirm = useConfirm();
 
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const textAreaRef = useRef<TextAreaRef>(null);
@@ -206,17 +220,22 @@ export const ChatPage = () => {
         try {
             const res = await api.getChatSessions();
             setSessions(res.data);
+            setSessionsLoadFailed(false);
         } catch {
-            message.error(t('chat.loadError'));
+            setSessionsLoadFailed(true);
         }
-    }, [message, t]);
+    }, []);
 
     useEffect(() => { fetchSessions(); }, [fetchSessions]);
 
     const loadSessionMessages = useCallback(async (sessionId: string) => {
+        const view = viewRef.current;
         setLoadingMessages(true);
+        setMessagesLoadFailed(false);
+        setMessages([]);
         try {
             const res = await api.getChatSessionMessages(sessionId);
+            if (view !== viewRef.current) return;
             const filtered: DisplayMessage[] = res.data
                 .filter(m => m.role !== 'TOOL')
                 .map(m => ({
@@ -227,21 +246,26 @@ export const ChatPage = () => {
                 }));
             setMessages(filtered);
         } catch {
-            message.error(t('chat.loadError'));
+            if (view !== viewRef.current) return;
+            setMessagesLoadFailed(true);
         } finally {
-            setLoadingMessages(false);
+            if (view === viewRef.current) setLoadingMessages(false);
         }
-    }, [message, t]);
+    }, []);
 
     const handleSelectSession = (sessionId: string) => {
+        viewRef.current += 1;
         setActiveSessionId(sessionId);
         loadSessionMessages(sessionId);
         if (isMobile) setSidebarOpen(false);
     };
 
     const handleNewChat = () => {
+        viewRef.current += 1;
         setActiveSessionId(null);
         setMessages([]);
+        setMessagesLoadFailed(false);
+        setLoadingMessages(false);
         if (isMobile) setSidebarOpen(false);
     };
 
@@ -251,8 +275,10 @@ export const ChatPage = () => {
             message.success(t('chat.deleteSuccess'));
             setSessions(prev => prev.filter(s => s.id !== sessionId));
             if (activeSessionId === sessionId) {
+                viewRef.current += 1;
                 setActiveSessionId(null);
                 setMessages([]);
+                setMessagesLoadFailed(false);
             }
         } catch {
             message.error(t('chat.deleteError'));
@@ -262,6 +288,8 @@ export const ChatPage = () => {
     const handleSend = async (textOverride?: string) => {
         const text = (textOverride ?? inputText).trim();
         if (!text || sending) return;
+        const view = viewRef.current;
+        const sessionAtSend = activeSessionId;
 
         const tempBase = `temp-${Date.now()}`;
         const userMsg: DisplayMessage = {
@@ -284,8 +312,15 @@ export const ChatPage = () => {
         setSending(true);
 
         try {
-            const res = await api.sendChatMessage({ sessionId: activeSessionId, message: text });
+            const res = await api.sendChatMessage({ sessionId: sessionAtSend, message: text });
             const { sessionId, reply, toolsUsed } = res.data;
+
+            // L'utente ha cambiato chat mentre attendeva: la risposta è salvata nella sua
+            // sessione, che si vedrà riaprendola. Basta aggiornare l'elenco.
+            if (view !== viewRef.current) {
+                if (!sessionAtSend && sessionId !== null) fetchSessions();
+                return;
+            }
 
             // sessionId null: il modello AI non ha risposto su una chat nuova e il backend
             // non ha salvato nulla. Si resta nella "nuova chat": la risposta di ripiego è
@@ -293,7 +328,7 @@ export const ChatPage = () => {
             // (Su una sessione esistente il ripiego è indistinguibile: nessun flag esplicito.)
             const notSaved = sessionId === null;
 
-            if (!activeSessionId && sessionId !== null) {
+            if (!sessionAtSend && sessionId !== null) {
                 setActiveSessionId(sessionId);
                 fetchSessions();
             }
@@ -314,11 +349,16 @@ export const ChatPage = () => {
             );
             if (notSaved) setInputText(prev => (prev.trim() ? prev : text));
         } catch (error) {
+            if (view !== viewRef.current) {
+                message.error(apiErrorText(error, t('chat.sendError')));
+                return;
+            }
             setMessages(prev => prev.filter(m => m.id !== `${tempBase}-loading` && m.id !== `${tempBase}-user`));
-            if (getApiErrorStatus(error) === 404 && activeSessionId) {
+            if (getApiErrorStatus(error) === 404 && sessionAtSend) {
                 // La sessione è stata eliminata nel frattempo (es. da un altro dispositivo).
                 message.warning(t('chat.sessionGone'));
-                setSessions(prev => prev.filter(s => s.id !== activeSessionId));
+                setSessions(prev => prev.filter(s => s.id !== sessionAtSend));
+                viewRef.current += 1;
                 setActiveSessionId(null);
                 setMessages([]);
             } else {
@@ -344,6 +384,9 @@ export const ChatPage = () => {
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         // Su mobile Enter va a capo (comportamento naturale); solo su desktop invia senza Shift
+        // Durante la composizione IME (cinese, giapponese, coreano…) Enter conferma il
+        // carattere: non deve inviare il messaggio a metà.
+        if (e.nativeEvent.isComposing || e.keyCode === 229) return;
         if (e.key === 'Enter' && !e.shiftKey && !isMobile) {
             e.preventDefault();
             handleSend();
@@ -389,18 +432,12 @@ export const ChatPage = () => {
                 </Button>
             </div>
             <div style={{ flex: 1, overflowY: 'auto', WebkitOverflowScrolling: 'touch' } as React.CSSProperties}>
-                {sessions.length === 0 ? (
-                    <Text
-                        style={{
-                            padding: SPACING.md,
-                            display: 'block',
-                            color: token.colorTextSecondary,
-                            fontSize: FONT_SIZE.sm,
-                            textAlign: 'center',
-                        }}
-                    >
-                        {t('chat.noSessions')}
-                    </Text>
+                {sessionsLoadFailed && sessions.length === 0 ? (
+                    <div style={{ padding: SPACING.sm }}>
+                        <InlineError message={t('chat.loadError')} onRetry={fetchSessions} />
+                    </div>
+                ) : sessions.length === 0 ? (
+                    <EmptyState description={t('chat.noSessions')} style={{ marginTop: SPACING.lg }} />
                 ) : (
                     <ItemList
                         items={sessions}
@@ -448,30 +485,26 @@ export const ChatPage = () => {
                                         {session.title}
                                     </Text>
                                     <Text style={{ fontSize: FONT_SIZE.xs, color: token.colorTextTertiary }}>
-                                        {dayjs(session.updatedAt).format('DD/MM/YY HH:mm')}
+                                        {formatDateTime(session.updatedAt)}
                                     </Text>
                                 </Flex>
-                                <Popconfirm
-                                    title={t('chat.deleteConfirm')}
-                                    onConfirm={e => {
-                                        e?.stopPropagation();
-                                        handleDeleteSession(session.id);
+                                <Button
+                                    type="text"
+                                    size="small"
+                                    danger
+                                    icon={<DeleteOutlined />}
+                                    onClick={e => {
+                                        e.stopPropagation();
+                                        confirm({
+                                            title: t('chat.deleteConfirm'),
+                                            okText: t('common.delete'),
+                                            danger: true,
+                                            onOk: () => handleDeleteSession(session.id),
+                                        });
                                     }}
-                                    onCancel={e => e?.stopPropagation()}
-                                    okText={t('common.yes')}
-                                    cancelText={t('common.no')}
-                                    placement="right"
-                                >
-                                    <Button
-                                        type="text"
-                                        size="small"
-                                        danger
-                                        icon={<DeleteOutlined />}
-                                        onClick={e => e.stopPropagation()}
-                                        aria-label={t('chat.deleteSession')}
-                                        style={{ minWidth: 32, minHeight: 32, flexShrink: 0 }}
-                                    />
-                                </Popconfirm>
+                                    aria-label={t('chat.deleteSession')}
+                                    style={{ minWidth: 32, minHeight: 32, flexShrink: 0 }}
+                                />
                             </Flex>
                         )}
                     />
@@ -601,6 +634,11 @@ export const ChatPage = () => {
                         <Flex justify="center" align="center" style={{ height: '100%' }}>
                             <Spin size="large" />
                         </Flex>
+                    ) : messagesLoadFailed && activeSessionId ? (
+                        <InlineError
+                            message={t('chat.loadError')}
+                            onRetry={() => loadSessionMessages(activeSessionId)}
+                        />
                     ) : messages.length === 0 ? (
                         <Flex
                             vertical

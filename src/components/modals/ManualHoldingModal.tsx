@@ -4,6 +4,8 @@ import {useTranslation} from 'react-i18next';
 import {addManualHolding, updateManualHolding} from '../../services/api';
 import type {CryptoAsset, ManualHoldingsRequest, UpdateCryptoAsset} from '../../types/api';
 import {apiErrorText, applyApiFieldErrors} from '../../utils/apiError';
+import { decimalStringParser } from '../../utils/number';
+import { formatNumber } from '../../utils/format';
 
 interface ManualHoldingModalProps {
     open: boolean;
@@ -79,12 +81,13 @@ export const ManualHoldingModal: React.FC<ManualHoldingModalProps> = ({ open, on
                     label={t('manualHolding.amount')}
                     rules={[{ required: true, message: t('manualHolding.amountRequired') }]}
                 >
-                    <InputNumber
+                    <InputNumber<string>
                         style={{ width: '100%' }}
-                        placeholder="0.00"
+                        placeholder={formatNumber(0, 2, 2)}
                         step="0.00000001"
                         stringMode
-                        parser={(value) => value?.replace(',', '.') ?? ''}
+                        min="0"
+                        parser={decimalStringParser}
                     />
                 </Form.Item>
 

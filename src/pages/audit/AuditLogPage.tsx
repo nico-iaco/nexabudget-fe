@@ -1,9 +1,8 @@
-import { memo, useEffect, useState } from 'react';
-import { App, Card, Collapse, Flex, Table, Tag, Typography, theme } from 'antd';
+import { memo, useEffect, useRef, useState } from 'react';
+import { Card, Collapse, Flex, Table, Tag, Typography, theme } from 'antd';
 import { useTranslation } from 'react-i18next';
-import dayjs from 'dayjs';
 import * as api from '../../services/api';
-import type { AuditAction, AuditLogEntry } from '../../types/api';
+import type { AuditAction, AuditEntityType, AuditLogEntry } from '../../types/api';
 import type { ColumnsType } from 'antd/es/table';
 import { useBreakpoints } from '../../hooks/useBreakpoints';
 import { usePageTitle } from '../../hooks/usePageTitle';
@@ -12,6 +11,7 @@ import { EmptyState } from '../../components/common/EmptyState';
 import { InlineError } from '../../components/common/InlineError';
 import { ItemList } from '../../components/common/ItemList';
 import { FONT_SIZE, SPACING, RADIUS } from '../../theme/tokens';
+import { formatDateTime } from '../../utils/format';
 
 const { Text } = Typography;
 
@@ -57,7 +57,6 @@ JsonPreview.displayName = 'JsonPreview';
 
 export const AuditLogPage = () => {
     const { t } = useTranslation();
-    const { message } = App.useApp();
     const { token } = theme.useToken();
     usePageTitle(t('audit.title'));
     const { isSmallMobile: isMobile } = useBreakpoints();
@@ -70,19 +69,32 @@ export const AuditLogPage = () => {
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
     const pageSize = 20;
+    // Tipo di entità tradotto: prima compariva il valore grezzo del backend ("Transaction").
+    const entityLabel = (type: AuditEntityType): string => ({
+        Transaction: t('audit.entityTransaction'),
+        Account: t('audit.entityAccount'),
+        Budget: t('audit.entityBudget'),
+        Category: t('audit.entityCategory'),
+    }[type] ?? type);
 
+    // Cambiando pagina in fretta, la risposta di una pagina precedente non deve
+    // sovrascrivere quella evidenziata.
+    const requestIdRef = useRef(0);
     const fetchLog = async (p: number) => {
+        const requestId = ++requestIdRef.current;
         setLoading(true);
         try {
             const resp = await api.getAuditLog(p - 1, pageSize);
+            if (requestId !== requestIdRef.current) return;
             setEntries(Array.isArray(resp.data.content) ? resp.data.content : []);
             setTotal(resp.data.page?.totalElements ?? 0);
             setLoadError(false);
         } catch {
-            message.error(t('audit.loadError'));
+            if (requestId !== requestIdRef.current) return;
+            // Niente toast: InlineError prende già il posto della lista.
             setLoadError(true);
         } finally {
-            setLoading(false);
+            if (requestId === requestIdRef.current) setLoading(false);
         }
     };
 
@@ -96,7 +108,7 @@ export const AuditLogPage = () => {
             title: t('audit.timestamp'),
             dataIndex: 'timestamp',
             key: 'timestamp',
-            render: (v: string) => dayjs(v).format('DD/MM/YYYY HH:mm:ss'),
+            render: (v: string) => formatDateTime(v, { seconds: true }),
             width: 150,
         },
         {
@@ -116,6 +128,7 @@ export const AuditLogPage = () => {
             key: 'entityType',
             width: 120,
             ellipsis: { showTitle: true },
+            render: (v: AuditEntityType) => entityLabel(v),
         },
         {
             title: t('audit.entityId'),
@@ -143,7 +156,7 @@ export const AuditLogPage = () => {
         pageSize,
         total,
         showSizeChanger: false,
-        showTotal: (tot: number) => `${tot} ${t('audit.title').toLowerCase()}`,
+        showTotal: (tot: number) => t('audit.total', { count: tot }),
         onChange: (p: number) => {
             setPage(p);
             fetchLog(p);
@@ -164,7 +177,6 @@ export const AuditLogPage = () => {
                     rowKey={record => record.id}
                     loading={loading}
                     aria-label={t('audit.title')}
-                    deferOffscreen
                     empty={<EmptyState description={t('audit.emptyState')} />}
                     pagination={paginationProps}
                     renderItem={(record) => (
@@ -175,11 +187,11 @@ export const AuditLogPage = () => {
                                         {t(`audit.actions.${record.action}`)}
                                     </Tag>
                                     <Text type="secondary" style={{ fontSize: FONT_SIZE.sm }}>
-                                        {dayjs(record.timestamp).format('DD/MM/YYYY HH:mm')}
+                                        {formatDateTime(record.timestamp)}
                                     </Text>
                                 </Flex>
                                 <Flex gap="small" wrap="wrap">
-                                    <Text style={{ fontSize: FONT_SIZE.sm }}>{record.entityType}</Text>
+                                    <Text style={{ fontSize: FONT_SIZE.sm }}>{entityLabel(record.entityType)}</Text>
                                     <Text copyable={{ text: record.entityId }} type="secondary" style={{ fontSize: FONT_SIZE.sm, fontFamily: 'monospace' }}>
                                         {record.entityId.substring(0, 8)}…
                                     </Text>

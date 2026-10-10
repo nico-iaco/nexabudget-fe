@@ -3,18 +3,18 @@ import {LockOutlined, UserOutlined} from '@ant-design/icons';
 import {Alert, Button, Form, Input} from 'antd';
 import {useState} from 'react';
 import {useTranslation} from 'react-i18next';
-import {Link, useNavigate} from 'react-router-dom';
+import {Link} from 'react-router-dom';
 import {useAuth} from '../../contexts/AuthContext';
 import * as api from '../../services/api';
 import type {LoginRequest} from '../../types/api';
 import {SPACING} from '../../theme/tokens';
 import {AuthCard} from '../../components/common/AuthCard';
+import {getApiErrorStatus} from '../../utils/apiError';
 
 export const LoginPage = () => {
     const { t } = useTranslation();
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
-    const navigate = useNavigate();
     const { login } = useAuth();
 
     const onFinish = async (values: LoginRequest) => {
@@ -22,10 +22,16 @@ export const LoginPage = () => {
         setError(null);
         try {
             const loginResponse = await api.login(values);
+            // Il redirect (alla pagina richiesta o alla dashboard) lo fa RedirectIfAuth.
             login(loginResponse.data);
-            navigate('/');
         } catch (err) {
-            setError(t('auth.invalidCredentials'));
+            // Rete giù o backend in errore non sono "credenziali non valide".
+            const status = getApiErrorStatus(err);
+            setError(status === undefined
+                ? t('auth.networkError')
+                : status >= 500
+                    ? t('auth.serverError')
+                    : t('auth.invalidCredentials'));
             console.error(err);
         } finally {
             setLoading(false);

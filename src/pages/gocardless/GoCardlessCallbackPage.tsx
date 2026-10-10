@@ -97,7 +97,7 @@ export const GoCardlessCallbackPage = () => {
             await api.syncBankAccount('gocardless', accountId, {actualBalance: currentBalance});
 
             apiNotification.info({
-                message: t('gocardlessCallback.syncStartedTitle'),
+                title: t('gocardlessCallback.syncStartedTitle'),
                 description: t('gocardlessCallback.syncStartedDescription'),
                 placement: 'bottomRight',
                 duration: 5,
@@ -108,7 +108,7 @@ export const GoCardlessCallbackPage = () => {
         } catch (err) {
             console.error(err);
             apiNotification.error({
-                message: t('gocardlessCallback.syncErrorTitle'),
+                title: t('gocardlessCallback.syncErrorTitle'),
                 description: t('gocardlessCallback.syncErrorDescription'),
                 placement: 'bottomRight',
                 duration: 5,

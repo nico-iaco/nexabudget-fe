@@ -30,17 +30,7 @@ import type { Account } from '../../types/api';
 import { formatMoney } from '../../utils/format';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePreferences } from '../../contexts/PreferencesContext';
-import {
-    FONT_HEADING,
-    FONT_SIZE,
-    GRADIENT_BALANCE,
-    GRADIENT_BALANCE_DARK,
-    SIDER_TEXT_PRIMARY,
-    SIDER_TEXT_SECONDARY,
-    SPACING,
-    SURFACE_DARK,
-    SURFACE_DARK_BORDER,
-} from '../../theme/tokens';
+import { FONT_HEADING, FONT_SIZE, GRADIENT_BALANCE, GRADIENT_BALANCE_DARK, SIDER_TEXT_PRIMARY, SIDER_TEXT_SECONDARY, SPACING, SURFACE_DARK, SURFACE_DARK_BORDER, ON_GRADIENT_TEXT, ON_GRADIENT_TEXT_MUTED } from '../../theme/tokens';
 import { NAV_ITEMS } from './navItems';
 import { AppLogo } from '../common/AppLogo';
 
@@ -327,7 +317,7 @@ export const AppSider = ({
                         <Statistic
                             title={
                                 <Text style={{
-                                    color: 'rgba(255,255,255,0.85)',
+                                    color: ON_GRADIENT_TEXT_MUTED,
                                     fontSize: FONT_SIZE.xs,
                                     fontWeight: 600,
                                     textTransform: 'uppercase',
@@ -338,7 +328,7 @@ export const AppSider = ({
                             }
                             value={totalBalance}
                             formatter={(v) => formatMoney(Number(v), auth?.defaultCurrency || 'EUR')}
-                            styles={{ content: { color: '#fff', fontFamily: FONT_HEADING, fontWeight: 800, fontSize: FONT_SIZE.xxl } }}
+                            styles={{ content: { color: ON_GRADIENT_TEXT, fontFamily: FONT_HEADING, fontWeight: 800, fontSize: FONT_SIZE.xxl } }}
                         />
                     </div>
                 </div>

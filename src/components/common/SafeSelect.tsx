@@ -5,13 +5,7 @@ import { Select, theme } from 'antd';
 import type { SelectProps } from 'antd';
 import { DownOutlined } from '@ant-design/icons';
 import { FONT_SIZE } from '../../theme/tokens';
-
-const detectIOS = (): boolean => {
-    if (typeof navigator === 'undefined') return false;
-    if (/iPad|iPhone|iPod/.test(navigator.userAgent)) return true;
-    if (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) return true;
-    return false;
-};
+import { detectIOS } from '../../utils/device';
 
 interface OptionItem {
     value: string | number;
@@ -23,13 +17,18 @@ function extractOptionsFromChildren(children: React.ReactNode): OptionItem[] {
     const opts: OptionItem[] = [];
     React.Children.forEach(children, (child) => {
         if (React.isValidElement(child)) {
-            const { value, children: label, disabled } = child.props as {
+            const { value, children: content, label, disabled } = child.props as {
                 value?: string | number;
                 children?: React.ReactNode;
+                label?: React.ReactNode;
                 disabled?: boolean;
             };
             if (value !== undefined) {
-                const text = typeof label === 'string' ? label : String(value);
+                // Figli non testuali (es. logo + nome della banca): si usa la prop `label`,
+                // altrimenti la select nativa mostrava l'id grezzo.
+                const text = typeof content === 'string'
+                    ? content
+                    : typeof label === 'string' ? label : String(value);
                 opts.push({ value, label: text, disabled });
             }
         }
@@ -105,7 +104,10 @@ function NativeSelect({
                 value={strValue}
                 onChange={(e) => {
                     const v = e.target.value;
-                    onChange?.(v === '' ? undefined : v);
+                    // Il DOM restituisce sempre stringhe: si torna al valore originale
+                    // dell'opzione, così un valore numerico resta numerico come su AntD.
+                    const option = allOptions.find(o => String(o.value) === v);
+                    onChange?.(v === '' ? undefined : option?.value ?? v);
                 }}
                 disabled={disabled}
                 style={{
