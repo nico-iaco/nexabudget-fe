@@ -31,6 +31,14 @@ import type {
     DeletedAccount,
     GoCardlessBankAccountsResponse,
     ImportConfirmRequest,
+    InvestmentAsset,
+    InvestmentAssetRequest,
+    InvestmentHistoryResponse,
+    InvestmentOperation,
+    InvestmentOperationRequest,
+    InvestmentPerformance,
+    InvestmentPortfolio,
+    InvestmentSearchResult,
     ImportPreviewResponse,
     ImportResultResponse,
     CsvColumnMapping,
@@ -41,6 +49,8 @@ import type {
     MonthlyProjectionResponse,
     MonthlyTrendResponse,
     MonthlySummaryResponse,
+    NetWorth,
+    NetWorthHistoryResponse,
     Page,
     PortfolioValueResponse,
     SyncBankTransactionsRequest,
@@ -309,3 +319,26 @@ export const sendChatMessage = (data: ChatRequest): Promise<AxiosResponse<ChatRe
 export const getChatSessions = (): Promise<AxiosResponse<ChatSession[]>> => apiClient.get('/chat/sessions');
 export const getChatSessionMessages = (sessionId: string): Promise<AxiosResponse<ChatMessage[]>> => apiClient.get(`/chat/sessions/${sessionId}/messages`);
 export const deleteChatSession = (sessionId: string): Promise<AxiosResponse<void>> => apiClient.delete(`/chat/sessions/${sessionId}`);
+// Investimenti (separati da entrate/uscite: non generano transazioni né toccano i conti)
+export const searchInvestments = (q: string, signal?: AbortSignal): Promise<AxiosResponse<InvestmentSearchResult[]>> =>
+    apiClient.get('/investments/search', { params: { q }, signal });
+export const getInvestmentAssets = (): Promise<AxiosResponse<InvestmentAsset[]>> => apiClient.get('/investments/assets');
+export const getInvestmentAsset = (id: string): Promise<AxiosResponse<InvestmentAsset>> => apiClient.get(`/investments/assets/${id}`);
+export const createInvestmentAsset = (data: InvestmentAssetRequest): Promise<AxiosResponse<InvestmentAsset>> => apiClient.post('/investments/assets', data);
+export const updateInvestmentAsset = (id: string, data: InvestmentAssetRequest): Promise<AxiosResponse<InvestmentAsset>> => apiClient.put(`/investments/assets/${id}`, data);
+export const updateInvestmentManualPrice = (id: string, price: number): Promise<AxiosResponse<InvestmentAsset>> => apiClient.put(`/investments/assets/${id}/manual-price`, { price });
+// Elimina anche tutte le operazioni dell'asset.
+export const deleteInvestmentAsset = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/investments/assets/${id}`);
+export const getInvestmentOperations = (assetId: string): Promise<AxiosResponse<InvestmentOperation[]>> => apiClient.get(`/investments/assets/${assetId}/operations`);
+export const createInvestmentOperation = (assetId: string, data: InvestmentOperationRequest): Promise<AxiosResponse<InvestmentOperation>> => apiClient.post(`/investments/assets/${assetId}/operations`, data);
+export const updateInvestmentOperation = (id: string, data: InvestmentOperationRequest): Promise<AxiosResponse<InvestmentOperation>> => apiClient.put(`/investments/operations/${id}`, data);
+export const deleteInvestmentOperation = (id: string): Promise<AxiosResponse<void>> => apiClient.delete(`/investments/operations/${id}`);
+export const getInvestmentPortfolio = (currency: string): Promise<AxiosResponse<InvestmentPortfolio>> => apiClient.get('/investments/portfolio', { params: { currency } });
+export const getInvestmentHistory = (months: number, currency: string): Promise<AxiosResponse<InvestmentHistoryResponse>> => apiClient.get('/investments/portfolio/history', { params: { months, currency } });
+// Identico a GET /reports/investment-performance.
+export const getInvestmentPerformance = (startDate: string, endDate: string): Promise<AxiosResponse<InvestmentPerformance>> => apiClient.get('/investments/performance', { params: { startDate, endDate } });
+
+// Patrimonio netto
+export const getNetWorth = (currency: string): Promise<AxiosResponse<NetWorth>> => apiClient.get('/net-worth', { params: { currency } });
+// Identico a GET /reports/net-worth-trend.
+export const getNetWorthHistory = (months: number, currency: string): Promise<AxiosResponse<NetWorthHistoryResponse>> => apiClient.get('/net-worth/history', { params: { months, currency } });

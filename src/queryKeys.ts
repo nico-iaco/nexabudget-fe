@@ -44,6 +44,22 @@ export const queryKeys = {
     // Report trend saldo (mantiene la stessa struttura usata da BalanceTrendSection)
     balanceTrend: (startDate: string | null, endDate: string | null) =>
         ['reports', 'balance-trend', startDate, endDate] as const,
+
+    // Patrimonio netto: sotto il prefisso 'reports' così `invalidateDerivedData` lo rinfresca
+    // dopo ogni mutazione su conti, transazioni, crypto e valuta (cambia la liquidità/crypto).
+    netWorth: (currency: string) => ['reports', 'net-worth', currency] as const,
+    netWorthHistory: (months: number, currency: string) =>
+        ['reports', 'net-worth-history', months, currency] as const,
+
+    // Investimenti. `investmentsAll` è il prefisso per invalidare tutto in un colpo.
+    investmentsAll: ['investments'] as const,
+    investmentPortfolio: (currency: string) => ['investments', 'portfolio', currency] as const,
+    investmentHistory: (months: number, currency: string) =>
+        ['investments', 'history', months, currency] as const,
+    investmentPerformance: (startDate: string, endDate: string) =>
+        ['investments', 'performance', startDate, endDate] as const,
+    investmentAsset: (id: string) => ['investments', 'asset', id] as const,
+    investmentOperations: (assetId: string) => ['investments', 'operations', assetId] as const,
 } as const;
 
 /**
@@ -54,5 +70,15 @@ export const queryKeys = {
  */
 export const invalidateDerivedData = (queryClient: QueryClient) => {
     queryClient.invalidateQueries({ queryKey: queryKeys.dashboardAll });
+    queryClient.invalidateQueries({ queryKey: queryKeys.reportsAll });
+};
+
+/**
+ * Da chiamare dopo ogni scrittura su asset, operazioni o prezzo manuale: il backend
+ * invalida la sua cache (~15 min) e qui si rifanno portafoglio, storico, performance e
+ * anche il patrimonio netto (che include gli investimenti).
+ */
+export const invalidateInvestmentData = (queryClient: QueryClient) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.investmentsAll });
     queryClient.invalidateQueries({ queryKey: queryKeys.reportsAll });
 };

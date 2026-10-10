@@ -520,3 +520,191 @@ export interface ChatResponse {
     reply: string;
     toolsUsed: string[];
 }
+
+// ─── Investimenti e patrimonio netto ─────────────────────────────────────────
+// Fonte di verità: Swagger del backend (sezione "2b. Investments & Net Worth" di
+// docs/API_GUIDE.md). I campi `| null` sono davvero null per il backend (prezzo o cambio
+// non disponibile): la UI li mostra come "n/d", mai come 0.
+
+export type InvestmentAssetType = 'ETF' | 'STOCK' | 'BOND' | 'FUND' | 'OTHER';
+export type InvestmentPriceSource = 'YAHOO' | 'TWELVE_DATA' | 'MANUAL';
+export type CouponFrequency = 'ANNUAL' | 'SEMIANNUAL' | 'QUARTERLY';
+export type InvestmentOperationType = 'BUY' | 'SELL' | 'DIVIDEND' | 'COUPON';
+
+export interface InvestmentSearchResult {
+    symbol: string;
+    name: string;
+    exchange: string | null;
+    suggestedType: InvestmentAssetType | null;
+    /** Provider della ricerca; `OPENFIGI` = risultato non verificato. */
+    provider: string;
+}
+
+export interface InvestmentAssetRequest {
+    assetType: InvestmentAssetType;
+    name: string;
+    isin?: string | null;
+    symbol?: string | null;
+    /** Solo in creazione: la valuta non è modificabile. Se assente la ricava il backend dal symbol. */
+    currency?: string;
+    priceSource?: InvestmentPriceSource;
+    /** Solo in creazione. In modifica si usa `updateInvestmentManualPrice`. */
+    manualPrice?: number;
+    /** % annua, 0–100, solo BOND. */
+    couponRate?: number | null;
+    couponFrequency?: CouponFrequency | null;
+    maturityDate?: string | null;
+}
+
+// Campi sempre presenti nel JSON, null quando vuoti (confermato dal backend).
+export interface InvestmentAsset {
+    id: string;
+    assetType: InvestmentAssetType;
+    name: string;
+    isin: string | null;
+    symbol: string | null;
+    currency: string;
+    priceSource: InvestmentPriceSource;
+    /** Con fonte MANUAL è il prezzo usato; con le altre è il prezzo di riserva. */
+    manualPrice: number | null;
+    manualPriceAt: string | null;
+    couponRate: number | null;
+    couponFrequency: CouponFrequency | null;
+    maturityDate: string | null;
+    createdAt: string;
+}
+
+export interface InvestmentOperationRequest {
+    type: InvestmentOperationType;
+    /** yyyy-MM-dd, non nel futuro. */
+    operationDate: string;
+    /** BUY/SELL. Per i BOND è il valore nominale. */
+    quantity?: number;
+    /** BUY/SELL. Per i BOND è la quotazione in % del nominale. */
+    price?: number;
+    fees?: number;
+    /** DIVIDEND/COUPON: importo NETTO incassato. */
+    amount?: number;
+    notes?: string;
+}
+
+export interface InvestmentOperation {
+    id: string;
+    assetId: string;
+    assetName: string;
+    type: InvestmentOperationType;
+    operationDate: string;
+    /** null per DIVIDEND/COUPON. */
+    quantity: number | null;
+    price: number | null;
+    /** 0 se non indicate. */
+    fees: number;
+    /** null per BUY/SELL. */
+    amount: number | null;
+    notes: string | null;
+}
+
+export interface InvestmentPosition {
+    assetId: string;
+    assetType: InvestmentAssetType;
+    name: string;
+    isin: string | null;
+    symbol: string | null;
+    /** Valuta dell'asset. */
+    currency: string;
+    /** Per i BOND: valore nominale. */
+    quantity: number;
+    /** Nella valuta dell'asset (per i BOND: % del nominale). */
+    avgPrice: number | null;
+    costBasis: number | null;
+    /** Nella valuta `priceCurrency` (per i BOND: % del nominale). */
+    price: number | null;
+    priceCurrency: string | null;
+    priceSource: InvestmentPriceSource;
+    priceAsOf: string | null;
+    stale: boolean;
+    marketValue: number | null;
+    unrealizedPl: number | null;
+    unrealizedPlPercent: number | null;
+    realizedPl: number | null;
+    income: number | null;
+    couponRate: number | null;
+    couponFrequency: CouponFrequency | null;
+    maturityDate: string | null;
+}
+
+export interface AllocationSlice {
+    key: string;
+    value: number | null;
+    percent: number | null;
+}
+
+export interface InvestmentPortfolio {
+    currency: string;
+    totalValue: number | null;
+    totalCostBasis: number | null;
+    unrealizedPl: number | null;
+    unrealizedPlPercent: number | null;
+    realizedPl: number | null;
+    income: number | null;
+    /** false = qualche posizione senza prezzo/cambio è esclusa dai totali. */
+    complete: boolean;
+    positions: InvestmentPosition[];
+    allocationByType: AllocationSlice[];
+    allocationByCurrency: AllocationSlice[];
+}
+
+export interface InvestmentHistoryPoint {
+    date: string;
+    marketValue: number | null;
+    costBasis: number | null;
+}
+
+export interface InvestmentHistoryResponse {
+    currency: string;
+    points: InvestmentHistoryPoint[];
+}
+
+export interface InvestmentPerformance {
+    startDate: string;
+    endDate: string;
+    currency: string;
+    invested: number | null;
+    divested: number | null;
+    realizedPl: number | null;
+    income: number | null;
+    startValue: number | null;
+    endValue: number | null;
+    totalGain: number | null;
+}
+
+export interface NetWorth {
+    currency: string;
+    total: number | null;
+    liquidity: number | null;
+    crypto: number | null;
+    investments: number | null;
+    liquidityPercent: number | null;
+    cryptoPercent: number | null;
+    investmentsPercent: number | null;
+    /** false = il totale è parziale: vedi `warnings`. */
+    complete: boolean;
+    warnings: string[];
+    investmentAccountsBalance: number | null;
+    possibleDoubleCounting: boolean;
+}
+
+export interface NetWorthHistoryPoint {
+    date: string;
+    liquidity: number | null;
+    /** null prima del primo snapshot (nel `total` contano come 0). */
+    crypto: number | null;
+    investments: number | null;
+    total: number | null;
+}
+
+export interface NetWorthHistoryResponse {
+    currency: string;
+    points: NetWorthHistoryPoint[];
+    cryptoIncludedInHistory: boolean;
+}

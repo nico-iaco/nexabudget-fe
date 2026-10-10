@@ -86,6 +86,30 @@ export const formatPercent = (value: number, decimals = 1, signed = false): stri
         ...(signed ? { signDisplay: 'exceptZero' } : {}),
     }).format(value / 100);
 
+// Valori che il backend può mandare a null (prezzo o cambio non disponibile: investimenti,
+// patrimonio netto, performance). Null NON è zero: "0,00 €" direbbe che il valore è nullo,
+// "n/d" dice che non lo conosciamo. Un vero 0 resta "0,00 €".
+
+const isMissing = (value: number | null | undefined): value is null | undefined =>
+    value === null || value === undefined || !Number.isFinite(value);
+
+/** Testo per un valore non disponibile ("n/d" in italiano, "n/a" in inglese). */
+export const notAvailable = (): string => i18n.t('common.notAvailable');
+
+/** Come `formatMoney`, ma "n/d" se il valore è null/undefined/NaN. */
+export const formatMoneyOrNA = (
+    value: number | null | undefined,
+    currency = 'EUR',
+    options?: MoneyOptions,
+): string => (isMissing(value) ? notAvailable() : formatMoney(value, currency, options));
+
+/** Come `formatPercent`, ma "n/d" se il valore è null/undefined/NaN. */
+export const formatPercentOrNA = (
+    value: number | null | undefined,
+    decimals = 1,
+    signed = false,
+): string => (isMissing(value) ? notAvailable() : formatPercent(value, decimals, signed));
+
 
 // Date mostrate all'utente: formato della lingua attiva ("09/10/2026" in italiano,
 // "10/09/2026" in inglese) invece di 'DD/MM/YYYY' fisso. dayjs segue già la lingua

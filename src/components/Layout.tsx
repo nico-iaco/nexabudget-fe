@@ -57,7 +57,11 @@ export const Layout = () => {
     // causando un doppio render di shell e pagina a OGNI navigazione. In più l'array
     // literal cambiava identità, invalidando il useMemo di accountMenuItems in AppSider,
     // che ricostruiva l'intero menu dei conti.
-    const selectedKeys = useMemo(() => [location.pathname], [location.pathname]);
+    // Le sotto-pagine di una voce (dettaglio asset) tengono evidenziata la voce di menu.
+    const selectedKeys = useMemo(
+        () => [location.pathname.startsWith('/investments/') ? '/investments' : location.pathname],
+        [location.pathname],
+    );
 
     // --- Hook dati ---
     const { accounts, totalBalance, fetchAccounts, isLoading: loadingAccounts, isError: isAccountsError, refetch: refetchAccounts } = useAccounts();

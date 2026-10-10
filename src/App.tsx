@@ -22,6 +22,8 @@ const DashboardPage = lazy(() => import('./pages/dashboard/DashboardPage').then(
 const GoCardlessCallbackPage = lazy(() => import('./pages/gocardless/GoCardlessCallbackPage.tsx').then(m => ({ default: m.GoCardlessCallbackPage })));
 const EnableBankingCallbackPage = lazy(() => import('./pages/banking/EnableBankingCallbackPage.tsx').then(m => ({ default: m.EnableBankingCallbackPage })));
 const CryptoPage = lazy(() => import('./pages/crypto/CryptoPage').then(m => ({ default: m.CryptoPage })));
+const InvestmentsPage = lazy(() => import('./pages/investments/InvestmentsPage').then(m => ({ default: m.InvestmentsPage })));
+const AssetDetailPage = lazy(() => import('./pages/investments/AssetDetailPage').then(m => ({ default: m.AssetDetailPage })));
 const SettingsPage = lazy(() => import('./pages/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
 const TrashPage = lazy(() => import('./pages/trash/TrashPage').then(m => ({ default: m.TrashPage })));
 const BudgetsPage = lazy(() => import('./pages/budgets/BudgetsPage').then(m => ({ default: m.BudgetsPage })));
@@ -113,6 +115,14 @@ const router = createBrowserRouter([
             {
                 path: 'crypto',
                 element: <LazyRoute><CryptoPage /></LazyRoute>,
+            },
+            {
+                path: 'investments',
+                element: <LazyRoute><InvestmentsPage /></LazyRoute>,
+            },
+            {
+                path: 'investments/:assetId',
+                element: <LazyRoute><AssetDetailPage /></LazyRoute>,
             },
             {
                 path: 'settings',

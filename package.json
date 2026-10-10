@@ -8,6 +8,7 @@
     "build": "npm run generate-icons && tsc -b && vite build",
     "analyze": "ANALYZE=true npm run build && open .stats/stats.html",
     "lint": "eslint .",
+    "test": "vitest run",
     "preview": "vite preview",
     "generate-icons": "node scripts/generate-icons.mjs"
   },
@@ -42,6 +43,7 @@
     "vite": "8.0.8",
     "vite-plugin-compression": "^0.5.1",
     "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.0.3",
     "workbox-window": "^7.4.0"
   }
 }

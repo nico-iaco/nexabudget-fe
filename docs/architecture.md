@@ -79,7 +79,7 @@ Data-access hooks in `src/hooks/` wrap the query layer so pages never call Axios
 * `useDashboardData` — parallel fetch of every dashboard widget, collecting per-request failures into a `partialErrors` list so a backend error is reported instead of rendering as "no data". It only queries complete date ranges: while the user is picking a custom range, the last complete one stays applied.
 * `useTransactionsList` — the transaction list: a paged query on desktop and an infinite query on mobile, both under the `queryKeys.transactions()` prefix, so invalidations from anywhere (bank sync, trash restore) refresh it. Filters, sort and page live in the URL (`useTransactionFilters`).
 
-A few views (API keys, audit log, trash, chat, crypto) still fetch imperatively on mount; they guard against out-of-order responses and show an inline error instead of an empty list when a load fails.
+Investments and net worth (`useInvestments.ts`, `src/pages/investments/`) are fully `useQuery`-based; writes call `invalidateInvestmentData`. A few views (API keys, audit log, trash, chat, crypto) still fetch imperatively on mount; they guard against out-of-order responses and show an inline error instead of an empty list when a load fails.
 
 ```mermaid
 flowchart TD

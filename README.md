@@ -19,6 +19,11 @@ NexaBudget is a modern and intuitive personal finance management application des
 | ![Audit log light](https://raw.githubusercontent.com/nico-iaco/nexabudget-fe/main/docs/screenshots/audit-log-light.png) | ![Chat light](https://raw.githubusercontent.com/nico-iaco/nexabudget-fe/main/docs/screenshots/chat-light.png) |
 | ![Audit log dark](https://raw.githubusercontent.com/nico-iaco/nexabudget-fe/main/docs/screenshots/audit-log-dark.png) | ![Chat dark](https://raw.githubusercontent.com/nico-iaco/nexabudget-fe/main/docs/screenshots/chat-dark.png) |
 
+| Investments | Asset detail | Net worth |
+|---|---|---|
+| ![Investments light](https://raw.githubusercontent.com/nico-iaco/nexabudget-fe/main/docs/screenshots/investments-light.png) | ![Asset detail light](https://raw.githubusercontent.com/nico-iaco/nexabudget-fe/main/docs/screenshots/investment-detail-light.png) | ![Net worth light](https://raw.githubusercontent.com/nico-iaco/nexabudget-fe/main/docs/screenshots/net-worth-light.png) |
+| ![Investments dark](https://raw.githubusercontent.com/nico-iaco/nexabudget-fe/main/docs/screenshots/investments-dark.png) | ![Asset detail dark](https://raw.githubusercontent.com/nico-iaco/nexabudget-fe/main/docs/screenshots/investment-detail-dark.png) | ![Net worth dark](https://raw.githubusercontent.com/nico-iaco/nexabudget-fe/main/docs/screenshots/net-worth-dark.png) |
+
 *Shown with sample data, in light (top row) and dark (bottom row) theme.*
 
 ## ✨ Features
@@ -38,12 +43,14 @@ NexaBudget is a modern and intuitive personal finance management application des
   - Income and expense breakdown by category (donut chart + table; progress bars on mobile)
   - Monthly trend bar chart (6 / 12 / 24 months)
   - Net-worth balance trend section
+  - Net worth card (liquidity + crypto + investments) with history chart
   - Guided onboarding checklist for new users
 - **Budget Templates & Alerts**: Create recurring budget limits per category (monthly, quarterly, yearly) with threshold alerts.
 - **Trash / Soft Delete**: Deleted transactions and accounts are moved to a recoverable trash, with a dedicated page to restore them.
 - **Audit Log**: Paginated, server-side audit trail of all user actions with expandable JSON detail.
 - **Bank Synchronization**: Open Banking account linking through two interchangeable providers — **GoCardless** and **Enable Banking** — with automatic transaction import and live sync status.
 - **Crypto Portfolio**: Read-only Binance and Coinbase integrations, plus manual holdings for cold wallets, aggregated into a single valuation.
+- **Investments**: Track ETFs, stocks, bonds and funds through their operations (buy, sell, dividend, coupon): positions, unrealized/realized P/L, allocation, portfolio history and period performance. Prices come from the backend (manual price for bonds such as BTP). Kept separate from income and expenses.
 - **AI Assistant (NexaBot)**: Chat with an AI agent about your finances, with multiple saved conversations and transparency about the data tools it used.
 - **AI Insights & Automation**: On-demand AI analysis of your spending (viewable in-app or downloadable as PDF) and automatic categorization of uncategorized transactions.
 - **Programmatic API Keys**: Issue and revoke personal API keys for programmatic access to your own data.

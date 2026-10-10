@@ -117,6 +117,20 @@ If the portfolio cannot be loaded, the page shows an inline error with *Retry* r
 
 ---
 
+## 📈 Investments & Net Worth
+
+Investments (ETFs, stocks, bonds, funds) are tracked **separately from income and expenses**: they generate no transactions and never touch accounts. The UI lives in `src/pages/investments/` (`InvestmentsPage` at `/investments`, `AssetDetailPage` at `/investments/:assetId`), `src/components/investments/` and three modals in `src/components/modals/` (`InvestmentAssetModal`, `InvestmentOperationModal`, `InvestmentManualPriceModal`).
+
+* **Positions come from operations** (BUY, SELL, DIVIDEND, COUPON). The frontend never computes average price or P/L — it shows what `GET /investments/portfolio` returns. Portfolio money values (cost, market value, P/L, income) are in the portfolio currency; `avgPrice` and `price` stay in the asset currency.
+* **Bonds** (`assetType = BOND`): quantity is the *nominal value* and price is the quote in *% of nominal* (value = nominal × price / 100, computed by the backend). Labels switch to "Nominale" / "Prezzo %". Bonds such as BTP have no automatic price: use `priceSource = MANUAL` and update it via the *Update price* action (`PUT …/manual-price`).
+* **Null is not zero**: `price`, `marketValue`, `unrealizedPl`, `costBasis`, net-worth components and performance values can be `null` (missing price or exchange rate) and are shown as "n/d" (`formatMoneyOrNA` / `formatPercentOrNA` in `utils/format.ts`). `complete = false` shows a banner, `stale = true` a *Prezzo non aggiornato* badge with `priceAsOf`, `possibleDoubleCounting` a warning. Closed positions (quantity 0) sit in a collapsed section.
+* **Adding an asset**: search (`GET /investments/search`, debounced, min. 2 characters; an ISIN returns several listings, all shown; `provider = OPENFIGI` results are flagged *Non verificato*) pre-fills ticker, name and suggested type; or *Inserimento manuale* (no ticker, manual price). The currency is omitted when a ticker is present (the backend derives it from Yahoo; if that fails it answers 400 and the form switches the currency field to a selector) and is not editable afterwards. Automatic price sources require a symbol (client-side check; the backend answers 400 otherwise); `isin`/`symbol` are sent as `null` in the PUT when empty, never as `""`. COUPON is offered only for bonds and DIVIDEND only for the other types (a UI choice — the backend accepts both everywhere); `PUT …/manual-price` on a non-MANUAL asset is exposed as the *fallback price* (used only when no live or last-known price exists). A 409 (duplicate ISIN/ticker, or a SELL above the held quantity, even when editing/deleting an earlier BUY) shows the backend's `message` inside the modal.
+* **Histories** (`/investments/portfolio/history`, `/net-worth/history`) start from the day the feature was enabled, with no backfill: `points` can be empty, and crypto/investments are `null` before the first snapshot. `SeriesLineChart` breaks the line at a `null` instead of dropping to zero, and a note says "history available from <date>".
+* **Net worth** (`NetWorthCard`, dashboard): total, liquidity / crypto / investments breakdown, warnings, and a trend chart with a 6/12/24-month selector. It is shown even when the user has no transactions.
+* **Refresh**: the backend caches prices ~15 minutes and invalidates the cache on every write; after any write the modals call `invalidateInvestmentData(queryClient)` (portfolio, history, performance, asset, operations **and** the net-worth queries, which live under the `reports` prefix).
+
+---
+
 ## 🔑 Programmatic API Keys
 
 Separately from exchange credentials, `src/pages/settings/ApiKeysCard.tsx` manages NexaBudget's **own** API keys, for programmatic access to the user's data. `ApiKeyFormModal` creates or edits a key, and `ApiKeySecretModal` displays the generated secret once, at creation time, since it is not retrievable afterwards.

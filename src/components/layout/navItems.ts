@@ -17,6 +17,7 @@ export const NAV_ITEMS: NavItem[] = [
     { key: '/transactions', labelKey: 'nav.allTransactions',  showInBottomBar: true, bottomBarLabelKey: 'nav.transactions' },
     { key: '/budgets',     labelKey: 'nav.budgets',           showInBottomBar: true },
     { key: '/crypto',      labelKey: 'nav.crypto',            showInBottomBar: false },
+    { key: '/investments', labelKey: 'nav.investments',       showInBottomBar: false },
     { key: '/trash',       labelKey: 'nav.trash',             showInBottomBar: false },
     { key: '/audit-log',   labelKey: 'nav.auditLog',          showInBottomBar: false },
     { key: '/chat',        labelKey: 'nav.chat',              showInBottomBar: true },

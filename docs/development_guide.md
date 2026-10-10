@@ -49,6 +49,7 @@ NexaBudget Frontend configures the following scripts in `package.json`:
     1. `npm run generate-icons`: Generates device-compliant PWA icons via `scripts/generate-icons.mjs`.
     2. `tsc -b`: Type-checks the entire TypeScript codebase using the project build configuration.
     3. `vite build`: Bundles assets, applies compression (Brotli and Gzip), and writes static bundles into the `dist/` directory.
+* **`npm test`**: Runs the unit tests once with Vitest (`vitest.config.ts`, Node environment, `src/**/*.test.ts`). Tests cover pure functions only (formatting, request mapping, null/stale handling).
 * **`npm run lint`**: Inspects code quality by running ESLint (flat config, `eslint.config.js`) across all TypeScript and React files.
 * **`npm run preview`**: Serves the local production build folder (`dist/`) on a local port for verification before deployment. This is also the only way to exercise the service worker, which is disabled in dev mode.
 * **`npm run analyze`**: Runs a production build and opens the `rollup-plugin-visualizer` treemap (`dist/stats.html`) to inspect bundle composition and chunk sizes.
@@ -56,12 +57,15 @@ NexaBudget Frontend configures the following scripts in `package.json`:
 
 ### Verifying a change
 
-The project has **no automated test suite**. Before opening a pull request, the expected checks are:
+The project has a **small unit-test suite** (Vitest, pure functions only — no component or end-to-end tests). Before opening a pull request, the expected checks are:
 
 ```bash
+npm test
 npm run lint
 npm run build   # includes tsc -b, so it catches type errors
 ```
+
+Test files sit next to the code (`src/utils/*.test.ts`); they are type-checked by `tsc -b` and linted like everything else.
 
 Both currently pass; `npm run lint` reports warnings but exits 0. Three rules from `eslint-plugin-react-hooks` 7 (the React Compiler rule set) are configured as warnings instead of errors in `eslint.config.js`, each with the rationale inline — most notably `set-state-in-effect`, which flags the imperative fetch-on-mount pattern still used by the pages that predate the React Query migration. Treat those warnings as a migration backlog, not as noise to suppress.
 

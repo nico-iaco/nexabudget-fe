@@ -31,6 +31,7 @@ const Sparkline = lazy(() => _chartsModule().then(m => ({ default: m.Sparkline }
 // per una card opzionale, e li portava nel chunk della route di atterraggio.
 const AiAnalysisCard = lazy(() => import('../../components/dashboard/AiAnalysisCard').then(m => ({ default: m.AiAnalysisCard })));
 import { BalanceTrendSection } from '../../components/reports/BalanceTrendSection';
+import { NetWorthCard } from '../../components/investments/NetWorthCard';
 import * as api from '../../services/api';
 import { queryKeys } from '../../queryKeys';
 import type { CategoryBreakdownItem, MonthComparisonResponse, MonthlySummaryResponse } from '../../types/api';
@@ -319,8 +320,13 @@ export const DashboardPage = () => {
             )}
 
             {coreFailed ? (
-                <InlineError message={t('dashboard.loadErrorFull')} onRetry={retryDashboard} />
+                <>
+                    <InlineError message={t('dashboard.loadErrorFull')} onRetry={retryDashboard} />
+                    {/* Il patrimonio netto ha query proprie: non dipende dai movimenti. */}
+                    <div style={{ marginTop: SPACING.md }}><NetWorthCard /></div>
+                </>
             ) : !hasData && emptyIsKnown ? (
+                <>
                 <EmptyState
                     description={
                         accounts.length === 0
@@ -338,6 +344,9 @@ export const DashboardPage = () => {
                               ]
                     }
                 />
+                {/* Chi ha solo investimenti o crypto, senza movimenti, vede comunque il patrimonio. */}
+                <div style={{ marginTop: SPACING.md }}><NetWorthCard /></div>
+                </>
             ) : (
                 <div
                     aria-busy={refreshing}
@@ -415,6 +424,13 @@ export const DashboardPage = () => {
                                 />
                             </Col>
                         )}
+                    </Row>
+
+                    {/* Patrimonio netto: liquidità + crypto + investimenti, con avvisi e andamento. */}
+                    <Row gutter={[16, 16]} style={{ marginTop: SPACING.md }}>
+                        <Col xs={24}>
+                            <NetWorthCard />
+                        </Col>
                     </Row>
 
                     {/* Bento: analytics a sinistra, budget + proiezione + confronto a destra.

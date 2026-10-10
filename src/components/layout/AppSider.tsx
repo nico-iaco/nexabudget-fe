@@ -19,6 +19,7 @@ import {
     RobotOutlined,
     SafetyCertificateOutlined,
     SettingOutlined,
+    StockOutlined,
     SyncOutlined,
     TransactionOutlined,
     WalletOutlined
@@ -43,6 +44,7 @@ const NAV_ICON_MAP: Record<string, React.ReactNode> = {
     '/transactions': <TransactionOutlined />,
     '/budgets':      <ContainerOutlined />,
     '/crypto':       <FundOutlined />,
+    '/investments':  <StockOutlined />,
     '/trash':        <RestOutlined />,
     '/audit-log':    <HistoryOutlined />,
     '/chat':         <RobotOutlined />,

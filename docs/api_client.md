@@ -192,3 +192,16 @@ One legacy GoCardless-only endpoint is retained because the unified API does not
 * `GET /chat/sessions` — Lists active chat discussions (`getChatSessions`).
 * `GET /chat/sessions/:sessionId/messages` — Retrieves chat history (`getChatSessionMessages`).
 * `DELETE /chat/sessions/:sessionId` — Closes and deletes a session (`deleteChatSession`).
+
+### 15. Investments & Net Worth
+
+All paths below are under `/api`; types are in `src/types/api.ts` (`Investment*`, `NetWorth*`).
+
+* `GET /investments/search?q=` — ticker / name / ISIN lookup (`searchInvestments`, accepts an `AbortSignal`).
+* `GET|POST /investments/assets`, `GET|PUT|DELETE /investments/assets/:id` — assets (`getInvestmentAssets`, `createInvestmentAsset`, `getInvestmentAsset`, `updateInvestmentAsset`, `deleteInvestmentAsset`). Deleting an asset deletes its operations.
+* `PUT /investments/assets/:id/manual-price` — body `{ price }` (`updateInvestmentManualPrice`).
+* `GET|POST /investments/assets/:id/operations`, `PUT|DELETE /investments/operations/:id` — operations (`getInvestmentOperations`, `createInvestmentOperation`, `updateInvestmentOperation`, `deleteInvestmentOperation`).
+* `GET /investments/portfolio?currency=` (`getInvestmentPortfolio`), `GET /investments/portfolio/history?months=&currency=` (`getInvestmentHistory`), `GET /investments/performance?startDate=&endDate=` (`getInvestmentPerformance`, identical to `/reports/investment-performance`).
+* `GET /net-worth?currency=` (`getNetWorth`), `GET /net-worth/history?months=&currency=` (`getNetWorthHistory`, identical to `/reports/net-worth-trend`).
+
+Queries live in `src/hooks/useInvestments.ts`; keys in `queryKeys` (`investmentsAll` prefix; the net-worth keys sit under `reportsAll` so `invalidateDerivedData` refreshes them too). After a write call `invalidateInvestmentData`.

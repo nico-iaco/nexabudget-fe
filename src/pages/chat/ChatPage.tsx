@@ -163,6 +163,8 @@ const SUGGESTION_KEYS = [
     'chat.suggestion2',
     'chat.suggestion3',
     'chat.suggestion4',
+    'chat.suggestion5',
+    'chat.suggestion6',
 ] as const;
 
 export const ChatPage = () => {
